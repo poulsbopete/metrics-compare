@@ -7,13 +7,19 @@ A Next.js application that helps you compare the costs of different observabilit
 - **Interactive Metric Volume Slider**: Adjust base metrics per second
 - **Tag Management**: Add tags to see how cardinality explosion affects metric volume
 - **Cost Comparison**: Compare monthly and annual costs across multiple platforms:
-  - Elastic Serverless
-  - Datadog
-  - New Relic
-  - Splunk Observability
-  - Dynatrace
-  - Prometheus (Self-hosted)
-  - Grafana Cloud
+  - **Cloud/SaaS Platforms:**
+    - Elastic Serverless
+    - Datadog
+    - New Relic
+    - Splunk Observability
+    - Dynatrace
+    - Grafana Cloud
+  - **Self-Hosted Solutions:**
+    - Elastic (Self-hosted)
+    - Prometheus (Self-hosted)
+    - Thanos (Self-hosted)
+    - VictoriaMetrics (Self-hosted)
+    - Cortex (Self-hosted)
 - **Real-time Calculations**: See cost impacts instantly as you adjust parameters
 
 ## Getting Started
