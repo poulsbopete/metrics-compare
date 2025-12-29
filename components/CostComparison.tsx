@@ -2,8 +2,8 @@
 
 import { Platform } from "@/lib/costCalculator";
 import { useState } from "react";
-import AnimatedNumber from "./AnimatedNumber";
 import CostBarChart from "./CostBarChart";
+import PlatformRow from "./PlatformRow";
 
 interface CostComparisonProps {
   platforms: Platform[];
@@ -80,66 +80,50 @@ export default function CostComparison({
 
       {/* Table View */}
       {viewMode === "table" && (
-        <div className="overflow-x-auto animate-fade-in-up">
-          <div className="min-w-full">
-            <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                      Platform
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                      Monthly Metrics
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                      Monthly Cost
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                      Annual Cost
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {sortedPlatforms.map((platform, index) => {
-                    const cost = costs[platform.id];
-                    const annualCost = cost * 12;
-                    return (
-                      <tr
-                        key={platform.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-[1.01]"
-                        style={{
-                          animationDelay: `${index * 50}ms`,
-                        }}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div
-                              className={`w-4 h-4 rounded-full ${platform.color} mr-3 shadow-sm`}
-                            />
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              {platform.name}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {formatNumber(monthlyMetrics)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                            <AnimatedNumber value={cost} format={formatCurrency} />
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                            <AnimatedNumber value={annualCost} format={formatCurrency} />
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        <div className="space-y-3 animate-fade-in-up">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              💡 <strong>Tip:</strong> Click on any platform row to view supported metric types and infrastructure cost breakdown (for self-hosted solutions).
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <div className="min-w-full">
+              <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Platform
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Monthly Metrics
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Monthly Cost
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                        Annual Cost
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {sortedPlatforms.map((platform, index) => {
+                      const cost = costs[platform.id];
+                      return (
+                        <PlatformRow
+                          key={platform.id}
+                          platform={platform}
+                          cost={cost}
+                          monthlyMetrics={monthlyMetrics}
+                          formatCurrency={formatCurrency}
+                          formatNumber={formatNumber}
+                          index={index}
+                        />
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -147,4 +131,3 @@ export default function CostComparison({
     </div>
   );
 }
-

@@ -98,9 +98,13 @@ export default function Home() {
 
   const costs = useMemo(() => {
     const result: Record<string, number> = {};
-    platforms.forEach((platform) => {
-      result[platform.id] = calculatePlatformCost(platform, monthlyMetrics);
-    });
+    try {
+      platforms.forEach((platform) => {
+        result[platform.id] = calculatePlatformCost(platform, monthlyMetrics);
+      });
+    } catch (error) {
+      console.error("Error calculating costs:", error);
+    }
     return result;
   }, [monthlyMetrics]);
 
@@ -128,6 +132,21 @@ export default function Home() {
   };
 
   const multiplier = tags.length > 0 ? Math.pow(tagValues, tags.length) : 1;
+
+  if (!platforms || platforms.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Loading...
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Initializing platforms data...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -293,7 +312,7 @@ export default function Home() {
         <div className="mt-12 text-center">
           <div className="inline-block bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl px-6 py-4 border border-gray-200/50 dark:border-gray-700/50 shadow-md">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              💡 Pricing is approximate and based on publicly available information as of 2025. Actual costs may vary.
+              💡 Pricing is approximate and based on publicly available information as of 2025. Elastic Serverless pricing based on <a href="https://www.elastic.co/pricing/serverless-observability" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">official pricing page</a> ($0.09/GB ingest + $0.019/GB retention, converted to metrics). Actual costs may vary.
             </p>
           </div>
         </div>
@@ -301,4 +320,3 @@ export default function Home() {
     </div>
   );
 }
-

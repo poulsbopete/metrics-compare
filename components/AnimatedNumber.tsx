@@ -15,9 +15,18 @@ export default function AnimatedNumber({
   format = (v) => v.toLocaleString(),
   className = "",
 }: AnimatedNumberProps) {
-  const [displayValue, setDisplayValue] = useState(0);
+  const [displayValue, setDisplayValue] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
 
   useEffect(() => {
+    // Only animate if value actually changed
+    if (value === prevValue) {
+      setDisplayValue(value);
+      return;
+    }
+
+    setPrevValue(value);
+    const startValue = displayValue;
     let startTime: number;
     let animationFrame: number;
 
@@ -27,7 +36,7 @@ export default function AnimatedNumber({
 
       // Easing function for smooth animation
       const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-      setDisplayValue(value * easeOutCubic);
+      setDisplayValue(startValue + (value - startValue) * easeOutCubic);
 
       if (progress < 1) {
         animationFrame = requestAnimationFrame(animate);

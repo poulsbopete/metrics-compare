@@ -81,15 +81,7 @@ export default function TagManager({
             {tagValues}
           </span>
         </div>
-        <div className="relative">
-          <div className="relative h-3 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 rounded-full overflow-hidden">
-            <div
-              className="absolute h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-300 ease-out shadow-lg"
-              style={{ width: `${percentage}%` }}
-            >
-              <div className="absolute inset-0 gradient-shimmer" />
-            </div>
-          </div>
+        <div className="relative h-6 flex items-center">
           <input
             type="range"
             min={1}
@@ -97,12 +89,9 @@ export default function TagManager({
             step={1}
             value={tagValues}
             onChange={(e) => onTagValuesChange(Number(e.target.value))}
-            className="absolute top-0 left-0 w-full h-3 opacity-0 cursor-pointer z-10"
-          />
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-gray-200 rounded-full shadow-lg border-2 border-purple-500 transition-transform duration-200 pointer-events-none z-20"
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-purple-600"
             style={{
-              left: `calc(${percentage}% - 12px)`,
+              background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`,
             }}
           />
         </div>
