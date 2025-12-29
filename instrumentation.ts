@@ -30,8 +30,13 @@ export async function register() {
     });
 
     // Set up metrics
+    // Ensure endpoint doesn't have trailing slash
+    const metricsUrl = endpoint.endsWith('/') 
+      ? `${endpoint.slice(0, -1)}/v1/metrics`
+      : `${endpoint}/v1/metrics`;
+    
     const metricExporter = new OTLPMetricExporter({
-      url: `${endpoint}/v1/metrics`,
+      url: metricsUrl,
       headers: {
         Authorization: `ApiKey ${apiKey}`,
       },
@@ -52,14 +57,21 @@ export async function register() {
     metrics.setGlobalMeterProvider(meterProvider);
 
     // Set up traces
+    // Ensure endpoint doesn't have trailing slash
+    const tracesUrl = endpoint.endsWith('/') 
+      ? `${endpoint.slice(0, -1)}/v1/traces`
+      : `${endpoint}/v1/traces`;
+    
+    const traceExporter = new OTLPTraceExporter({
+      url: tracesUrl,
+      headers: {
+        Authorization: `ApiKey ${apiKey}`,
+      },
+    });
+    
     const sdk = new NodeSDK({
       resource,
-      traceExporter: new OTLPTraceExporter({
-        url: `${endpoint}/v1/traces`,
-        headers: {
-          Authorization: `ApiKey ${apiKey}`,
-        },
-      }),
+      traceExporter,
       instrumentations: [
         getNodeAutoInstrumentations({
           // Exclude instrumentations that require optional dependencies
@@ -75,10 +87,24 @@ export async function register() {
     
     // Log initialization with service details
     const serviceName = process.env.OTEL_SERVICE_NAME || 'metrics-compare';
-    console.log(`OpenTelemetry instrumentation initialized for service: ${serviceName}`);
+    console.log('='.repeat(60));
+    console.log('OpenTelemetry instrumentation initialized');
+    console.log(`Service Name: ${serviceName}`);
     console.log(`Environment: ${deploymentEnv}`);
-    console.log(`Sending traces to: ${endpoint}/v1/traces`);
-    console.log(`Sending metrics to: ${endpoint}/v1/metrics`);
+    console.log(`Traces Endpoint: ${endpoint}/v1/traces`);
+    console.log(`Metrics Endpoint: ${endpoint}/v1/metrics`);
+    console.log(`API Key configured: ${apiKey ? 'Yes (***' + apiKey.slice(-4) + ')' : 'No'}`);
+    console.log('='.repeat(60));
+    
+    // Create a test span to verify tracing is working
+    const { trace } = await import('@opentelemetry/api');
+    const tracer = trace.getTracer('metrics-compare-init');
+    const span = tracer.startSpan('instrumentation-startup');
+    span.setAttribute('service.name', serviceName);
+    span.setAttribute('deployment.environment', deploymentEnv);
+    span.setAttribute('init.timestamp', new Date().toISOString());
+    span.end();
+    console.log('Test span created and sent');
   }
 }
 
