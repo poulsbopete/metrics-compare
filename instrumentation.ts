@@ -125,11 +125,13 @@ export async function register() {
       
       // Ensure span is sampled
       const spanContext = span.spanContext();
-      console.log(`Startup span - TraceId: ${spanContext.traceId}, SpanId: ${spanContext.spanId}, Sampled: ${(spanContext.traceFlags & 1) === 1}`);
+      const isSampled = (spanContext.traceFlags & 1) === 1;
+      console.log(`Startup span - TraceId: ${spanContext.traceId}, SpanId: ${spanContext.spanId}, Sampled: ${isSampled}`);
       
       span.end();
       console.log('Test span created and sent');
       console.log('Note: Traces are exported in batches. Allow 10-30 seconds for traces to appear in Elastic.');
+      console.log(`To test tracing, visit: /api/trace-test or /api/trace-ping`);
     } catch (error) {
       console.error('Error initializing OpenTelemetry:', error);
       throw error;
