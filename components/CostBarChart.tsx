@@ -79,9 +79,14 @@ export default function CostBarChart({
                   {platform.name}
                 </span>
               </div>
-              <span className="text-sm font-semibold text-gray-900 dark:text-white min-w-[80px] text-right">
-                {formatCurrency(cost)}
-              </span>
+              <div className="flex flex-col items-end min-w-[100px] text-right">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {formatCurrency(cost)}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatCurrency(cost * 12)}/yr
+                </span>
+              </div>
             </div>
             <div 
               className="relative rounded-full overflow-hidden shadow-inner"
@@ -104,9 +109,10 @@ export default function CostBarChart({
                   }}
                 >
                   {percentage > 15 && (
-                    <span className="text-xs font-semibold text-white drop-shadow-sm whitespace-nowrap">
-                      {formatCurrency(cost)}
-                    </span>
+                    <div className="flex flex-col items-end text-xs font-semibold text-white drop-shadow-sm whitespace-nowrap">
+                      <span>{formatCurrency(cost)}</span>
+                      <span className="text-[10px] opacity-90">{formatCurrency(cost * 12)}/yr</span>
+                    </div>
                   )}
                 </div>
               )}
