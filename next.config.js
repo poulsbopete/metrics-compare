@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    instrumentationHook: true,
-  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       // Ignore optional OpenTelemetry dependencies that may not be installed
