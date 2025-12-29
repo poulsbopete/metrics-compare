@@ -60,11 +60,25 @@ export async function register() {
           Authorization: `ApiKey ${apiKey}`,
         },
       }),
-      instrumentations: [getNodeAutoInstrumentations()],
+      instrumentations: [
+        getNodeAutoInstrumentations({
+          // Exclude instrumentations that require optional dependencies
+          '@opentelemetry/instrumentation-winston': {
+            enabled: false,
+          },
+          // HTTP instrumentation is enabled by default and will capture all HTTP requests
+        }),
+      ],
     });
 
     sdk.start();
-    console.log('OpenTelemetry instrumentation initialized');
+    
+    // Log initialization with service details
+    const serviceName = process.env.OTEL_SERVICE_NAME || 'metrics-compare';
+    console.log(`OpenTelemetry instrumentation initialized for service: ${serviceName}`);
+    console.log(`Environment: ${deploymentEnv}`);
+    console.log(`Sending traces to: ${endpoint}/v1/traces`);
+    console.log(`Sending metrics to: ${endpoint}/v1/metrics`);
   }
 }
 
