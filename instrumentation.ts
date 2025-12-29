@@ -87,6 +87,8 @@ export async function register() {
     const sdk = new NodeSDK({
       resource,
       traceExporter,
+      // Force all traces to be sampled (not sampled out)
+      spanProcessor: undefined, // Use default batch processor
       instrumentations: [
         getNodeAutoInstrumentations({
           // Exclude instrumentations that require optional dependencies
@@ -97,6 +99,10 @@ export async function register() {
         }),
       ],
     });
+    
+    // Set global trace config to ensure all traces are sampled
+    const { trace, context } = await import('@opentelemetry/api');
+    const { TraceFlags } = await import('@opentelemetry/api');
 
     try {
       sdk.start();
@@ -115,12 +121,30 @@ export async function register() {
       // Create a test span to verify tracing is working
       const { trace } = await import('@opentelemetry/api');
       const tracer = trace.getTracer('metrics-compare-init');
-      const span = tracer.startSpan('instrumentation-startup');
-      span.setAttribute('service.name', serviceName);
-      span.setAttribute('deployment.environment', deploymentEnv);
-      span.setAttribute('init.timestamp', new Date().toISOString());
+      const span = tracer.startSpan('instrumentation-startup', {
+        attributes: {
+          'service.name': serviceName,
+          'deployment.environment': deploymentEnv,
+          'init.timestamp': new Date().toISOString(),
+        }
+      });
+      
+      // Ensure span is sampled
+      const spanContext = span.spanContext();
+      console.log(`Startup span - TraceId: ${spanContext.traceId}, SpanId: ${spanContext.spanId}, Sampled: ${(spanContext.traceFlags & 1) === 1}`);
+      
       span.end();
       console.log('Test span created and sent');
+      
+      // Force flush to ensure immediate export
+      setTimeout(async () => {
+        try {
+          await sdk.forceFlush();
+          console.log('Trace export flushed');
+        } catch (error) {
+          console.error('Error flushing traces:', error);
+        }
+      }, 2000);
     } catch (error) {
       console.error('Error initializing OpenTelemetry:', error);
       throw error;
