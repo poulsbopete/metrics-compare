@@ -83,28 +83,33 @@ export async function register() {
       ],
     });
 
-    sdk.start();
-    
-    // Log initialization with service details
-    const serviceName = process.env.OTEL_SERVICE_NAME || 'metrics-compare';
-    console.log('='.repeat(60));
-    console.log('OpenTelemetry instrumentation initialized');
-    console.log(`Service Name: ${serviceName}`);
-    console.log(`Environment: ${deploymentEnv}`);
-    console.log(`Traces Endpoint: ${endpoint}/v1/traces`);
-    console.log(`Metrics Endpoint: ${endpoint}/v1/metrics`);
-    console.log(`API Key configured: ${apiKey ? 'Yes (***' + apiKey.slice(-4) + ')' : 'No'}`);
-    console.log('='.repeat(60));
-    
-    // Create a test span to verify tracing is working
-    const { trace } = await import('@opentelemetry/api');
-    const tracer = trace.getTracer('metrics-compare-init');
-    const span = tracer.startSpan('instrumentation-startup');
-    span.setAttribute('service.name', serviceName);
-    span.setAttribute('deployment.environment', deploymentEnv);
-    span.setAttribute('init.timestamp', new Date().toISOString());
-    span.end();
-    console.log('Test span created and sent');
+    try {
+      sdk.start();
+      
+      // Log initialization with service details
+      const serviceName = process.env.OTEL_SERVICE_NAME || 'metrics-compare';
+      console.log('='.repeat(60));
+      console.log('OpenTelemetry instrumentation initialized');
+      console.log(`Service Name: ${serviceName}`);
+      console.log(`Environment: ${deploymentEnv}`);
+      console.log(`Traces Endpoint: ${tracesUrl}`);
+      console.log(`Metrics Endpoint: ${metricsUrl}`);
+      console.log(`API Key configured: ${apiKey ? 'Yes (***' + apiKey.slice(-4) + ')' : 'No'}`);
+      console.log('='.repeat(60));
+      
+      // Create a test span to verify tracing is working
+      const { trace } = await import('@opentelemetry/api');
+      const tracer = trace.getTracer('metrics-compare-init');
+      const span = tracer.startSpan('instrumentation-startup');
+      span.setAttribute('service.name', serviceName);
+      span.setAttribute('deployment.environment', deploymentEnv);
+      span.setAttribute('init.timestamp', new Date().toISOString());
+      span.end();
+      console.log('Test span created and sent');
+    } catch (error) {
+      console.error('Error initializing OpenTelemetry:', error);
+      throw error;
+    }
   }
 }
 
