@@ -129,16 +129,7 @@ export async function register() {
       
       span.end();
       console.log('Test span created and sent');
-      
-      // Force flush to ensure immediate export
-      setTimeout(async () => {
-        try {
-          await sdk.forceFlush();
-          console.log('Trace export flushed');
-        } catch (error) {
-          console.error('Error flushing traces:', error);
-        }
-      }, 2000);
+      console.log('Note: Traces are exported in batches. Allow 10-30 seconds for traces to appear in Elastic.');
     } catch (error) {
       console.error('Error initializing OpenTelemetry:', error);
       throw error;
