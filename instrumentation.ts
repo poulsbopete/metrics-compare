@@ -87,8 +87,6 @@ export async function register() {
     const sdk = new NodeSDK({
       resource,
       traceExporter,
-      // Force all traces to be sampled (not sampled out)
-      spanProcessor: undefined, // Use default batch processor
       instrumentations: [
         getNodeAutoInstrumentations({
           // Exclude instrumentations that require optional dependencies
@@ -99,10 +97,6 @@ export async function register() {
         }),
       ],
     });
-    
-    // Set global trace config to ensure all traces are sampled
-    const { trace, context } = await import('@opentelemetry/api');
-    const { TraceFlags } = await import('@opentelemetry/api');
 
     try {
       sdk.start();
@@ -120,7 +114,7 @@ export async function register() {
       
       // Create a test span to verify tracing is working
       const { trace } = await import('@opentelemetry/api');
-      const tracer = trace.getTracer('metrics-compare-init');
+      const tracer = trace.getTracer('metrics-compare-init', '1.0.0');
       const span = tracer.startSpan('instrumentation-startup', {
         attributes: {
           'service.name': serviceName,
