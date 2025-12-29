@@ -108,12 +108,6 @@ export default function CostBarChart({
                     justifyContent: 'flex-end',
                   }}
                 >
-                  {percentage > 15 && (
-                    <div className="flex flex-col items-end text-xs font-semibold text-white drop-shadow-sm whitespace-nowrap">
-                      <span>{formatCurrency(cost)}</span>
-                      <span className="text-[10px] opacity-90">{formatCurrency(cost * 12)}/yr</span>
-                    </div>
-                  )}
                 </div>
               )}
               {cost === 0 && (
