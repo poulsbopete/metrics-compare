@@ -71,6 +71,17 @@ export const platforms: Platform[] = [
     },
   },
   {
+    id: "elastic-self-hosted",
+    name: "Elastic (Self-hosted)",
+    color: "bg-slate-500",
+    pricing: {
+      basePrice: 400, // Infrastructure cost (Elasticsearch cluster + storage)
+      pricePerMillionMetrics: 0,
+      freeTier: 0,
+      unit: "fixed infrastructure cost",
+    },
+  },
+  {
     id: "datadog",
     name: "Datadog",
     color: "bg-purple-500",
