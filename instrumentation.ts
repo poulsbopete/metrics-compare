@@ -38,7 +38,7 @@ export async function register() {
     const metricExporter = new OTLPMetricExporter({
       url: metricsUrl,
       headers: {
-        Authorization: `ApiKey ${apiKey}`,
+        'Authorization': `ApiKey ${apiKey}`,
       },
     });
 
@@ -65,7 +65,7 @@ export async function register() {
     const traceExporter = new OTLPTraceExporter({
       url: tracesUrl,
       headers: {
-        Authorization: `ApiKey ${apiKey}`,
+        'Authorization': apiKey.startsWith('ApiKey ') ? apiKey : `ApiKey ${apiKey}`,
       },
     });
     
