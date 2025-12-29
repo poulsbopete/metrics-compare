@@ -9,12 +9,27 @@ export async function register() {
     const { MeterProvider, PeriodicExportingMetricReader } = await import('@opentelemetry/sdk-metrics');
 
     // Get configuration from environment variables (required in Vercel)
-    const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
-    const apiKey = process.env.OTEL_API_KEY;
+    const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim();
+    const apiKey = process.env.OTEL_API_KEY?.trim();
     
     // Skip initialization if required environment variables are not set
     if (!endpoint || !apiKey) {
       console.warn('OpenTelemetry: OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_API_KEY must be set. Skipping instrumentation.');
+      return;
+    }
+    
+    // Validate endpoint format
+    if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+      console.error('OpenTelemetry: OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL starting with http:// or https://');
+      console.error(`Current value appears to be: ${endpoint.substring(0, 50)}...`);
+      console.error('Please set OTEL_EXPORTER_OTLP_ENDPOINT to your Elastic endpoint URL (e.g., https://your-deployment-id.ingest.region.aws.elastic.cloud:443)');
+      return;
+    }
+    
+    // Validate API key doesn't look like a URL
+    if (apiKey.startsWith('http://') || apiKey.startsWith('https://')) {
+      console.error('OpenTelemetry: OTEL_API_KEY appears to be a URL. Please set it to your API key value only.');
+      console.error('The API key should be just the key value, not the endpoint URL.');
       return;
     }
     
