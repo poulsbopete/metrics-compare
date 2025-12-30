@@ -181,6 +181,18 @@ export const platforms: Platform[] = [
     },
   },
   {
+    id: "chronosphere",
+    name: "Chronosphere",
+    color: "bg-teal-500",
+    metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "DogStatsD", "SignalFX", "Wavefront"],
+    pricing: {
+      basePrice: 0,
+      pricePerMillionMetrics: 0.45, // Estimated based on market positioning as premium solution
+      freeTier: 0,
+      unit: "per million metrics/month",
+    },
+  },
+  {
     id: "thanos",
     name: "Thanos (Self-hosted)",
     color: "bg-pink-500",

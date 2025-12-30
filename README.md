@@ -14,6 +14,7 @@ A Next.js application that helps you compare the costs of different observabilit
     - Splunk Observability
     - Dynatrace
     - Grafana Cloud
+    - Chronosphere
   - **Self-Hosted Solutions:**
     - Elastic (Self-hosted)
     - Prometheus (Self-hosted)

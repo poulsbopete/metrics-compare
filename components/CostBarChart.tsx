@@ -20,6 +20,7 @@ const colorMap: Record<string, string> = {
   "bg-pink-500": "#ec4899",
   "bg-emerald-500": "#10b981",
   "bg-amber-500": "#f59e0b",
+  "bg-teal-500": "#14b8a6",
 };
 
 export default function CostBarChart({
