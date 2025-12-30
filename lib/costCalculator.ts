@@ -72,7 +72,7 @@ export const platforms: Platform[] = [
     id: "elastic-serverless",
     name: "Elastic Serverless",
     color: "bg-blue-500",
-    metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
+    metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "DogStatsD", "Wavefront", "Custom"],
     pricing: {
       basePrice: 0,
       pricePerMillionMetrics: 0.016, // Based on https://www.elastic.co/pricing/serverless-observability: $0.09/GB ingest + $0.019/GB retention. Estimated ~0.15GB per million metrics (150 bytes/metric avg)
