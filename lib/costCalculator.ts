@@ -101,6 +101,7 @@ export const platforms: Platform[] = [
       other: 50, // Monitoring, backups, operational overhead
       notes: "3+ node Elasticsearch cluster for HA",
     },
+    cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. However, high cardinality may require additional storage or compute resources as your infrastructure scales, potentially increasing infrastructure costs over time.",
   },
   {
     id: "datadog",
@@ -113,6 +114,7 @@ export const platforms: Platform[] = [
       freeTier: 0,
       unit: "per million metrics/month",
     },
+    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series (including all tag combinations) is counted separately. Adding high-cardinality tags multiplies your metric count and costs proportionally.",
   },
   {
     id: "new-relic",
@@ -125,6 +127,7 @@ export const platforms: Platform[] = [
       freeTier: 100_000_000, // 100M free per month
       unit: "per million metrics/month",
     },
+    cardinalityNote: "Charges per metric after the 100M free tier. High cardinality directly increases costs as each unique metric series is counted. The free tier helps with low-volume scenarios, but high-cardinality tags can quickly exceed the free tier limit.",
   },
   {
     id: "splunk-o11y",
@@ -137,6 +140,7 @@ export const platforms: Platform[] = [
       freeTier: 0,
       unit: "per million metrics/month",
     },
+    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series (with all tag combinations) is billed separately. High-cardinality tags cause exponential cost growth as metric volume multiplies.",
   },
   {
     id: "dynatrace",
@@ -149,6 +153,7 @@ export const platforms: Platform[] = [
       freeTier: 0,
       unit: "per million metrics/month",
     },
+    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series is counted and billed separately. Adding high-cardinality tags multiplies your metric count and costs proportionally.",
   },
   {
     id: "prometheus",
@@ -169,6 +174,7 @@ export const platforms: Platform[] = [
       other: 20, // Monitoring, backups
       notes: "2-3 nodes for HA, local SSD storage",
     },
+    cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. However, high cardinality increases storage requirements and may require infrastructure scaling (more storage, memory, or nodes) as your metric volume grows, potentially increasing costs over time.",
   },
   {
     id: "grafana-cloud",
@@ -181,6 +187,7 @@ export const platforms: Platform[] = [
       freeTier: 0,
       unit: "per million metrics/month",
     },
+    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series (including all tag combinations) is counted separately. High-cardinality tags cause exponential cost growth as metric volume multiplies.",
   },
   {
     id: "chronosphere",
@@ -193,6 +200,7 @@ export const platforms: Platform[] = [
       freeTier: 0,
       unit: "per million metrics/month",
     },
+    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series is counted and billed separately. However, Chronosphere's Control Plane helps reduce metric volumes through intelligent aggregation, potentially mitigating some cardinality impact.",
   },
   {
     id: "thanos",
@@ -213,6 +221,7 @@ export const platforms: Platform[] = [
       other: 30, // Monitoring, operational overhead
       notes: "Prometheus + Thanos components + object storage",
     },
+    cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. However, high cardinality increases storage requirements (especially for long-term retention in object storage) and may require scaling compute or storage resources, potentially increasing infrastructure costs over time.",
   },
   {
     id: "victoria-metrics",
@@ -233,6 +242,7 @@ export const platforms: Platform[] = [
       other: 15, // Monitoring, backups
       notes: "Highly efficient, 2 nodes for HA, compressed storage",
     },
+    cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. VictoriaMetrics' efficient compression and storage design helps minimize the impact of high cardinality on storage costs, but very high cardinality may still require infrastructure scaling over time.",
   },
   {
     id: "cortex",
@@ -253,6 +263,7 @@ export const platforms: Platform[] = [
       other: 10, // Monitoring, operational overhead
       notes: "Distributed architecture with multiple components",
     },
+    cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. However, high cardinality increases storage requirements in object storage and may require scaling the distributed components (Ingesters, Queriers) to handle increased load, potentially increasing infrastructure costs over time.",
   },
 ];
 
