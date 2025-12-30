@@ -43,6 +43,18 @@ export default function PlatformDetails({ platform }: PlatformDetailsProps) {
         </div>
       )}
 
+      {/* Cardinality Note */}
+      {platform.cardinalityNote && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+          <h4 className="text-xs font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-2">
+            💡 Cardinality Impact on TCO
+          </h4>
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            {platform.cardinalityNote}
+          </p>
+        </div>
+      )}
+
       {/* Infrastructure Breakdown */}
       {platform.infrastructure && (
         <div>

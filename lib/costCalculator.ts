@@ -18,6 +18,7 @@ export interface Platform {
     other?: number;
     notes?: string;
   };
+  cardinalityNote?: string; // Explanation of how cardinality impacts pricing
 }
 
 export interface MetricConfig {
@@ -79,6 +80,7 @@ export const platforms: Platform[] = [
       freeTier: 0,
       unit: "per million metrics/month",
     },
+    cardinalityNote: "Elastic charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric.",
   },
   {
     id: "elastic-self-hosted",
