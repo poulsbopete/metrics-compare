@@ -184,7 +184,7 @@ export const platforms: Platform[] = [
     id: "chronosphere",
     name: "Chronosphere",
     color: "bg-teal-500",
-    metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "DogStatsD", "SignalFX", "Wavefront"],
+    metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "DogStatsD", "Wavefront"],
     pricing: {
       basePrice: 0,
       pricePerMillionMetrics: 0.45, // Estimated based on market positioning as premium solution
