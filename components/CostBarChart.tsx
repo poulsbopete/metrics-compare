@@ -21,6 +21,8 @@ const colorMap: Record<string, string> = {
   "bg-emerald-500": "#10b981",
   "bg-amber-500": "#f59e0b",
   "bg-teal-500": "#14b8a6",
+  "bg-sky-600": "#0284c7", // Observe Inc
+  "bg-yellow-600": "#ca8a04", // ClickHouse
 };
 
 export default function CostBarChart({

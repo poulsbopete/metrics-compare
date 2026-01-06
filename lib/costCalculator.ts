@@ -322,7 +322,7 @@ export const platforms: Platform[] = [
   {
     id: "observe-inc",
     name: "Observe Inc",
-    color: "bg-sky-500",
+    color: "bg-sky-600",
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 0,
@@ -335,7 +335,7 @@ export const platforms: Platform[] = [
   {
     id: "clickhouse-diy",
     name: "ClickHouse (Self-hosted)",
-    color: "bg-yellow-500",
+    color: "bg-yellow-600",
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 750,
