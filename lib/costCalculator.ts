@@ -134,7 +134,7 @@ export const platforms: Platform[] = [
       freeTier: 0,
       unit: "per GB/month (total cost)",
     },
-    cardinalityNote: "Elastic charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Pricing varies significantly by metric source type (includes ingest + retention + support): OpenTelemetry $21.04/GB, Prometheus $12.74/GB, Elastic Agent/Fleet $8.62/GB. Bytes per datapoint: OTel 488B, Prometheus 296B, E.Agent/Fleet 200B. Select your primary metric type for accurate TCO. Normalized to datapoints: OTel $10.27/1M datapoints, Prometheus $3.77/1M datapoints, E.Agent/Fleet $1.72/1M datapoints.",
+    cardinalityNote: "Elastic Serverless Complete charges based on data ingest volume (GB), not per metric. $0.09/GB ingested + $0.019/GB retained per month. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Pricing varies significantly by metric source type (includes ingest + retention + support): OpenTelemetry $21.04/GB, Prometheus $12.74/GB, Elastic Agent/Fleet $8.62/GB. Bytes per datapoint: OTel 488B, Prometheus 296B, E.Agent/Fleet 200B. Select your primary metric type for accurate TCO. Source: https://www.elastic.co/pricing/serverless-observability",
   },
   {
     id: "elastic-self-hosted",

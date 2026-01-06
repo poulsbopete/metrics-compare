@@ -105,19 +105,19 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
   },
   {
     id: "elastic-tracing",
-    name: "Elastic APM",
+    name: "Elastic Serverless APM",
     color: "bg-blue-500",
     pricing: {
       tracing: {
         basePrice: 0,
-        pricePerGB: 0.45, // $0.45/GB for traces (ingest + retention)
+        pricePerGB: 0.109, // $0.09/GB ingest + $0.019/GB retention per month (Complete tier)
         bytesPerSpan: 500,
         freeTier: 0,
         unit: "per GB/month",
       },
     },
     notes: {
-      tracing: "Volume-based pricing (GB). High cardinality doesn't directly increase costs - only data volume matters.",
+      tracing: "Elastic Serverless Complete: Volume-based pricing (GB). $0.09/GB ingested + $0.019/GB retained per month. High cardinality doesn't directly increase costs - only data volume matters. Source: https://www.elastic.co/pricing/serverless-observability",
     },
   },
   {
@@ -250,18 +250,18 @@ export const logsPlatforms: ObservabilityPlatform[] = [
   },
   {
     id: "elastic-logs",
-    name: "Elastic Logs",
+    name: "Elastic Serverless Logs",
     color: "bg-blue-500",
     pricing: {
       logs: {
         basePrice: 0,
-        pricePerGB: 0.11, // $0.09 ingest + $0.019 retention
+        pricePerGB: 0.109, // $0.09/GB ingested + $0.019/GB retained per month (Complete tier)
         freeTier: 0,
         unit: "per GB/month",
       },
     },
     notes: {
-      logs: "Volume-based pricing. Includes ingest and retention. Efficient compression.",
+      logs: "Elastic Serverless Complete: $0.09/GB ingested + $0.019/GB retained per month. Includes logs analysis, dashboards, integrations, alerts, and AI-powered insights. Source: https://www.elastic.co/pricing/serverless-observability",
     },
   },
   {
