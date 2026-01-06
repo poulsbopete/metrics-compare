@@ -14,6 +14,11 @@ interface ObservabilityComparisonProps {
   costs: Record<string, number>;
   volume: number; // metrics, spans, or GB
   volumeLabel: string; // "Monthly Metrics", "Monthly Spans", "Monthly GB"
+  calculationContext?: {
+    eventsPerSecond?: number;
+    monthlyEvents?: number;
+    monthlyGB?: number;
+  };
 }
 
 export default function ObservabilityComparison({
@@ -22,6 +27,7 @@ export default function ObservabilityComparison({
   costs,
   volume,
   volumeLabel,
+  calculationContext,
 }: ObservabilityComparisonProps) {
   const [viewMode, setViewMode] = useState<"table" | "chart">("chart");
   const sortedPlatforms = [...platforms].sort(
@@ -133,6 +139,10 @@ export default function ObservabilityComparison({
                           formatCurrency={formatCurrency}
                           formatNumber={formatNumber}
                           index={index}
+                          calculationContext={calculationContext ? {
+                            ...calculationContext,
+                            cost,
+                          } : undefined}
                         />
                       );
                     })}

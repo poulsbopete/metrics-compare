@@ -587,6 +587,17 @@ export default function Home() {
                 costs={currentCosts}
                 volume={currentVolume}
                 volumeLabel={currentVolumeLabel}
+                calculationContext={
+                  activeTab === "security"
+                    ? {
+                        eventsPerSecond,
+                        monthlyEvents,
+                        monthlyGB: monthlyEvents
+                          ? (monthlyEvents * 1000) / (1024 * 1024 * 1024) // Convert events to GB (1000 bytes per event)
+                          : undefined,
+                      }
+                    : undefined
+                }
               />
             )}
           </div>

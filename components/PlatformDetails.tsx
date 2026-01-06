@@ -5,9 +5,15 @@ import { ObservabilityPlatform } from "@/lib/observabilityPricing";
 
 interface PlatformDetailsProps {
   platform: Platform | ObservabilityPlatform;
+  calculationContext?: {
+    eventsPerSecond?: number;
+    monthlyEvents?: number;
+    monthlyGB?: number;
+    cost: number;
+  };
 }
 
-export default function PlatformDetails({ platform }: PlatformDetailsProps) {
+export default function PlatformDetails({ platform, calculationContext }: PlatformDetailsProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -81,7 +87,104 @@ export default function PlatformDetails({ platform }: PlatformDetailsProps) {
               </p>
             </div>
           )}
+          {(platform as ObservabilityPlatform).notes?.security && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <h4 className="text-xs font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-2">
+                💡 Security Details
+              </h4>
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                {(platform as ObservabilityPlatform).notes?.security}
+              </p>
+            </div>
+          )}
         </>
+      )}
+
+      {/* TCO Calculation Breakdown for Security */}
+      {calculationContext && 
+       calculationContext.eventsPerSecond !== undefined && 
+       !isPlatform(platform) &&
+       platform.pricing?.security && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+          <h4 className="text-xs font-semibold text-purple-900 dark:text-purple-200 uppercase tracking-wide mb-3">
+            📊 TCO Calculation Breakdown
+          </h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 dark:text-gray-400">Events per Second:</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {calculationContext.eventsPerSecond.toLocaleString()}/sec
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 dark:text-gray-400">Monthly Events:</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {calculationContext.monthlyEvents ? 
+                  calculationContext.monthlyEvents >= 1_000_000_000
+                    ? `${(calculationContext.monthlyEvents / 1_000_000_000).toFixed(2)}B`
+                    : calculationContext.monthlyEvents >= 1_000_000
+                    ? `${(calculationContext.monthlyEvents / 1_000_000).toFixed(2)}M`
+                    : calculationContext.monthlyEvents >= 1_000
+                    ? `${(calculationContext.monthlyEvents / 1_000).toFixed(2)}K`
+                    : calculationContext.monthlyEvents.toLocaleString()
+                  : 'N/A'}
+              </span>
+            </div>
+            {calculationContext.monthlyGB !== undefined && (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Monthly GB (calculated):</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {calculationContext.monthlyGB.toFixed(2)} GB
+                  </span>
+                </div>
+                {platform.pricing.security.freeTier && platform.pricing.security.freeTier > 0 && (
+                  <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                    <span>Free Tier:</span>
+                    <span className="font-semibold">-{platform.pricing.security.freeTier} GB</span>
+                  </div>
+                )}
+                {platform.pricing.security.freeTier && platform.pricing.security.freeTier > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Billable GB:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {Math.max(0, calculationContext.monthlyGB - (platform.pricing.security.freeTier || 0)).toFixed(2)} GB
+                    </span>
+                  </div>
+                )}
+                {platform.pricing.security.pricePerGB && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Price per GB:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(platform.pricing.security.pricePerGB)}/GB
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+            {platform.pricing.security.basePrice && platform.pricing.security.basePrice > 0 && (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Fixed Infrastructure Cost:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(platform.pricing.security.basePrice)}/month
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">
+                  Self-hosted solution with fixed monthly infrastructure costs (see breakdown below)
+                </p>
+              </>
+            )}
+            <div className="pt-2 border-t border-purple-200 dark:border-purple-700">
+              <div className="flex justify-between items-center font-semibold">
+                <span className="text-purple-900 dark:text-purple-200">Total Monthly Cost:</span>
+                <span className="text-purple-900 dark:text-purple-200 text-lg">
+                  {formatCurrency(calculationContext.cost)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Infrastructure Breakdown */}

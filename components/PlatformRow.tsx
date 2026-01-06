@@ -13,6 +13,12 @@ interface PlatformRowProps {
   formatCurrency: (value: number) => string;
   formatNumber: (value: number) => string;
   index: number;
+  calculationContext?: {
+    eventsPerSecond?: number;
+    monthlyEvents?: number;
+    monthlyGB?: number;
+    cost: number;
+  };
 }
 
 export default function PlatformRow({
@@ -22,6 +28,7 @@ export default function PlatformRow({
   formatCurrency,
   formatNumber,
   index,
+  calculationContext,
 }: PlatformRowProps) {
   const [expanded, setExpanded] = useState(false);
   const annualCost = cost * 12;
@@ -99,7 +106,7 @@ export default function PlatformRow({
       {expanded && (
         <tr>
           <td colSpan={4} className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
-            <PlatformDetails platform={platform} />
+            <PlatformDetails platform={platform} calculationContext={calculationContext} />
           </td>
         </tr>
       )}
