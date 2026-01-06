@@ -1,9 +1,10 @@
 "use client";
 
 import { Platform } from "@/lib/costCalculator";
+import { ObservabilityPlatform } from "@/lib/observabilityPricing";
 
 interface PlatformDetailsProps {
-  platform: Platform;
+  platform: Platform | ObservabilityPlatform;
 }
 
 export default function PlatformDetails({ platform }: PlatformDetailsProps) {
@@ -22,10 +23,14 @@ export default function PlatformDetails({ platform }: PlatformDetailsProps) {
         .reduce((sum, val) => sum + val, 0)
     : 0;
 
+  const isPlatform = (p: Platform | ObservabilityPlatform): p is Platform => {
+    return 'metricTypes' in p;
+  };
+
   return (
     <div className="space-y-4">
       {/* Metric Types */}
-      {platform.metricTypes && platform.metricTypes.length > 0 && (
+      {isPlatform(platform) && platform.metricTypes && platform.metricTypes.length > 0 && (
         <div>
           <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
             Supported Metric Types
@@ -43,8 +48,8 @@ export default function PlatformDetails({ platform }: PlatformDetailsProps) {
         </div>
       )}
 
-      {/* Cardinality Note */}
-      {platform.cardinalityNote && (
+      {/* Cardinality Note or Observability Notes */}
+      {isPlatform(platform) && platform.cardinalityNote && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
           <h4 className="text-xs font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-2">
             💡 Cardinality Impact on TCO
@@ -53,6 +58,30 @@ export default function PlatformDetails({ platform }: PlatformDetailsProps) {
             {platform.cardinalityNote}
           </p>
         </div>
+      )}
+      {(platform as ObservabilityPlatform).notes && (
+        <>
+          {(platform as ObservabilityPlatform).notes?.tracing && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <h4 className="text-xs font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-2">
+                💡 Tracing/APM Details
+              </h4>
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                {(platform as ObservabilityPlatform).notes?.tracing}
+              </p>
+            </div>
+          )}
+          {(platform as ObservabilityPlatform).notes?.logs && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <h4 className="text-xs font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-2">
+                💡 Logs Details
+              </h4>
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                {(platform as ObservabilityPlatform).notes?.logs}
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Infrastructure Breakdown */}

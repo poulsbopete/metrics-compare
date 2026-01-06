@@ -123,19 +123,11 @@ export default function ObservabilityComparison({
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {sortedPlatforms.map((platform, index) => {
                       const cost = costs[platform.id] || 0;
-                      // Convert platform to Platform format for PlatformRow
-                      const platformForRow = {
-                        ...platform,
-                        metricTypes: type === "metrics" ? (platform as Platform).metricTypes || [] : [],
-                        pricing: type === "metrics" ? (platform as Platform).pricing : undefined,
-                        cardinalityNote: type === "metrics" ? (platform as Platform).cardinalityNote : undefined,
-                        infrastructure: platform.infrastructure,
-                      } as Platform;
                       
                       return (
                         <PlatformRow
                           key={platform.id}
-                          platform={platformForRow}
+                          platform={platform as Platform | ObservabilityPlatform}
                           cost={cost}
                           monthlyMetrics={volume}
                           formatCurrency={formatCurrency}

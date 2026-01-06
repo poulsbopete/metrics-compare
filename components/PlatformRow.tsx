@@ -1,12 +1,13 @@
 "use client";
 
 import { Platform } from "@/lib/costCalculator";
+import { ObservabilityPlatform } from "@/lib/observabilityPricing";
 import { useState } from "react";
 import AnimatedNumber from "./AnimatedNumber";
 import PlatformDetails from "./PlatformDetails";
 
 interface PlatformRowProps {
-  platform: Platform;
+  platform: Platform | ObservabilityPlatform;
   cost: number;
   monthlyMetrics: number;
   formatCurrency: (value: number) => string;
@@ -25,6 +26,14 @@ export default function PlatformRow({
   const [expanded, setExpanded] = useState(false);
   const annualCost = cost * 12;
 
+  const isPlatform = (p: Platform | ObservabilityPlatform): p is Platform => {
+    return 'metricTypes' in p;
+  };
+
+  const hasDetails = isPlatform(platform) 
+    ? (platform.metricTypes && platform.metricTypes.length > 0) || platform.infrastructure
+    : platform.infrastructure || (platform as ObservabilityPlatform).notes;
+
   return (
     <>
       <tr
@@ -42,7 +51,7 @@ export default function PlatformRow({
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               {platform.name}
             </span>
-            {((platform.metricTypes && platform.metricTypes.length > 0) || platform.infrastructure) && (
+            {hasDetails && (
               <>
                 <button
                   className="ml-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
