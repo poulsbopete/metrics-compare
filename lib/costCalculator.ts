@@ -332,5 +332,26 @@ export const platforms: Platform[] = [
     },
     cardinalityNote: "Observe Inc charges per datapoint, so high cardinality directly increases costs. Each unique metric series is counted separately. Built on Snowflake backend, providing scalable data management and analysis capabilities. Pricing: $0.008 per million datapoints per month with 13-month retention included. Very competitive pricing compared to other per-metric platforms.",
   },
+  {
+    id: "clickhouse-diy",
+    name: "ClickHouse (Self-hosted)",
+    color: "bg-yellow-500",
+    metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
+    pricing: {
+      basePrice: 750,
+      pricePerMillionMetrics: 0,
+      freeTier: 0,
+      unit: "fixed infrastructure cost",
+    },
+    infrastructure: {
+      compute: 450, // 2-3 nodes @ $150-200/month each (16+ cores, 64GB+ RAM per node)
+      storage: 200, // Fast SSD storage for columnar data
+      memory: 0, // Included in compute costs
+      network: 40,
+      other: 60, // Monitoring, backups, operational overhead, ClickHouse expertise
+      notes: "2-3 node cluster for HA, fast SSD storage, requires ClickHouse expertise",
+    },
+    cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. However, ClickHouse's columnar storage is efficient for high-cardinality data. High cardinality may require additional storage capacity and can impact query performance, potentially requiring more compute resources or storage scaling over time. ClickHouse excels at handling large volumes of time-series data efficiently.",
+  },
 ];
 
