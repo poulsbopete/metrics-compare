@@ -209,6 +209,14 @@ export default function Home() {
     [eventsPerSecond]
   );
 
+  // Calculate daily ingest in GB for security events
+  const securityGbPerDay = useMemo(() => {
+    const bytesPerEvent = 1000; // BYTES_PER_SECURITY_EVENT
+    const secondsPerDay = 24 * 60 * 60;
+    const bytesPerDay = eventsPerSecond * bytesPerEvent * secondsPerDay;
+    return bytesPerDay / (1024 * 1024 * 1024);
+  }, [eventsPerSecond]);
+
   const securityCosts = useMemo(() => {
     const result: Record<string, number> = {};
     try {
@@ -537,28 +545,46 @@ export default function Home() {
               )}
 
               {activeTab === "security" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-xl p-5 border border-red-200 dark:border-red-700/50 shadow-md">
-                    <div className="text-sm text-red-600 dark:text-red-400 font-semibold mb-2 uppercase tracking-wide">
-                      Events per Second
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-xl p-5 border border-red-200 dark:border-red-700/50 shadow-md">
+                      <div className="text-sm text-red-600 dark:text-red-400 font-semibold mb-2 uppercase tracking-wide">
+                        Events per Second
+                      </div>
+                      <div className="text-3xl font-bold text-red-900 dark:text-red-100">
+                        <AnimatedNumber
+                          value={eventsPerSecond}
+                          format={(v) => `${v.toLocaleString()}/sec`}
+                        />
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-red-900 dark:text-red-100">
-                      <AnimatedNumber
-                        value={eventsPerSecond}
-                        format={(v) => `${v.toLocaleString()}/sec`}
-                      />
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md">
+                      <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
+                        Daily Ingest (GB/day)
+                      </div>
+                      <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                        {securityGbPerDay.toFixed(2)} GB/day
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
+                      <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
+                        Monthly Events
+                      </div>
+                      <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                        <AnimatedNumber
+                          value={monthlyEvents}
+                          format={formatMonthlyMetrics}
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
-                    <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
-                      Monthly Events
-                    </div>
-                    <div className="text-3xl font-bold text-green-900 dark:text-green-100">
-                      <AnimatedNumber
-                        value={monthlyEvents}
-                        format={formatMonthlyMetrics}
-                      />
-                    </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                      💡 <strong>Calculation:</strong> Daily ingest (GB/day) = Events/sec × 1,000 bytes/event × 86,400 sec/day ÷ 1,073,741,824 bytes/GB
+                    </p>
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      <strong>To match your daily ingest:</strong> Adjust the Events per Second slider. Quick reference: 100 GB/day ≈ 1,157 events/sec, 500 GB/day ≈ 5,787 events/sec, 1 TB/day ≈ 11,574 events/sec
+                    </p>
                   </div>
                 </div>
               )}
