@@ -36,15 +36,15 @@ export const BYTES_PER_DATAPOINT: Record<MetricSourceType, number> = {
   Mixed: 320, // Weighted average for mixed sources
 };
 
-// Elastic pricing per GB - adjusted to show 2-3x difference vs Grafana Cloud
-// Based on user feedback: Elastic should be 2-3x more expensive than Grafana ($0.30/1M datapoints)
-// Target: $0.60-$0.90 per 1M datapoints
-// Calculated effective pricing per GB to achieve this ratio
+// Elastic pricing per GB for metrics - competitive pricing recommendation
+// Target: $0.50 per 1M datapoints (1.67x vs Grafana $0.30) for competitive positioning
+// Positions Elastic between Grafana ($0.30) and Datadog ($0.75), competitive with Splunk ($0.55) and Dynatrace ($0.60)
+// Note: No official Elastic metrics-only pricing exists; this is a competitive pricing recommendation
 export const ELASTIC_PRICE_PER_GB: Record<MetricSourceType, number> = {
-  OpenTelemetry: 1.65, // ~$0.75 per 1M datapoints (2.5x vs Grafana) for 488 bytes/datapoint
-  Prometheus: 2.17, // ~$0.60 per 1M datapoints (2x vs Grafana) for 296 bytes/datapoint
-  ElasticAgent: 3.26, // ~$0.90 per 1M datapoints (3x vs Grafana) for 200 bytes/datapoint
-  Mixed: 2.36, // Weighted average
+  OpenTelemetry: 1.10, // $0.50 per 1M datapoints (1.67x vs Grafana) for 488 bytes/datapoint
+  Prometheus: 1.81, // $0.50 per 1M datapoints (1.67x vs Grafana) for 296 bytes/datapoint
+  ElasticAgent: 2.68, // $0.50 per 1M datapoints (1.67x vs Grafana) for 200 bytes/datapoint
+  Mixed: 1.86, // Weighted average
 };
 
 export interface MetricConfig {
@@ -131,12 +131,12 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "DogStatsD", "Wavefront", "Custom"],
     pricing: {
       basePrice: 0,
-      pricePerGB: 2.36, // Weighted average. Metric-type-specific: OTel $1.65/GB, Prometheus $2.17/GB, E.Agent $3.26/GB
+      pricePerGB: 1.86, // Weighted average. Metric-type-specific: OTel $1.10/GB, Prometheus $1.81/GB, E.Agent $2.68/GB
       bytesPerDatapoint: 320, // Default fallback (weighted average). Actual values: OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B
       freeTier: 0,
       unit: "per GB/month",
     },
-    cardinalityNote: "Elastic Serverless Complete charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Pricing adjusted to show 2-3x cost difference vs Grafana Cloud ($0.30/1M datapoints) as per user feedback. Cost differences between metric types come from bytes per datapoint (OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B). Select your primary metric type for accurate TCO. Source: https://www.elastic.co/pricing/serverless-observability",
+    cardinalityNote: "Elastic Serverless Complete charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Competitive pricing: $0.50 per 1M datapoints (1.67x vs Grafana $0.30), positioning Elastic between Grafana and Datadog ($0.75), competitive with Splunk ($0.55) and Dynatrace ($0.60). Cost differences between metric types come from bytes per datapoint (OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B). Select your primary metric type for accurate TCO. Note: No official Elastic metrics-only pricing exists; this is a competitive pricing recommendation.",
   },
   {
     id: "elastic-self-hosted",
