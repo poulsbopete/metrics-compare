@@ -319,5 +319,18 @@ export const platforms: Platform[] = [
     },
     cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. However, high cardinality increases storage requirements in object storage and may require scaling the distributed components (Ingesters, Queriers) to handle increased load, potentially increasing infrastructure costs over time.",
   },
+  {
+    id: "observe-inc",
+    name: "Observe Inc",
+    color: "bg-sky-500",
+    metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
+    pricing: {
+      basePrice: 0,
+      pricePerMillionMetrics: 0.008, // $0.008 per million datapoints per month (13-month retention included)
+      freeTier: 0,
+      unit: "per million metrics/month",
+    },
+    cardinalityNote: "Observe Inc charges per datapoint, so high cardinality directly increases costs. Each unique metric series is counted separately. Built on Snowflake backend, providing scalable data management and analysis capabilities. Pricing: $0.008 per million datapoints per month with 13-month retention included. Very competitive pricing compared to other per-metric platforms.",
+  },
 ];
 
