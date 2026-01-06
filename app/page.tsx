@@ -4,6 +4,10 @@ import { useState, useMemo, useEffect } from "react";
 import MetricSlider from "@/components/MetricSlider";
 import TagManager from "@/components/TagManager";
 import CostComparison from "@/components/CostComparison";
+import ObservabilityComparison from "@/components/ObservabilityComparison";
+import ObservabilityTabs, { type ObservabilityTab } from "@/components/ObservabilityTabs";
+import TracingConfig from "@/components/TracingConfig";
+import LogsConfig from "@/components/LogsConfig";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import {
   platforms,
@@ -13,14 +17,28 @@ import {
   type MetricConfig,
   type MetricSourceType,
 } from "@/lib/costCalculator";
+import {
+  tracingPlatforms,
+  logsPlatforms,
+  calculateTracingCost,
+  calculateLogsCost,
+  spansPerSecondToMonthly,
+  gbPerDayToMonthly,
+} from "@/lib/observabilityPricing";
 
-const STORAGE_KEY = "metrics-compare-state";
+const STORAGE_KEY = "observability-compare-state";
 
 interface SavedState {
+  activeTab?: ObservabilityTab;
+  // Metrics
   baseVolume: number;
   tags: string[];
   tagValues: number;
   primaryMetricType?: MetricSourceType;
+  // Tracing
+  spansPerSecond: number;
+  // Logs
+  gbPerDay: number;
 }
 
 function loadState(): SavedState | null {
@@ -30,10 +48,13 @@ function loadState(): SavedState | null {
     if (saved) {
       const parsed = JSON.parse(saved);
       return {
+        activeTab: parsed.activeTab ?? "metrics",
         baseVolume: parsed.baseVolume ?? 100,
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
         tagValues: parsed.tagValues ?? 10,
         primaryMetricType: parsed.primaryMetricType ?? "Mixed",
+        spansPerSecond: parsed.spansPerSecond ?? 100,
+        gbPerDay: parsed.gbPerDay ?? 10,
       };
     }
   } catch (error) {
@@ -52,11 +73,21 @@ function saveState(state: SavedState) {
 }
 
 export default function Home() {
-  // Initialize with default values to match server render
+  // Tab state
+  const [activeTab, setActiveTab] = useState<ObservabilityTab>("metrics");
+  
+  // Metrics state
   const [baseVolume, setBaseVolume] = useState(100);
   const [tags, setTags] = useState<string[]>([]);
   const [tagValues, setTagValues] = useState(10);
   const [primaryMetricType, setPrimaryMetricType] = useState<MetricSourceType>("Mixed");
+  
+  // Tracing state
+  const [spansPerSecond, setSpansPerSecond] = useState(100);
+  
+  // Logs state
+  const [gbPerDay, setGbPerDay] = useState(10);
+  
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load state from localStorage after hydration
@@ -64,12 +95,15 @@ export default function Home() {
     setIsHydrated(true);
     const savedState = loadState();
     if (savedState) {
+      if (savedState.activeTab) setActiveTab(savedState.activeTab);
       setBaseVolume(savedState.baseVolume);
       setTags(savedState.tags);
       setTagValues(savedState.tagValues);
       if (savedState.primaryMetricType) {
         setPrimaryMetricType(savedState.primaryMetricType);
       }
+      if (savedState.spansPerSecond) setSpansPerSecond(savedState.spansPerSecond);
+      if (savedState.gbPerDay) setGbPerDay(savedState.gbPerDay);
     }
   }, []);
 
@@ -77,13 +111,16 @@ export default function Home() {
   useEffect(() => {
     if (isHydrated) {
       saveState({
+        activeTab,
         baseVolume,
         tags,
         tagValues,
         primaryMetricType,
+        spansPerSecond,
+        gbPerDay,
       });
     }
-  }, [baseVolume, tags, tagValues, primaryMetricType, isHydrated]);
+  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, spansPerSecond, gbPerDay, isHydrated]);
 
   const metricConfig: MetricConfig = useMemo(
     () => ({
@@ -105,17 +142,79 @@ export default function Home() {
     [metricsPerSecond]
   );
 
-  const costs = useMemo(() => {
+  // Metrics calculations
+  const metricsCosts = useMemo(() => {
     const result: Record<string, number> = {};
     try {
       platforms.forEach((platform) => {
         result[platform.id] = calculatePlatformCost(platform, monthlyMetrics, primaryMetricType);
       });
     } catch (error) {
-      console.error("Error calculating costs:", error);
+      console.error("Error calculating metrics costs:", error);
     }
     return result;
   }, [monthlyMetrics, primaryMetricType]);
+
+  // Tracing calculations
+  const monthlySpans = useMemo(
+    () => spansPerSecondToMonthly(spansPerSecond),
+    [spansPerSecond]
+  );
+
+  const tracingCosts = useMemo(() => {
+    const result: Record<string, number> = {};
+    try {
+      tracingPlatforms.forEach((platform) => {
+        result[platform.id] = calculateTracingCost(platform, monthlySpans);
+      });
+    } catch (error) {
+      console.error("Error calculating tracing costs:", error);
+    }
+    return result;
+  }, [monthlySpans]);
+
+  // Logs calculations
+  const monthlyGB = useMemo(
+    () => gbPerDayToMonthly(gbPerDay),
+    [gbPerDay]
+  );
+
+  const logsCosts = useMemo(() => {
+    const result: Record<string, number> = {};
+    try {
+      logsPlatforms.forEach((platform) => {
+        result[platform.id] = calculateLogsCost(platform, monthlyGB);
+      });
+    } catch (error) {
+      console.error("Error calculating logs costs:", error);
+    }
+    return result;
+  }, [monthlyGB]);
+
+  // Get current costs and platforms based on active tab
+  const currentCosts = useMemo(() => {
+    if (activeTab === "metrics") return metricsCosts;
+    if (activeTab === "tracing") return tracingCosts;
+    return logsCosts;
+  }, [activeTab, metricsCosts, tracingCosts, logsCosts]);
+
+  const currentPlatforms = useMemo(() => {
+    if (activeTab === "metrics") return platforms;
+    if (activeTab === "tracing") return tracingPlatforms;
+    return logsPlatforms;
+  }, [activeTab]);
+
+  const currentVolume = useMemo(() => {
+    if (activeTab === "metrics") return monthlyMetrics;
+    if (activeTab === "tracing") return monthlySpans;
+    return monthlyGB;
+  }, [activeTab, monthlyMetrics, monthlySpans, monthlyGB]);
+
+  const currentVolumeLabel = useMemo(() => {
+    if (activeTab === "metrics") return "Monthly Metrics";
+    if (activeTab === "tracing") return "Monthly Spans";
+    return "Monthly GB";
+  }, [activeTab]);
 
   const formatMetricsPerSecond = (value: number) => {
     if (value >= 1_000_000) {
@@ -163,117 +262,141 @@ export default function Home() {
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         <div className="text-center mb-12 animate-fade-in-up">
           <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 mb-4">
-            Metrics Cost Comparison
+            Observability Cost Comparison
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Compare costs across observability platforms and see how tag cardinality impacts your bill
+            Compare costs across observability platforms for Metrics, Tracing/APM, and Logs
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Configuration Panel */}
-          <div className="lg:col-span-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-slide-in">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-              <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3" />
-              Configuration
-            </h2>
-            <div className="space-y-6">
-              <MetricSlider
-                label="Base Metrics per Second"
-                value={baseVolume}
-                onChange={setBaseVolume}
-                min={1}
-                max={10000}
-                step={1}
-                formatValue={(v) => `${v.toLocaleString()}/sec`}
-              />
+        {/* Tabs */}
+        <ObservabilityTabs activeTab={activeTab} onTabChange={setActiveTab}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Configuration Panel */}
+            <div className="lg:col-span-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-slide-in">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3" />
+                Configuration
+              </h2>
+              <div className="space-y-6">
+                {activeTab === "metrics" && (
+                  <>
+                    <MetricSlider
+                      label="Base Metrics per Second"
+                      value={baseVolume}
+                      onChange={setBaseVolume}
+                      min={1}
+                      max={10000}
+                      step={1}
+                      formatValue={(v) => `${v.toLocaleString()}/sec`}
+                    />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Primary Metric Source Type
-                </label>
-                <select
-                  value={primaryMetricType}
-                  onChange={(e) => setPrimaryMetricType(e.target.value as MetricSourceType)}
-                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                >
-                  <option value="Mixed">Mixed (Weighted Average)</option>
-                  <option value="OpenTelemetry">OpenTelemetry (489 bytes/datapoint)</option>
-                  <option value="Prometheus">Prometheus (229 bytes/datapoint)</option>
-                  <option value="ElasticAgent">Elastic Agent/Beats (116 bytes/datapoint)</option>
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Affects volume-based pricing (e.g., Elastic). Different sources have different bytes per datapoint.
-                </p>
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Primary Metric Source Type
+                      </label>
+                      <select
+                        value={primaryMetricType}
+                        onChange={(e) => setPrimaryMetricType(e.target.value as MetricSourceType)}
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      >
+                        <option value="Mixed">Mixed (Weighted Average)</option>
+                        <option value="OpenTelemetry">OpenTelemetry (489 bytes/datapoint)</option>
+                        <option value="Prometheus">Prometheus (229 bytes/datapoint)</option>
+                        <option value="ElasticAgent">Elastic Agent/Beats (116 bytes/datapoint)</option>
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Affects volume-based pricing (e.g., Elastic). Different sources have different bytes per datapoint.
+                      </p>
+                    </div>
 
-              <TagManager
-                tags={tags}
-                onTagsChange={setTags}
-                tagValues={tagValues}
-                onTagValuesChange={setTagValues}
-              />
-            </div>
-          </div>
+                    <TagManager
+                      tags={tags}
+                      onTagsChange={setTags}
+                      tagValues={tagValues}
+                      onTagValuesChange={setTagValues}
+                    />
+                  </>
+                )}
 
-          {/* Metrics Summary */}
-          <div className="lg:col-span-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-              <span className="w-1 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3" />
-              Metric Volume Impact
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
-                  Base Volume
-                </div>
-                <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
-                  <AnimatedNumber
-                    value={baseVolume}
-                    format={(v) => `${v.toLocaleString()}/sec`}
+                {activeTab === "tracing" && (
+                  <TracingConfig
+                    spansPerSecond={spansPerSecond}
+                    onSpansPerSecondChange={setSpansPerSecond}
                   />
-                </div>
-              </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl p-5 border border-purple-200 dark:border-purple-700/50 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                <div className="text-sm text-purple-600 dark:text-purple-400 font-semibold mb-2 uppercase tracking-wide">
-                  With Tags
-                </div>
-                <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">
-                  <AnimatedNumber
-                    value={metricsPerSecond}
-                    format={formatMetricsPerSecond}
+                )}
+
+                {activeTab === "logs" && (
+                  <LogsConfig
+                    gbPerDay={gbPerDay}
+                    onGbPerDayChange={setGbPerDay}
                   />
-                </div>
-                <div className="text-xs text-purple-600 dark:text-purple-400 mt-2 font-medium">
-                  {tags.length > 0
-                    ? `${tags.length} tag(s) × ${tagValues} values = ${multiplier.toLocaleString()}x`
-                    : "No tags added"}
-                </div>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
-                  Monthly Volume
-                </div>
-                <div className="text-3xl font-bold text-green-900 dark:text-green-100">
-                  <AnimatedNumber
-                    value={monthlyMetrics}
-                    format={formatMonthlyMetrics}
-                  />
-                  <span className="text-lg ml-1">
-                    {monthlyMetrics >= 1_000_000_000
-                      ? "B"
-                      : monthlyMetrics >= 1_000_000
-                      ? "M"
-                      : "K"}
-                  </span>
-                </div>
-                <div className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
-                  metrics/month
-                </div>
+                )}
               </div>
             </div>
 
-            {tags.length > 0 && (
+            {/* Volume Summary */}
+            <div className="lg:col-span-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                <span className="w-1 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3" />
+                {activeTab === "metrics" && "Metric Volume Impact"}
+                {activeTab === "tracing" && "Tracing Volume"}
+                {activeTab === "logs" && "Log Volume"}
+              </h2>
+              {activeTab === "metrics" && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                      <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
+                        Base Volume
+                      </div>
+                      <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                        <AnimatedNumber
+                          value={baseVolume}
+                          format={(v) => `${v.toLocaleString()}/sec`}
+                        />
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl p-5 border border-purple-200 dark:border-purple-700/50 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                      <div className="text-sm text-purple-600 dark:text-purple-400 font-semibold mb-2 uppercase tracking-wide">
+                        With Tags
+                      </div>
+                      <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+                        <AnimatedNumber
+                          value={metricsPerSecond}
+                          format={formatMetricsPerSecond}
+                        />
+                      </div>
+                      <div className="text-xs text-purple-600 dark:text-purple-400 mt-2 font-medium">
+                        {tags.length > 0
+                          ? `${tags.length} tag(s) × ${tagValues} values = ${multiplier.toLocaleString()}x`
+                          : "No tags added"}
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                      <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
+                        Monthly Volume
+                      </div>
+                      <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                        <AnimatedNumber
+                          value={monthlyMetrics}
+                          format={formatMonthlyMetrics}
+                        />
+                        <span className="text-lg ml-1">
+                          {monthlyMetrics >= 1_000_000_000
+                            ? "B"
+                            : monthlyMetrics >= 1_000_000
+                            ? "M"
+                            : "K"}
+                        </span>
+                      </div>
+                      <div className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
+                        metrics/month
+                      </div>
+                    </div>
+                  </div>
+
+                  {tags.length > 0 && (
               <div className="mt-6 p-5 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl border-2 border-yellow-300 dark:border-yellow-700/50 shadow-lg animate-pulse-slow">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -317,24 +440,85 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
+                    </div>
+                  </div>
+                  )}
+                </>
+              )}
+
+              {activeTab === "tracing" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md">
+                    <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
+                      Spans per Second
+                    </div>
+                    <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                      {spansPerSecond.toLocaleString()}/sec
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
+                    <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
+                      Monthly Spans
+                    </div>
+                    <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                      <AnimatedNumber
+                        value={monthlySpans}
+                        format={formatMonthlyMetrics}
+                      />
+                      <span className="text-lg ml-1">
+                        {monthlySpans >= 1_000_000_000 ? "B" : monthlySpans >= 1_000_000 ? "M" : "K"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {activeTab === "logs" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md">
+                    <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
+                      GB per Day
+                    </div>
+                    <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                      {gbPerDay.toFixed(1)} GB/day
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
+                    <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
+                      Monthly GB
+                    </div>
+                    <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                      {monthlyGB.toFixed(1)} GB/month
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Cost Comparison */}
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+              <span className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full mr-3" />
+              Cost Comparison
+            </h2>
+            {activeTab === "metrics" ? (
+              <CostComparison
+                platforms={platforms}
+                costs={currentCosts}
+                monthlyMetrics={currentVolume}
+              />
+            ) : (
+              <ObservabilityComparison
+                type={activeTab}
+                platforms={currentPlatforms}
+                costs={currentCosts}
+                volume={currentVolume}
+                volumeLabel={currentVolumeLabel}
+              />
             )}
           </div>
-        </div>
-
-        {/* Cost Comparison */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-            <span className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full mr-3" />
-            Cost Comparison
-          </h2>
-          <CostComparison
-            platforms={platforms}
-            costs={costs}
-            monthlyMetrics={monthlyMetrics}
-          />
-        </div>
+        </ObservabilityTabs>
 
         {/* Footer */}
         <div className="mt-12 text-center">
