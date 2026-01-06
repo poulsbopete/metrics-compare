@@ -36,15 +36,15 @@ export const BYTES_PER_DATAPOINT: Record<MetricSourceType, number> = {
   Mixed: 320, // Weighted average for mixed sources
 };
 
-// Elastic pricing per GB for metrics - competitive pricing recommendation
-// Target: $0.50 per 1M datapoints (1.67x vs Grafana $0.30) for competitive positioning
-// Positions Elastic between Grafana ($0.30) and Datadog ($0.75), competitive with Splunk ($0.55) and Dynatrace ($0.60)
-// Note: No official Elastic metrics-only pricing exists; this is a competitive pricing recommendation
+// Elastic pricing per GB for metrics
+// Base pricing: $0.109/GB ($0.09 ingest + $0.019 retention) for all metric types
+// This is Elastic's TOP VOLUME TIER pricing (best price for high-volume customers)
+// Note: No official Elastic metrics-only pricing exists; using Complete tier pricing as reference
 export const ELASTIC_PRICE_PER_GB: Record<MetricSourceType, number> = {
-  OpenTelemetry: 1.10, // $0.50 per 1M datapoints (1.67x vs Grafana) for 488 bytes/datapoint
-  Prometheus: 1.81, // $0.50 per 1M datapoints (1.67x vs Grafana) for 296 bytes/datapoint
-  ElasticAgent: 2.68, // $0.50 per 1M datapoints (1.67x vs Grafana) for 200 bytes/datapoint
-  Mixed: 1.86, // Weighted average
+  OpenTelemetry: 0.109, // $0.109/GB (top volume tier)
+  Prometheus: 0.109, // $0.109/GB (top volume tier)
+  ElasticAgent: 0.109, // $0.109/GB (top volume tier)
+  Mixed: 0.109, // $0.109/GB (top volume tier)
 };
 
 export interface MetricConfig {
@@ -131,12 +131,12 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "DogStatsD", "Wavefront", "Custom"],
     pricing: {
       basePrice: 0,
-      pricePerGB: 1.86, // Weighted average. Metric-type-specific: OTel $1.10/GB, Prometheus $1.81/GB, E.Agent $2.68/GB
+      pricePerGB: 0.109, // $0.09/GB ingest + $0.019/GB retention (Complete tier, TOP VOLUME TIER pricing)
       bytesPerDatapoint: 320, // Default fallback (weighted average). Actual values: OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B
       freeTier: 0,
       unit: "per GB/month",
     },
-    cardinalityNote: "Elastic Serverless Complete charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Competitive pricing: $0.50 per 1M datapoints (1.67x vs Grafana $0.30), positioning Elastic between Grafana and Datadog ($0.75), competitive with Splunk ($0.55) and Dynatrace ($0.60). Cost differences between metric types come from bytes per datapoint (OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B). Select your primary metric type for accurate TCO. Note: No official Elastic metrics-only pricing exists; this is a competitive pricing recommendation.",
+    cardinalityNote: "Elastic Serverless Complete charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Pricing shown: $0.109/GB ($0.09 ingest + $0.019 retention) for TOP VOLUME TIER. Cost differences between metric types come from bytes per datapoint (OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B). Select your primary metric type for accurate TCO. Note: No official Elastic metrics-only pricing exists; using Complete tier pricing as reference.",
   },
   {
     id: "elastic-self-hosted",
@@ -239,11 +239,11 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 0,
-      pricePerMillionMetrics: 0.30,
+      pricePerMillionMetrics: 0.30, // $0.30 per million metrics (STARTING TIER pricing)
       freeTier: 0,
       unit: "per million metrics/month",
     },
-    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series (including all tag combinations) is counted separately. High-cardinality tags cause exponential cost growth as metric volume multiplies.",
+    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series (including all tag combinations) is counted separately. High-cardinality tags cause exponential cost growth as metric volume multiplies. Pricing shown: $0.30 per million metrics for STARTING TIER. Grafana offers volume discounts and can go 'as low as' $3/GB for Enterprise tier (approximately $0.15 per million metrics at typical conversion rates). Contact Grafana for Enterprise tier pricing based on your volume.",
   },
   {
     id: "chronosphere",
