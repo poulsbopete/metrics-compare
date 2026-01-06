@@ -130,36 +130,39 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   : 'N/A'}
               </span>
             </div>
-            {calculationContext.monthlyGB !== undefined && (
+            {/* Always show Monthly GB and Price per GB for volume-based pricing */}
+            {platform.pricing.security.pricePerGB !== undefined && platform.pricing.security.pricePerGB > 0 && (
               <>
+                {calculationContext.monthlyGB !== undefined && calculationContext.monthlyGB > 0 && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Monthly GB (calculated):</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {calculationContext.monthlyGB.toFixed(2)} GB
+                      </span>
+                    </div>
+                    {platform.pricing.security.freeTier && platform.pricing.security.freeTier > 0 && (
+                      <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                        <span>Free Tier:</span>
+                        <span className="font-semibold">-{platform.pricing.security.freeTier} GB</span>
+                      </div>
+                    )}
+                    {platform.pricing.security.freeTier && platform.pricing.security.freeTier > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">Billable GB:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {Math.max(0, calculationContext.monthlyGB - (platform.pricing.security.freeTier || 0)).toFixed(2)} GB
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Monthly GB (calculated):</span>
+                  <span className="text-gray-600 dark:text-gray-400">Price per GB:</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {calculationContext.monthlyGB.toFixed(2)} GB
+                    {formatCurrency(platform.pricing.security.pricePerGB)}/GB
                   </span>
                 </div>
-                {platform.pricing.security.freeTier && platform.pricing.security.freeTier > 0 && (
-                  <div className="flex justify-between items-center text-green-600 dark:text-green-400">
-                    <span>Free Tier:</span>
-                    <span className="font-semibold">-{platform.pricing.security.freeTier} GB</span>
-                  </div>
-                )}
-                {platform.pricing.security.freeTier && platform.pricing.security.freeTier > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Billable GB:</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {Math.max(0, calculationContext.monthlyGB - (platform.pricing.security.freeTier || 0)).toFixed(2)} GB
-                    </span>
-                  </div>
-                )}
-                {platform.pricing.security.pricePerGB && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Price per GB:</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(platform.pricing.security.pricePerGB)}/GB
-                    </span>
-                  </div>
-                )}
               </>
             )}
             {platform.pricing.security.basePrice && platform.pricing.security.basePrice > 0 && (

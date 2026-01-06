@@ -612,13 +612,18 @@ export default function Home() {
                 volumeLabel={currentVolumeLabel}
                 calculationContext={
                   activeTab === "security"
-                    ? {
-                        eventsPerSecond,
-                        monthlyEvents,
-                        monthlyGB: monthlyEvents
-                          ? (monthlyEvents * 1000) / (1024 * 1024 * 1024) // Convert events to GB (1000 bytes per event)
-                          : undefined,
-                      }
+                    ? (() => {
+                        // Calculate monthly GB from events: events × bytes per event ÷ bytes per GB
+                        const bytesPerEvent = 1000; // BYTES_PER_SECURITY_EVENT
+                        const monthlyGB = monthlyEvents
+                          ? (monthlyEvents * bytesPerEvent) / (1024 * 1024 * 1024)
+                          : 0;
+                        return {
+                          eventsPerSecond,
+                          monthlyEvents,
+                          monthlyGB: monthlyGB > 0 ? monthlyGB : undefined,
+                        };
+                      })()
                     : undefined
                 }
               />
