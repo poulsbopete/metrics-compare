@@ -355,7 +355,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
   {
     id: "loki-self-hosted",
     name: "Grafana Loki (Self-hosted)",
-    color: "bg-indigo-500",
+    color: "bg-indigo-600",
     pricing: {
       logs: {
         basePrice: 300,
@@ -377,7 +377,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
   {
     id: "elasticsearch-logs",
     name: "Elasticsearch (Self-hosted)",
-    color: "bg-slate-500",
+    color: "bg-slate-600",
     pricing: {
       logs: {
         basePrice: 1000,
