@@ -281,6 +281,46 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     },
   },
   {
+    id: "splunk-cloud-logs",
+    name: "Splunk Cloud",
+    color: "bg-orange-600",
+    pricing: {
+      logs: {
+        basePrice: 0,
+        pricePerGB: 1.50, // Estimated: $0.60-$1.20/GB/day = $18-$36/GB/month, using conservative $1.50/GB/month
+        freeTier: 0,
+        unit: "per GB/month",
+      },
+    },
+    notes: {
+      logs: "Splunk Cloud offers ingest-based pricing. Pricing varies by volume and can range from $0.60-$1.20/GB/day. Estimated monthly pricing shown. Includes indexing, search, and analytics capabilities. Contact Splunk for exact pricing based on your volume.",
+    },
+  },
+  {
+    id: "splunk-core-logs",
+    name: "Splunk Core (Self-hosted)",
+    color: "bg-orange-700",
+    pricing: {
+      logs: {
+        basePrice: 1200,
+        pricePerGB: 0,
+        freeTier: 0,
+        unit: "fixed infrastructure cost",
+      },
+    },
+    infrastructure: {
+      compute: 600, // 3-4 indexer nodes @ $150-200/month each
+      storage: 400, // High-performance storage for indexing and search
+      memory: 100, // High memory requirements for Splunk indexing
+      network: 50,
+      other: 50, // Licensing, monitoring, backups, operational overhead
+      notes: "3-4 node Splunk cluster for HA, high-performance storage, requires Splunk Enterprise licensing",
+    },
+    notes: {
+      logs: "Fixed infrastructure cost. Splunk Core (self-hosted) requires Splunk Enterprise licenses and infrastructure. High-performance storage and compute required for indexing and search operations. Costs scale with data volume and retention requirements.",
+    },
+  },
+  {
     id: "grafana-logs",
     name: "Grafana Cloud Logs",
     color: "bg-indigo-500",
