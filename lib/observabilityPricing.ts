@@ -482,7 +482,7 @@ export const securityPlatforms: ObservabilityPlatform[] = [
       },
     },
     notes: {
-      security: "Elastic Serverless Complete: $0.09/GB ingested + $0.019/GB retained per month. Includes SIEM, threat detection, security analytics, and AI-powered insights. Source: https://www.elastic.co/pricing/serverless-observability",
+      security: "Elastic Serverless Complete: $0.09/GB ingested + $0.019/GB retained per month (TOP VOLUME TIER pricing). All-inclusive pricing includes: SIEM, threat detection, security analytics, AI-powered insights, endpoint security, cloud security posture management, vulnerability management, compliance monitoring, and security orchestration. No additional add-ons or per-feature charges required. Unified observability platform (metrics, logs, traces, security) in one solution. Source: https://www.elastic.co/pricing/serverless-observability. Note: Pricing comparison is based on raw ingest volume; actual value includes comprehensive security features, unified platform capabilities, and advanced analytics that may require additional modules or add-ons with other vendors.",
     },
   },
   {
@@ -598,7 +598,24 @@ export const securityPlatforms: ObservabilityPlatform[] = [
       },
     },
     notes: {
-      security: "Microsoft Sentinel charges $0.10/GB ingested. First 5 GB free per month. Includes SIEM, threat detection, and security analytics. Azure integration required.",
+      security: "Microsoft Sentinel charges $0.10/GB ingested. First 5 GB free per month. Base pricing includes SIEM, threat detection, and security analytics. Azure integration required. Additional features, connectors, and advanced analytics may require separate Azure services or add-ons. Compare total cost including all required Azure services for complete security operations.",
+    },
+  },
+  {
+    id: "google-secops",
+    name: "Google Security Operations",
+    color: "bg-red-500",
+    pricing: {
+      security: {
+        basePrice: 0,
+        pricePerGB: 0.10, // Estimated: Google Chronicle pricing varies, using $0.10/GB as baseline
+        bytesPerEvent: BYTES_PER_SECURITY_EVENT,
+        freeTier: 0,
+        unit: "per GB/month",
+      },
+    },
+    notes: {
+      security: "Google Security Operations (Chronicle) pricing varies by volume and contract terms. Estimated baseline pricing shown. Base pricing includes SIEM, threat detection, and security analytics. Google Cloud integration required. Additional features, advanced analytics, and enterprise capabilities may require separate services or add-ons. Contact Google for exact pricing based on your volume and requirements.",
     },
   },
   {
