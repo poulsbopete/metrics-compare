@@ -11,6 +11,7 @@ import {
   metricsPerSecondToMonthly,
   calculatePlatformCost,
   type MetricConfig,
+  type MetricSourceType,
 } from "@/lib/costCalculator";
 
 const STORAGE_KEY = "metrics-compare-state";
@@ -19,6 +20,7 @@ interface SavedState {
   baseVolume: number;
   tags: string[];
   tagValues: number;
+  primaryMetricType?: MetricSourceType;
 }
 
 function loadState(): SavedState | null {
@@ -31,6 +33,7 @@ function loadState(): SavedState | null {
         baseVolume: parsed.baseVolume ?? 100,
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
         tagValues: parsed.tagValues ?? 10,
+        primaryMetricType: parsed.primaryMetricType ?? "Mixed",
       };
     }
   } catch (error) {
@@ -53,6 +56,7 @@ export default function Home() {
   const [baseVolume, setBaseVolume] = useState(100);
   const [tags, setTags] = useState<string[]>([]);
   const [tagValues, setTagValues] = useState(10);
+  const [primaryMetricType, setPrimaryMetricType] = useState<MetricSourceType>("Mixed");
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load state from localStorage after hydration
@@ -63,6 +67,9 @@ export default function Home() {
       setBaseVolume(savedState.baseVolume);
       setTags(savedState.tags);
       setTagValues(savedState.tagValues);
+      if (savedState.primaryMetricType) {
+        setPrimaryMetricType(savedState.primaryMetricType);
+      }
     }
   }, []);
 
@@ -73,17 +80,19 @@ export default function Home() {
         baseVolume,
         tags,
         tagValues,
+        primaryMetricType,
       });
     }
-  }, [baseVolume, tags, tagValues, isHydrated]);
+  }, [baseVolume, tags, tagValues, primaryMetricType, isHydrated]);
 
   const metricConfig: MetricConfig = useMemo(
     () => ({
       baseVolume,
       tags,
       tagValues,
+      primaryMetricType,
     }),
-    [baseVolume, tags, tagValues]
+    [baseVolume, tags, tagValues, primaryMetricType]
   );
 
   const metricsPerSecond = useMemo(
@@ -100,13 +109,13 @@ export default function Home() {
     const result: Record<string, number> = {};
     try {
       platforms.forEach((platform) => {
-        result[platform.id] = calculatePlatformCost(platform, monthlyMetrics);
+        result[platform.id] = calculatePlatformCost(platform, monthlyMetrics, primaryMetricType);
       });
     } catch (error) {
       console.error("Error calculating costs:", error);
     }
     return result;
-  }, [monthlyMetrics]);
+  }, [monthlyMetrics, primaryMetricType]);
 
   const formatMetricsPerSecond = (value: number) => {
     if (value >= 1_000_000) {
@@ -178,6 +187,25 @@ export default function Home() {
                 step={1}
                 formatValue={(v) => `${v.toLocaleString()}/sec`}
               />
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Primary Metric Source Type
+                </label>
+                <select
+                  value={primaryMetricType}
+                  onChange={(e) => setPrimaryMetricType(e.target.value as MetricSourceType)}
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="Mixed">Mixed (Weighted Average)</option>
+                  <option value="OpenTelemetry">OpenTelemetry (489 bytes/datapoint)</option>
+                  <option value="Prometheus">Prometheus (229 bytes/datapoint)</option>
+                  <option value="ElasticAgent">Elastic Agent/Beats (116 bytes/datapoint)</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Affects volume-based pricing (e.g., Elastic). Different sources have different bytes per datapoint.
+                </p>
+              </div>
 
               <TagManager
                 tags={tags}

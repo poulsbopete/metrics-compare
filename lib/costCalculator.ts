@@ -23,10 +23,33 @@ export interface Platform {
   cardinalityNote?: string; // Explanation of how cardinality impacts pricing
 }
 
+export type MetricSourceType = "OpenTelemetry" | "Prometheus" | "ElasticAgent" | "Mixed";
+
+// Bytes per datapoint based on actual Elastic data:
+// OTel: 998.17 bytes/doc / 2.04 datapoints/doc = 489 bytes/datapoint
+// Prometheus: 853.49 bytes/doc / 3.73 datapoints/doc = 229 bytes/datapoint
+// E.Agent/Beats: 883.75 bytes/doc / 7.62 datapoints/doc = 116 bytes/datapoint
+export const BYTES_PER_DATAPOINT: Record<MetricSourceType, number> = {
+  OpenTelemetry: 488, // Updated from slide: 488B (was 489)
+  Prometheus: 296, // Updated from slide: 296B (was 229)
+  ElasticAgent: 200, // Updated from slide: 200B (was 116)
+  Mixed: 320, // Weighted average for mixed sources
+};
+
+// Elastic pricing per GB (total cost including ingest + retention + support)
+// Based on normalized pricing analysis slide
+export const ELASTIC_PRICE_PER_GB: Record<MetricSourceType, number> = {
+  OpenTelemetry: 21.04, // $21.04/GB total (OTel)
+  Prometheus: 12.74, // $12.74/GB total (Prometheus)
+  ElasticAgent: 8.62, // $8.62/GB total (E.Agent/Fleet)
+  Mixed: 14.13, // Weighted average: (21.04 + 12.74 + 8.62) / 3
+};
+
 export interface MetricConfig {
   baseVolume: number; // metrics per second
   tags: string[];
   tagValues: number; // number of unique values per tag
+  primaryMetricType?: MetricSourceType; // Primary metric source type for volume-based pricing
 }
 
 // Calculate total metric volume with cardinality explosion from tags
@@ -56,10 +79,16 @@ export function metricsToGB(metrics: number, bytesPerDatapoint: number = 320): n
   return gb;
 }
 
+// Get bytes per datapoint for a metric type
+export function getBytesPerDatapoint(metricType?: MetricSourceType): number {
+  return metricType ? BYTES_PER_DATAPOINT[metricType] : BYTES_PER_DATAPOINT.Mixed;
+}
+
 // Calculate cost for a platform
 export function calculatePlatformCost(
   platform: Platform,
-  monthlyMetrics: number
+  monthlyMetrics: number,
+  metricType?: MetricSourceType
 ): number {
   const { pricing } = platform;
   let cost = pricing.basePrice || 0;
@@ -69,9 +98,19 @@ export function calculatePlatformCost(
   
   if (pricing.pricePerGB) {
     // Volume-based pricing: convert metrics to GB first
-    const bytesPerDatapoint = pricing.bytesPerDatapoint || 320; // Default: 320 bytes/datapoint (weighted avg from OTel, Prometheus, Fleet)
+    // Use metric-type-specific conversion if available, otherwise use platform default or metric type default
+    const bytesPerDatapoint = metricType 
+      ? getBytesPerDatapoint(metricType)
+      : (pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
     const monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
-    cost += monthlyGB * pricing.pricePerGB;
+    
+    // For Elastic, use metric-type-specific pricing per GB if available
+    let pricePerGB = pricing.pricePerGB;
+    if (platform.id === "elastic-serverless" && metricType && ELASTIC_PRICE_PER_GB[metricType]) {
+      pricePerGB = ELASTIC_PRICE_PER_GB[metricType];
+    }
+    
+    cost += monthlyGB * pricePerGB;
   } else if (pricing.pricePerMillionMetrics) {
     cost += (billableMetrics / 1_000_000) * pricing.pricePerMillionMetrics;
   } else if (pricing.pricePerMetric) {
@@ -90,12 +129,12 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "DogStatsD", "Wavefront", "Custom"],
     pricing: {
       basePrice: 0,
-      pricePerGB: 1.01, // Based on actual cost analysis: ~$1.01-1.02/GB/month (ingest + retention) for 1000 metrics @ 60s granularity. OTel: $1.02/GB, Prometheus: $1.01/GB, E.Agent/Beats: $1.01/GB
-      bytesPerDatapoint: 320, // Weighted average: OTel (488), Prometheus (296), E.Agent/Beats (200) ≈ 320 bytes/datapoint
+      pricePerGB: 14.13, // Weighted average. Actual metric-type-specific pricing: OTel $21.04/GB, Prometheus $12.74/GB, E.Agent/Fleet $8.62/GB (includes ingest + retention + support)
+      bytesPerDatapoint: 320, // Default fallback (weighted average). Actual values: OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B
       freeTier: 0,
-      unit: "per GB/month",
+      unit: "per GB/month (total cost)",
     },
-    cardinalityNote: "Elastic charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Based on actual data: ~320 bytes per datapoint on average (OTel: 488, Prometheus: 296, E.Agent/Beats: 200 bytes/datapoint). Actual pricing: ~$1.01-1.02/GB/month (ingest + retention) based on real-world scenario analysis.",
+    cardinalityNote: "Elastic charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Pricing varies significantly by metric source type (includes ingest + retention + support): OpenTelemetry $21.04/GB, Prometheus $12.74/GB, Elastic Agent/Fleet $8.62/GB. Bytes per datapoint: OTel 488B, Prometheus 296B, E.Agent/Fleet 200B. Select your primary metric type for accurate TCO. Normalized to datapoints: OTel $10.27/1M datapoints, Prometheus $3.77/1M datapoints, E.Agent/Fleet $1.72/1M datapoints.",
   },
   {
     id: "elastic-self-hosted",
