@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 
-export type ObservabilityTab = "metrics" | "tracing" | "logs";
+export type ObservabilityTab = "metrics" | "tracing" | "logs" | "security";
 
 interface ObservabilityTabsProps {
   activeTab: ObservabilityTab;
@@ -19,6 +19,7 @@ export default function ObservabilityTabs({
     { id: "metrics", label: "Metrics", icon: "📊" },
     { id: "tracing", label: "Tracing/APM", icon: "🔍" },
     { id: "logs", label: "Logs", icon: "📝" },
+    { id: "security", label: "Security", icon: "🔒" },
   ];
 
   return (

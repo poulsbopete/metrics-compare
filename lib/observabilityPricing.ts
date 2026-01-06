@@ -1,6 +1,6 @@
 // Comprehensive observability pricing data for Metrics, Tracing/APM, and Logs
 
-export type ObservabilityType = "metrics" | "tracing" | "logs";
+export type ObservabilityType = "metrics" | "tracing" | "logs" | "security";
 
 export interface ObservabilityPricing {
   metrics?: {
@@ -27,6 +27,16 @@ export interface ObservabilityPricing {
     freeTier?: number; // In GB
     unit: string;
   };
+  security?: {
+    basePrice?: number;
+    pricePerEvent?: number;
+    pricePerMillionEvents?: number;
+    pricePerGB?: number;
+    pricePerEndpoint?: number;
+    bytesPerEvent?: number; // Average bytes per security event
+    freeTier?: number;
+    unit: string;
+  };
 }
 
 export interface ObservabilityPlatform {
@@ -46,12 +56,17 @@ export interface ObservabilityPlatform {
     metrics?: string;
     tracing?: string;
     logs?: string;
+    security?: string;
   };
 }
 
 // Average bytes per span (for tracing)
 // Based on typical OpenTelemetry span sizes
 export const BYTES_PER_SPAN = 500; // Average span size in bytes
+
+// Average bytes per security event
+// Based on typical SIEM event sizes (logs, alerts, detections)
+export const BYTES_PER_SECURITY_EVENT = 1000; // Average security event size in bytes
 
 // Tracing/APM platforms pricing (as of 2025)
 export const tracingPlatforms: ObservabilityPlatform[] = [
@@ -449,5 +464,196 @@ export function spansPerSecondToMonthly(spansPerSecond: number): number {
 // Convert GB per day to monthly
 export function gbPerDayToMonthly(gbPerDay: number): number {
   return gbPerDay * 30;
+}
+
+// Security platforms pricing (as of 2025)
+export const securityPlatforms: ObservabilityPlatform[] = [
+  {
+    id: "elastic-security",
+    name: "Elastic Security",
+    color: "bg-blue-500",
+    pricing: {
+      security: {
+        basePrice: 0,
+        pricePerGB: 0.109, // $0.09/GB ingested + $0.019/GB retained per month (Complete tier)
+        bytesPerEvent: BYTES_PER_SECURITY_EVENT,
+        freeTier: 0,
+        unit: "per GB/month",
+      },
+    },
+    notes: {
+      security: "Elastic Serverless Complete: $0.09/GB ingested + $0.019/GB retained per month. Includes SIEM, threat detection, security analytics, and AI-powered insights. Source: https://www.elastic.co/pricing/serverless-observability",
+    },
+  },
+  {
+    id: "splunk-security",
+    name: "Splunk Enterprise Security",
+    color: "bg-orange-500",
+    pricing: {
+      security: {
+        basePrice: 0,
+        pricePerGB: 0.50,
+        bytesPerEvent: BYTES_PER_SECURITY_EVENT,
+        freeTier: 0,
+        unit: "per GB/month",
+      },
+    },
+    notes: {
+      security: "Charges per GB ingested. Includes SIEM, threat detection, and security analytics. Enterprise Security add-on required.",
+    },
+  },
+  {
+    id: "splunk-cloud-security",
+    name: "Splunk Cloud Security",
+    color: "bg-orange-600",
+    pricing: {
+      security: {
+        basePrice: 0,
+        pricePerGB: 1.50, // Estimated: $0.60-$1.20/GB/day = $18-$36/GB/month, using conservative $1.50/GB/month
+        bytesPerEvent: BYTES_PER_SECURITY_EVENT,
+        freeTier: 0,
+        unit: "per GB/month",
+      },
+    },
+    notes: {
+      security: "Splunk Cloud offers ingest-based pricing for security events. Pricing varies by volume and can range from $0.60-$1.20/GB/day. Estimated monthly pricing shown. Includes SIEM, threat detection, and security analytics. Contact Splunk for exact pricing based on your volume.",
+    },
+  },
+  {
+    id: "splunk-core-security",
+    name: "Splunk Core (Self-hosted)",
+    color: "bg-orange-700",
+    pricing: {
+      security: {
+        basePrice: 1200,
+        pricePerGB: 0,
+        freeTier: 0,
+        unit: "fixed infrastructure cost",
+      },
+    },
+    infrastructure: {
+      compute: 600, // 3-4 indexer nodes @ $150-200/month each
+      storage: 400, // High-performance storage for indexing and search
+      memory: 100, // High memory requirements for Splunk indexing
+      network: 50,
+      other: 50, // Licensing, monitoring, backups, operational overhead
+      notes: "3-4 node Splunk cluster for HA, high-performance storage, requires Splunk Enterprise licenses",
+    },
+    notes: {
+      security: "Fixed infrastructure cost. Splunk Core (self-hosted) requires Splunk Enterprise licenses and infrastructure. High-performance storage and compute required for security event indexing and search operations. Costs scale with data volume and retention requirements.",
+    },
+  },
+  {
+    id: "datadog-security",
+    name: "Datadog Security",
+    color: "bg-purple-500",
+    pricing: {
+      security: {
+        basePrice: 0,
+        pricePerGB: 0.10, // $0.10/GB ingested
+        bytesPerEvent: BYTES_PER_SECURITY_EVENT,
+        freeTier: 5, // 5 GB free/month
+        unit: "per GB/month",
+      },
+    },
+    notes: {
+      security: "Charges per GB ingested. 5 GB free tier. Includes security monitoring, threat detection, and compliance reporting.",
+    },
+  },
+  {
+    id: "microsoft-sentinel",
+    name: "Microsoft Sentinel",
+    color: "bg-blue-600",
+    pricing: {
+      security: {
+        basePrice: 0,
+        pricePerGB: 0.10, // $0.10/GB ingested (first 5 GB free)
+        bytesPerEvent: BYTES_PER_SECURITY_EVENT,
+        freeTier: 5, // 5 GB free/month
+        unit: "per GB/month",
+      },
+    },
+    notes: {
+      security: "Microsoft Sentinel charges $0.10/GB ingested. First 5 GB free per month. Includes SIEM, threat detection, and security analytics. Azure integration required.",
+    },
+  },
+  {
+    id: "wazuh-self-hosted",
+    name: "Wazuh (Self-hosted)",
+    color: "bg-green-600",
+    pricing: {
+      security: {
+        basePrice: 500,
+        pricePerGB: 0,
+        freeTier: 0,
+        unit: "fixed infrastructure cost",
+      },
+    },
+    infrastructure: {
+      compute: 250, // 2-3 manager nodes
+      storage: 150, // Storage for logs and alerts
+      memory: 50,
+      network: 25,
+      other: 25, // Monitoring, backups
+      notes: "Open-source SIEM. Infrastructure costs for manager, indexer, and dashboard nodes.",
+    },
+    notes: {
+      security: "Fixed infrastructure cost. Open-source SIEM solution. Requires infrastructure for manager, indexer, and dashboard components. No licensing costs.",
+    },
+  },
+  {
+    id: "security-onion",
+    name: "Security Onion (Self-hosted)",
+    color: "bg-green-700",
+    pricing: {
+      security: {
+        basePrice: 800,
+        pricePerGB: 0,
+        freeTier: 0,
+        unit: "fixed infrastructure cost",
+      },
+    },
+    infrastructure: {
+      compute: 400, // Manager and worker nodes
+      storage: 300, // High-performance storage for network and host data
+      memory: 50,
+      network: 25,
+      other: 25, // Monitoring, backups
+      notes: "Open-source security monitoring platform. Infrastructure for manager, worker, and storage nodes.",
+    },
+    notes: {
+      security: "Fixed infrastructure cost. Open-source security monitoring and log management platform. Includes SIEM, network security monitoring (NSM), and host-based intrusion detection (HIDS). Requires infrastructure for manager, worker, and storage components.",
+    },
+  },
+];
+
+// Cost calculation function for security
+export function calculateSecurityCost(
+  platform: ObservabilityPlatform,
+  monthlyEvents: number
+): number {
+  const pricing = platform.pricing.security;
+  if (!pricing) return 0;
+
+  let cost = pricing.basePrice || 0;
+  const billableEvents = Math.max(0, monthlyEvents - (pricing.freeTier || 0));
+
+  if (pricing.pricePerGB) {
+    const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
+    const monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
+    cost += monthlyGB * pricing.pricePerGB;
+  } else if (pricing.pricePerMillionEvents) {
+    cost += (billableEvents / 1_000_000) * pricing.pricePerMillionEvents;
+  } else if (pricing.pricePerEvent) {
+    cost += billableEvents * pricing.pricePerEvent;
+  }
+
+  return Math.max(0, cost);
+}
+
+// Convert security events per second to monthly
+export function eventsPerSecondToMonthly(eventsPerSecond: number): number {
+  const secondsPerMonth = 30 * 24 * 60 * 60;
+  return eventsPerSecond * secondsPerMonth;
 }
 

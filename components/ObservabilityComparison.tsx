@@ -6,7 +6,7 @@ import { useState } from "react";
 import CostBarChart from "./CostBarChart";
 import PlatformRow from "./PlatformRow";
 
-type ObservabilityType = "metrics" | "tracing" | "logs";
+type ObservabilityType = "metrics" | "tracing" | "logs" | "security";
 
 interface ObservabilityComparisonProps {
   type: ObservabilityType;

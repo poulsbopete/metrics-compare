@@ -8,6 +8,7 @@ import ObservabilityComparison from "@/components/ObservabilityComparison";
 import ObservabilityTabs, { type ObservabilityTab } from "@/components/ObservabilityTabs";
 import TracingConfig from "@/components/TracingConfig";
 import LogsConfig from "@/components/LogsConfig";
+import SecurityConfig from "@/components/SecurityConfig";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import {
   platforms,
@@ -20,10 +21,13 @@ import {
 import {
   tracingPlatforms,
   logsPlatforms,
+  securityPlatforms,
   calculateTracingCost,
   calculateLogsCost,
+  calculateSecurityCost,
   spansPerSecondToMonthly,
   gbPerDayToMonthly,
+  eventsPerSecondToMonthly,
 } from "@/lib/observabilityPricing";
 
 const STORAGE_KEY = "observability-compare-state";
@@ -39,6 +43,8 @@ interface SavedState {
   spansPerSecond: number;
   // Logs
   gbPerDay: number;
+  // Security
+  eventsPerSecond: number;
 }
 
 function loadState(): SavedState | null {
@@ -55,6 +61,7 @@ function loadState(): SavedState | null {
         primaryMetricType: parsed.primaryMetricType ?? "Mixed",
         spansPerSecond: parsed.spansPerSecond ?? 100,
         gbPerDay: parsed.gbPerDay ?? 10,
+        eventsPerSecond: parsed.eventsPerSecond ?? 100,
       };
     }
   } catch (error) {
@@ -88,6 +95,9 @@ export default function Home() {
   // Logs state
   const [gbPerDay, setGbPerDay] = useState(10);
   
+  // Security state
+  const [eventsPerSecond, setEventsPerSecond] = useState(100);
+  
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load state from localStorage after hydration
@@ -104,6 +114,7 @@ export default function Home() {
       }
       if (savedState.spansPerSecond) setSpansPerSecond(savedState.spansPerSecond);
       if (savedState.gbPerDay) setGbPerDay(savedState.gbPerDay);
+      if (savedState.eventsPerSecond) setEventsPerSecond(savedState.eventsPerSecond);
     }
   }, []);
 
@@ -118,9 +129,10 @@ export default function Home() {
         primaryMetricType,
         spansPerSecond,
         gbPerDay,
+        eventsPerSecond,
       });
     }
-  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, spansPerSecond, gbPerDay, isHydrated]);
+  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, spansPerSecond, gbPerDay, eventsPerSecond, isHydrated]);
 
   const metricConfig: MetricConfig = useMemo(
     () => ({
@@ -191,29 +203,51 @@ export default function Home() {
     return result;
   }, [monthlyGB]);
 
+  // Security calculations
+  const monthlyEvents = useMemo(
+    () => eventsPerSecondToMonthly(eventsPerSecond),
+    [eventsPerSecond]
+  );
+
+  const securityCosts = useMemo(() => {
+    const result: Record<string, number> = {};
+    try {
+      securityPlatforms.forEach((platform) => {
+        result[platform.id] = calculateSecurityCost(platform, monthlyEvents);
+      });
+    } catch (error) {
+      console.error("Error calculating security costs:", error);
+    }
+    return result;
+  }, [monthlyEvents]);
+
   // Get current costs and platforms based on active tab
   const currentCosts = useMemo(() => {
     if (activeTab === "metrics") return metricsCosts;
     if (activeTab === "tracing") return tracingCosts;
-    return logsCosts;
-  }, [activeTab, metricsCosts, tracingCosts, logsCosts]);
+    if (activeTab === "logs") return logsCosts;
+    return securityCosts;
+  }, [activeTab, metricsCosts, tracingCosts, logsCosts, securityCosts]);
 
   const currentPlatforms = useMemo(() => {
     if (activeTab === "metrics") return platforms;
     if (activeTab === "tracing") return tracingPlatforms;
-    return logsPlatforms;
+    if (activeTab === "logs") return logsPlatforms;
+    return securityPlatforms;
   }, [activeTab]);
 
   const currentVolume = useMemo(() => {
     if (activeTab === "metrics") return monthlyMetrics;
     if (activeTab === "tracing") return monthlySpans;
-    return monthlyGB;
-  }, [activeTab, monthlyMetrics, monthlySpans, monthlyGB]);
+    if (activeTab === "logs") return monthlyGB;
+    return monthlyEvents;
+  }, [activeTab, monthlyMetrics, monthlySpans, monthlyGB, monthlyEvents]);
 
   const currentVolumeLabel = useMemo(() => {
     if (activeTab === "metrics") return "Monthly Metrics";
     if (activeTab === "tracing") return "Monthly Spans";
-    return "Monthly GB";
+    if (activeTab === "logs") return "Monthly GB";
+    return "Monthly Events";
   }, [activeTab]);
 
   const formatMetricsPerSecond = (value: number) => {
@@ -265,7 +299,7 @@ export default function Home() {
             Observability Cost Comparison
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Compare costs across observability platforms for Metrics, Tracing/APM, and Logs
+            Compare costs across observability platforms for Metrics, Tracing/APM, Logs, and Security
           </p>
         </div>
 
@@ -332,6 +366,13 @@ export default function Home() {
                     onGbPerDayChange={setGbPerDay}
                   />
                 )}
+
+                {activeTab === "security" && (
+                  <SecurityConfig
+                    eventsPerSecond={eventsPerSecond}
+                    onEventsPerSecondChange={setEventsPerSecond}
+                  />
+                )}
               </div>
             </div>
 
@@ -342,6 +383,7 @@ export default function Home() {
                 {activeTab === "metrics" && "Metric Volume Impact"}
                 {activeTab === "tracing" && "Tracing Volume"}
                 {activeTab === "logs" && "Log Volume"}
+                {activeTab === "security" && "Security Event Volume"}
               </h2>
               {activeTab === "metrics" && (
                 <>
@@ -489,6 +531,36 @@ export default function Home() {
                     </div>
                     <div className="text-3xl font-bold text-green-900 dark:text-green-100">
                       {monthlyGB.toFixed(1)} GB/month
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "security" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-xl p-5 border border-red-200 dark:border-red-700/50 shadow-md">
+                    <div className="text-sm text-red-600 dark:text-red-400 font-semibold mb-2 uppercase tracking-wide">
+                      Events per Second
+                    </div>
+                    <div className="text-3xl font-bold text-red-900 dark:text-red-100">
+                      <AnimatedNumber
+                        value={eventsPerSecond}
+                        format={(v) => `${v.toLocaleString()}/sec`}
+                      />
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
+                    <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
+                      Monthly Events
+                    </div>
+                    <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                      <AnimatedNumber
+                        value={monthlyEvents}
+                        format={formatMonthlyMetrics}
+                      />
+                      <span className="text-lg ml-1">
+                        {monthlyEvents >= 1_000_000_000 ? "B" : monthlyEvents >= 1_000_000 ? "M" : "K"}
+                      </span>
                     </div>
                   </div>
                 </div>

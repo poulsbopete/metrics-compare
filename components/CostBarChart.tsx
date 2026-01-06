@@ -27,6 +27,9 @@ const colorMap: Record<string, string> = {
   "bg-orange-700": "#c2410c", // Splunk Core
   "bg-indigo-600": "#4f46e5", // Grafana Loki (Self-hosted)
   "bg-slate-600": "#475569", // Elasticsearch (Self-hosted)
+  "bg-blue-600": "#2563eb", // Microsoft Sentinel
+  "bg-green-600": "#16a34a", // Wazuh
+  "bg-green-700": "#15803d", // Security Onion
 };
 
 export default function CostBarChart({
