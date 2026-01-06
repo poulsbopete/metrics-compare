@@ -475,14 +475,14 @@ export const securityPlatforms: ObservabilityPlatform[] = [
     pricing: {
       security: {
         basePrice: 0,
-        pricePerGB: 0.109, // $0.09/GB ingested + $0.019/GB retained per month (Complete tier)
+        pricePerGB: 0.129, // $0.11/GB ingested + $0.019/GB retained per month (Security Analytics Complete tier)
         bytesPerEvent: BYTES_PER_SECURITY_EVENT,
         freeTier: 0,
         unit: "per GB/month",
       },
     },
     notes: {
-      security: "Elastic Serverless Complete: $0.09/GB ingested + $0.019/GB retained per month (TOP VOLUME TIER pricing). All-inclusive pricing includes: SIEM, threat detection, security analytics, AI-powered insights, endpoint security, cloud security posture management, vulnerability management, compliance monitoring, and security orchestration. No additional add-ons or per-feature charges required. Unified observability platform (metrics, logs, traces, security) in one solution. Source: https://www.elastic.co/pricing/serverless-observability. Note: Pricing comparison is based on raw ingest volume; actual value includes comprehensive security features, unified platform capabilities, and advanced analytics that may require additional modules or add-ons with other vendors.",
+      security: "Elastic Security Serverless - Security Analytics Complete (Recommended): $0.11/GB ingested + $0.019/GB retained per month (TOP VOLUME TIER pricing). All-inclusive pricing includes: SIEM, threat detection, security analytics, AI-powered insights, entity analytics/UEBA, threat intelligence management, bidirectional response framework, extended security content, and Elastic AI Assistant. No additional add-ons or per-feature charges required for core security analytics. Unified observability platform (metrics, logs, traces, security) in one solution. Optional add-ons available: Endpoint Protection ($0.49/endpoint/month) and Cloud Protection ($0.65/asset/month). Source: https://www.elastic.co/pricing/serverless-security. Note: Pricing comparison is based on raw ingest volume; actual value includes comprehensive security features, unified platform capabilities, and advanced analytics that may require additional modules or add-ons with other vendors.",
     },
   },
   {
