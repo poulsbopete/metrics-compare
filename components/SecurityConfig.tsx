@@ -18,7 +18,7 @@ export default function SecurityConfig({
         value={eventsPerSecond}
         onChange={onEventsPerSecondChange}
         min={1}
-        max={10000}
+        max={100000}
         step={1}
         formatValue={(v) => `${v.toLocaleString()}/sec`}
       />
