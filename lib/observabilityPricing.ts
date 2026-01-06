@@ -486,6 +486,30 @@ export const securityPlatforms: ObservabilityPlatform[] = [
     },
   },
   {
+    id: "elastic-security-self-hosted",
+    name: "Elastic Security (Self-hosted)",
+    color: "bg-slate-600",
+    pricing: {
+      security: {
+        basePrice: 1000,
+        pricePerGB: 0,
+        freeTier: 0,
+        unit: "fixed infrastructure cost",
+      },
+    },
+    infrastructure: {
+      compute: 450, // 3+ Elasticsearch nodes @ $150/month each
+      storage: 300, // SSD storage for security event indexing and search
+      memory: 150, // High memory requirements for Elasticsearch
+      network: 50,
+      other: 50, // Monitoring, backups, operational overhead
+      notes: "3+ node Elasticsearch cluster for HA with Security features (Elastic Stack). Open source on-premises deployment. Includes Elasticsearch, Kibana, and Security features (SIEM, threat detection, security analytics). No licensing costs for open source version.",
+    },
+    notes: {
+      security: "Fixed infrastructure cost. Elastic Security (self-hosted) uses the open source Elastic Stack (Elasticsearch, Kibana) with Security features. Includes SIEM, threat detection, security analytics, and log analysis capabilities. Open source version available at no licensing cost. Requires infrastructure for Elasticsearch cluster, Kibana, and security event processing. Costs scale with data volume and retention requirements.",
+    },
+  },
+  {
     id: "splunk-security",
     name: "Splunk Enterprise Security",
     color: "bg-orange-500",
