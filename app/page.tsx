@@ -508,9 +508,6 @@ export default function Home() {
                         value={monthlySpans}
                         format={formatMonthlyMetrics}
                       />
-                      <span className="text-lg ml-1">
-                        {monthlySpans >= 1_000_000_000 ? "B" : monthlySpans >= 1_000_000 ? "M" : "K"}
-                      </span>
                     </div>
                   </div>
                 </div>
