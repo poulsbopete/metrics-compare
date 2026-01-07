@@ -11,6 +11,10 @@ export interface ObservabilityPricing {
     bytesPerDatapoint?: number;
     freeTier?: number;
     unit: string;
+    // Egress pricing (for SaaS platforms)
+    egressPricePerGB?: number; // Price per GB for data egress
+    egressFreeTier?: number; // Free egress in GB/month
+    egressPricePerGBWithPrivateLink?: number; // Reduced egress price with private link (typically near-zero)
   };
   tracing?: {
     basePrice?: number;
@@ -20,12 +24,20 @@ export interface ObservabilityPricing {
     bytesPerSpan?: number; // Average bytes per span
     freeTier?: number;
     unit: string;
+    // Egress pricing (for SaaS platforms)
+    egressPricePerGB?: number;
+    egressFreeTier?: number;
+    egressPricePerGBWithPrivateLink?: number;
   };
   logs?: {
     basePrice?: number;
     pricePerGB?: number;
     freeTier?: number; // In GB
     unit: string;
+    // Egress pricing (for SaaS platforms)
+    egressPricePerGB?: number;
+    egressFreeTier?: number;
+    egressPricePerGBWithPrivateLink?: number;
   };
   security?: {
     basePrice?: number;
@@ -36,6 +48,10 @@ export interface ObservabilityPricing {
     bytesPerEvent?: number; // Average bytes per security event
     freeTier?: number;
     unit: string;
+    // Egress pricing (for SaaS platforms)
+    egressPricePerGB?: number;
+    egressFreeTier?: number;
+    egressPricePerGBWithPrivateLink?: number;
   };
 }
 
@@ -80,6 +96,9 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
         pricePerMillionSpans: 1.70, // $1.70 per million spans
         freeTier: 0,
         unit: "per million spans/month",
+        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
+        egressFreeTier: 10, // 10 GB free egress/month
+        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
       },
     },
     notes: {
@@ -129,6 +148,9 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
         bytesPerSpan: 500,
         freeTier: 0,
         unit: "per GB/month",
+        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
+        egressFreeTier: 50, // 50 GB free egress/month
+        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
       },
     },
     notes: {
@@ -241,6 +263,9 @@ export const logsPlatforms: ObservabilityPlatform[] = [
         pricePerGB: 0.10, // $0.10/GB ingested
         freeTier: 5, // 5 GB free/month
         unit: "per GB/month",
+        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
+        egressFreeTier: 10, // 10 GB free egress/month
+        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
       },
     },
     notes: {
@@ -273,6 +298,9 @@ export const logsPlatforms: ObservabilityPlatform[] = [
         pricePerGB: 0.109, // $0.09/GB ingested + $0.019/GB retained per month (Complete tier)
         freeTier: 0,
         unit: "per GB/month",
+        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
+        egressFreeTier: 50, // 50 GB free egress/month
+        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
       },
     },
     notes: {
@@ -415,24 +443,61 @@ export const logsPlatforms: ObservabilityPlatform[] = [
 ];
 
 // Cost calculation functions
+// Calculate egress cost for observability platforms
+export function calculateObservabilityEgressCost(
+  platform: ObservabilityPlatform,
+  monthlyGB: number,
+  type: ObservabilityType,
+  usePrivateLink: boolean = false
+): number {
+  const pricing = platform.pricing[type];
+  if (!pricing || !pricing.egressPricePerGB) {
+    return 0;
+  }
+
+  // Use private link pricing if available and enabled
+  const egressPricePerGB = usePrivateLink && pricing.egressPricePerGBWithPrivateLink !== undefined
+    ? pricing.egressPricePerGBWithPrivateLink
+    : pricing.egressPricePerGB;
+
+  // Apply free tier
+  const billableGB = Math.max(0, monthlyGB - (pricing.egressFreeTier || 0));
+
+  return billableGB * egressPricePerGB;
+}
+
 export function calculateTracingCost(
   platform: ObservabilityPlatform,
-  monthlySpans: number
+  monthlySpans: number,
+  includeEgress: boolean = false,
+  usePrivateLink: boolean = false
 ): number {
   const pricing = platform.pricing.tracing;
   if (!pricing) return 0;
 
   let cost = pricing.basePrice || 0;
   const billableSpans = Math.max(0, monthlySpans - (pricing.freeTier || 0));
+  let monthlyGB = 0;
 
   if (pricing.pricePerGB) {
     const bytesPerSpan = pricing.bytesPerSpan || BYTES_PER_SPAN;
-    const monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
+    monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
     cost += monthlyGB * pricing.pricePerGB;
   } else if (pricing.pricePerMillionSpans) {
     cost += (billableSpans / 1_000_000) * pricing.pricePerMillionSpans;
+    // Estimate GB for egress calculation (if needed)
+    const bytesPerSpan = pricing.bytesPerSpan || BYTES_PER_SPAN;
+    monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
   } else if (pricing.pricePerSpan) {
     cost += billableSpans * pricing.pricePerSpan;
+    // Estimate GB for egress calculation (if needed)
+    const bytesPerSpan = pricing.bytesPerSpan || BYTES_PER_SPAN;
+    monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
+  }
+
+  // Add egress costs if enabled
+  if (includeEgress && monthlyGB > 0) {
+    cost += calculateObservabilityEgressCost(platform, monthlyGB, "tracing", usePrivateLink);
   }
 
   return Math.max(0, cost);
@@ -440,7 +505,9 @@ export function calculateTracingCost(
 
 export function calculateLogsCost(
   platform: ObservabilityPlatform,
-  monthlyGB: number
+  monthlyGB: number,
+  includeEgress: boolean = false,
+  usePrivateLink: boolean = false
 ): number {
   const pricing = platform.pricing.logs;
   if (!pricing) return 0;
@@ -450,6 +517,11 @@ export function calculateLogsCost(
 
   if (pricing.pricePerGB) {
     cost += billableGB * pricing.pricePerGB;
+  }
+
+  // Add egress costs if enabled
+  if (includeEgress && monthlyGB > 0) {
+    cost += calculateObservabilityEgressCost(platform, monthlyGB, "logs", usePrivateLink);
   }
 
   return Math.max(0, cost);
@@ -479,6 +551,9 @@ export const securityPlatforms: ObservabilityPlatform[] = [
         bytesPerEvent: BYTES_PER_SECURITY_EVENT,
         freeTier: 0,
         unit: "per GB/month",
+        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
+        egressFreeTier: 50, // 50 GB free egress/month
+        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
       },
     },
     notes: {
@@ -671,22 +746,36 @@ export const securityPlatforms: ObservabilityPlatform[] = [
 // Cost calculation function for security
 export function calculateSecurityCost(
   platform: ObservabilityPlatform,
-  monthlyEvents: number
+  monthlyEvents: number,
+  includeEgress: boolean = false,
+  usePrivateLink: boolean = false
 ): number {
   const pricing = platform.pricing.security;
   if (!pricing) return 0;
 
   let cost = pricing.basePrice || 0;
   const billableEvents = Math.max(0, monthlyEvents - (pricing.freeTier || 0));
+  let monthlyGB = 0;
 
   if (pricing.pricePerGB) {
     const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
-    const monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
+    monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
     cost += monthlyGB * pricing.pricePerGB;
   } else if (pricing.pricePerMillionEvents) {
     cost += (billableEvents / 1_000_000) * pricing.pricePerMillionEvents;
+    // Estimate GB for egress calculation (if needed)
+    const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
+    monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
   } else if (pricing.pricePerEvent) {
     cost += billableEvents * pricing.pricePerEvent;
+    // Estimate GB for egress calculation (if needed)
+    const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
+    monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
+  }
+
+  // Add egress costs if enabled
+  if (includeEgress && monthlyGB > 0) {
+    cost += calculateObservabilityEgressCost(platform, monthlyGB, "security", usePrivateLink);
   }
 
   return Math.max(0, cost);

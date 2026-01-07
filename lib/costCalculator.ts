@@ -11,6 +11,10 @@ export interface Platform {
     bytesPerDatapoint?: number; // Conversion factor for metrics to GB (default: 320 bytes)
     freeTier?: number;
     unit: string;
+    // Egress pricing (for SaaS platforms)
+    egressPricePerGB?: number; // Price per GB for data egress
+    egressFreeTier?: number; // Free egress in GB/month
+    egressPricePerGBWithPrivateLink?: number; // Reduced egress price with private link (typically near-zero)
   };
   infrastructure?: {
     compute?: number;
@@ -86,11 +90,37 @@ export function getBytesPerDatapoint(metricType?: MetricSourceType): number {
   return metricType ? BYTES_PER_DATAPOINT[metricType] : BYTES_PER_DATAPOINT.Mixed;
 }
 
+// Calculate egress cost for a platform
+export function calculateEgressCost(
+  platform: Platform,
+  monthlyGB: number,
+  usePrivateLink: boolean = false
+): number {
+  const { pricing } = platform;
+  
+  // Only calculate egress for SaaS platforms that have egress pricing
+  if (!pricing.egressPricePerGB) {
+    return 0;
+  }
+  
+  // Use private link pricing if available and enabled
+  const egressPricePerGB = usePrivateLink && pricing.egressPricePerGBWithPrivateLink !== undefined
+    ? pricing.egressPricePerGBWithPrivateLink
+    : pricing.egressPricePerGB;
+  
+  // Apply free tier
+  const billableGB = Math.max(0, monthlyGB - (pricing.egressFreeTier || 0));
+  
+  return billableGB * egressPricePerGB;
+}
+
 // Calculate cost for a platform
 export function calculatePlatformCost(
   platform: Platform,
   monthlyMetrics: number,
-  metricType?: MetricSourceType
+  metricType?: MetricSourceType,
+  includeEgress: boolean = false,
+  usePrivateLink: boolean = false
 ): number {
   const { pricing } = platform;
   let cost = pricing.basePrice || 0;
@@ -98,13 +128,15 @@ export function calculatePlatformCost(
   // Apply free tier
   const billableMetrics = Math.max(0, monthlyMetrics - (pricing.freeTier || 0));
   
+  let monthlyGB = 0;
+  
   if (pricing.pricePerGB) {
     // Volume-based pricing: convert metrics to GB first
     // Use metric-type-specific conversion if available, otherwise use platform default or metric type default
     const bytesPerDatapoint = metricType 
       ? getBytesPerDatapoint(metricType)
       : (pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
-    const monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
+    monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
     
     // For Elastic, use metric-type-specific pricing per GB if available
     let pricePerGB = pricing.pricePerGB;
@@ -115,8 +147,27 @@ export function calculatePlatformCost(
     cost += monthlyGB * pricePerGB;
   } else if (pricing.pricePerMillionMetrics) {
     cost += (billableMetrics / 1_000_000) * pricing.pricePerMillionMetrics;
+    // Calculate monthlyGB for egress if needed (only if platform has egress pricing)
+    if (includeEgress && pricing.egressPricePerGB) {
+      const bytesPerDatapoint = metricType 
+        ? getBytesPerDatapoint(metricType)
+        : (pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
+      monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
+    }
   } else if (pricing.pricePerMetric) {
     cost += billableMetrics * pricing.pricePerMetric;
+    // Calculate monthlyGB for egress if needed (only if platform has egress pricing)
+    if (includeEgress && pricing.egressPricePerGB) {
+      const bytesPerDatapoint = metricType 
+        ? getBytesPerDatapoint(metricType)
+        : (pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
+      monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
+    }
+  }
+  
+  // Add egress costs if enabled
+  if (includeEgress && monthlyGB > 0) {
+    cost += calculateEgressCost(platform, monthlyGB, usePrivateLink);
   }
   
   return Math.max(0, cost);
@@ -135,6 +186,9 @@ export const platforms: Platform[] = [
       bytesPerDatapoint: 320, // Default fallback (weighted average). Actual values: OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B
       freeTier: 0,
       unit: "per GB/month",
+      egressPricePerGB: 0.05, // $0.05/GB egress after free tier
+      egressFreeTier: 50, // 50 GB free egress/month
+      egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
     },
     cardinalityNote: "Elastic Serverless Complete charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Pricing shown: $0.109/GB ($0.09 ingest + $0.019 retention) for TOP VOLUME TIER. Cost differences between metric types come from bytes per datapoint (OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B). Select your primary metric type for accurate TCO. Note: No official Elastic metrics-only pricing exists; using Complete tier pricing as reference.",
   },
@@ -169,6 +223,9 @@ export const platforms: Platform[] = [
       pricePerMillionMetrics: 0.75,
       freeTier: 0,
       unit: "per million metrics/month",
+      egressPricePerGB: 0.05, // $0.05/GB egress after free tier
+      egressFreeTier: 10, // 10 GB free egress/month
+      egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
     },
     cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series (including all tag combinations) is counted separately. Adding high-cardinality tags multiplies your metric count and costs proportionally.",
   },
@@ -242,6 +299,9 @@ export const platforms: Platform[] = [
       pricePerMillionMetrics: 0.30, // $0.30 per million metrics (STARTING TIER pricing)
       freeTier: 0,
       unit: "per million metrics/month",
+      egressPricePerGB: 0.12, // Estimated: GCP egress pricing
+      egressFreeTier: 0,
+      egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
     },
     cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series (including all tag combinations) is counted separately. High-cardinality tags cause exponential cost growth as metric volume multiplies. Pricing shown: $0.30 per million metrics for STARTING TIER. Grafana offers volume discounts and can go 'as low as' $3/GB for Enterprise tier (approximately $0.15 per million metrics at typical conversion rates). Contact Grafana for Enterprise tier pricing based on your volume.",
   },

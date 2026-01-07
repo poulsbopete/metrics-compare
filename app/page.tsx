@@ -45,6 +45,9 @@ interface SavedState {
   gbPerDay: number;
   // Security
   eventsPerSecond: number;
+  // Egress
+  includeEgress?: boolean;
+  usePrivateLink?: boolean;
 }
 
 function loadState(): SavedState | null {
@@ -98,6 +101,10 @@ export default function Home() {
   // Security state
   const [eventsPerSecond, setEventsPerSecond] = useState(100);
   
+  // Egress state
+  const [includeEgress, setIncludeEgress] = useState(false);
+  const [usePrivateLink, setUsePrivateLink] = useState(false);
+  
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Load state from localStorage after hydration
@@ -115,6 +122,8 @@ export default function Home() {
       if (savedState.spansPerSecond) setSpansPerSecond(savedState.spansPerSecond);
       if (savedState.gbPerDay) setGbPerDay(savedState.gbPerDay);
       if (savedState.eventsPerSecond) setEventsPerSecond(savedState.eventsPerSecond);
+      if (savedState.includeEgress !== undefined) setIncludeEgress(savedState.includeEgress);
+      if (savedState.usePrivateLink !== undefined) setUsePrivateLink(savedState.usePrivateLink);
     }
   }, []);
 
@@ -130,6 +139,8 @@ export default function Home() {
         spansPerSecond,
         gbPerDay,
         eventsPerSecond,
+        includeEgress,
+        usePrivateLink,
       });
     }
   }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, spansPerSecond, gbPerDay, eventsPerSecond, isHydrated]);
@@ -159,13 +170,19 @@ export default function Home() {
     const result: Record<string, number> = {};
     try {
       platforms.forEach((platform) => {
-        result[platform.id] = calculatePlatformCost(platform, monthlyMetrics, primaryMetricType);
+        result[platform.id] = calculatePlatformCost(
+          platform,
+          monthlyMetrics,
+          primaryMetricType,
+          includeEgress,
+          usePrivateLink
+        );
       });
     } catch (error) {
       console.error("Error calculating metrics costs:", error);
     }
     return result;
-  }, [monthlyMetrics, primaryMetricType]);
+  }, [monthlyMetrics, primaryMetricType, includeEgress, usePrivateLink]);
 
   // Tracing calculations
   const monthlySpans = useMemo(
@@ -177,13 +194,18 @@ export default function Home() {
     const result: Record<string, number> = {};
     try {
       tracingPlatforms.forEach((platform) => {
-        result[platform.id] = calculateTracingCost(platform, monthlySpans);
+        result[platform.id] = calculateTracingCost(
+          platform,
+          monthlySpans,
+          includeEgress,
+          usePrivateLink
+        );
       });
     } catch (error) {
       console.error("Error calculating tracing costs:", error);
     }
     return result;
-  }, [monthlySpans]);
+  }, [monthlySpans, includeEgress, usePrivateLink]);
 
   // Logs calculations
   const monthlyGB = useMemo(
@@ -195,13 +217,18 @@ export default function Home() {
     const result: Record<string, number> = {};
     try {
       logsPlatforms.forEach((platform) => {
-        result[platform.id] = calculateLogsCost(platform, monthlyGB);
+        result[platform.id] = calculateLogsCost(
+          platform,
+          monthlyGB,
+          includeEgress,
+          usePrivateLink
+        );
       });
     } catch (error) {
       console.error("Error calculating logs costs:", error);
     }
     return result;
-  }, [monthlyGB]);
+  }, [monthlyGB, includeEgress, usePrivateLink]);
 
   // Security calculations
   const monthlyEvents = useMemo(
@@ -221,13 +248,18 @@ export default function Home() {
     const result: Record<string, number> = {};
     try {
       securityPlatforms.forEach((platform) => {
-        result[platform.id] = calculateSecurityCost(platform, monthlyEvents);
+        result[platform.id] = calculateSecurityCost(
+          platform,
+          monthlyEvents,
+          includeEgress,
+          usePrivateLink
+        );
       });
     } catch (error) {
       console.error("Error calculating security costs:", error);
     }
     return result;
-  }, [monthlyEvents]);
+  }, [monthlyEvents, includeEgress, usePrivateLink]);
 
   // Get current costs and platforms based on active tab
   const currentCosts = useMemo(() => {
@@ -381,6 +413,46 @@ export default function Home() {
                     onEventsPerSecondChange={setEventsPerSecond}
                   />
                 )}
+
+                {/* Egress Cost Options */}
+                <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Network Egress Costs
+                  </h3>
+                  <div className="space-y-4">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeEgress}
+                        onChange={(e) => setIncludeEgress(e.target.checked)}
+                        className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                      />
+                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Include network egress costs
+                      </span>
+                    </label>
+                    {includeEgress && (
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={usePrivateLink}
+                          onChange={(e) => setUsePrivateLink(e.target.checked)}
+                          className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Use Private Link (reduces egress costs)
+                        </span>
+                      </label>
+                    )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {includeEgress
+                        ? usePrivateLink
+                          ? "Egress costs calculated with Private Link pricing (near-zero)."
+                          : "Egress costs calculated based on platform pricing. Private Link can significantly reduce costs."
+                        : "Egress costs excluded from calculations. Enable to see full TCO including data transfer costs."}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
