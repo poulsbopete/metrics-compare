@@ -9,6 +9,9 @@ interface PlatformDetailsProps {
     eventsPerSecond?: number;
     monthlyEvents?: number;
     monthlyGB?: number;
+    spansPerSecond?: number;
+    monthlySpans?: number;
+    monthlyTraces?: number;
     cost: number;
   };
 }
@@ -98,6 +101,125 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
             </div>
           )}
         </>
+      )}
+
+      {/* TCO Calculation Breakdown for Tracing */}
+      {calculationContext && 
+       calculationContext.spansPerSecond !== undefined && 
+       !isPlatform(platform) &&
+       platform.pricing?.tracing && (
+        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <h4 className="text-xs font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-3">
+            📊 TCO Calculation Breakdown
+          </h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 dark:text-gray-400">Spans per Second:</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {calculationContext.spansPerSecond.toLocaleString()}/sec
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 dark:text-gray-400">Monthly Spans:</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {calculationContext.monthlySpans ? 
+                  calculationContext.monthlySpans >= 1_000_000_000
+                    ? `${(calculationContext.monthlySpans / 1_000_000_000).toFixed(2)}B`
+                    : calculationContext.monthlySpans >= 1_000_000
+                    ? `${(calculationContext.monthlySpans / 1_000_000).toFixed(2)}M`
+                    : calculationContext.monthlySpans >= 1_000
+                    ? `${(calculationContext.monthlySpans / 1_000).toFixed(2)}K`
+                    : calculationContext.monthlySpans.toLocaleString()
+                  : 'N/A'}
+              </span>
+            </div>
+            {/* Show trace conversion for Elastic APM (trace-based pricing) */}
+            {platform.pricing.tracing.pricePerMillionTraces && calculationContext.monthlyTraces !== undefined && (
+              <>
+                <div className="pt-2 border-t border-blue-200 dark:border-blue-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 italic">
+                    Elastic APM uses trace-based pricing (assumes 10 spans per trace)
+                  </p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Monthly Traces:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {calculationContext.monthlyTraces >= 1_000_000_000
+                        ? `${(calculationContext.monthlyTraces / 1_000_000_000).toFixed(2)}B`
+                        : calculationContext.monthlyTraces >= 1_000_000
+                        ? `${(calculationContext.monthlyTraces / 1_000_000).toFixed(2)}M`
+                        : calculationContext.monthlyTraces >= 1_000
+                        ? `${(calculationContext.monthlyTraces / 1_000).toFixed(2)}K`
+                        : calculationContext.monthlyTraces.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Price per Million Traces:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(platform.pricing.tracing.pricePerMillionTraces)}/M traces
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+            {/* Show span-based pricing for other platforms */}
+            {platform.pricing.tracing.pricePerMillionSpans && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 dark:text-gray-400">Price per Million Spans:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatCurrency(platform.pricing.tracing.pricePerMillionSpans)}/M spans
+                </span>
+              </div>
+            )}
+            {/* Show GB-based pricing */}
+            {platform.pricing.tracing.pricePerGB && platform.pricing.tracing.pricePerGB > 0 && (
+              <>
+                {calculationContext.monthlyGB !== undefined && calculationContext.monthlyGB > 0 && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Monthly GB (calculated):</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {calculationContext.monthlyGB.toFixed(2)} GB
+                      </span>
+                    </div>
+                    {platform.pricing.tracing.freeTier && platform.pricing.tracing.freeTier > 0 && (
+                      <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                        <span>Free Tier:</span>
+                        <span className="font-semibold">-{platform.pricing.tracing.freeTier.toLocaleString()} spans</span>
+                      </div>
+                    )}
+                  </>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Price per GB:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(platform.pricing.tracing.pricePerGB)}/GB
+                  </span>
+                </div>
+              </>
+            )}
+            {platform.pricing.tracing.basePrice && platform.pricing.tracing.basePrice > 0 && (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Fixed Infrastructure Cost:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(platform.pricing.tracing.basePrice)}/month
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">
+                  Self-hosted solution with fixed monthly infrastructure costs (see breakdown below)
+                </p>
+              </>
+            )}
+            <div className="pt-2 border-t border-blue-200 dark:border-blue-700">
+              <div className="flex justify-between items-center font-semibold">
+                <span className="text-blue-900 dark:text-blue-200">Total Monthly Cost:</span>
+                <span className="text-blue-900 dark:text-blue-200 text-lg">
+                  {formatCurrency(calculationContext.cost)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* TCO Calculation Breakdown for Security */}

@@ -20,6 +20,8 @@ export interface ObservabilityPricing {
     basePrice?: number;
     pricePerSpan?: number;
     pricePerMillionSpans?: number;
+    pricePerMillionTraces?: number; // Trace-based pricing (for Elastic APM)
+    spansPerTrace?: number; // Average spans per trace for conversion (default: 10)
     pricePerGB?: number;
     bytesPerSpan?: number; // Average bytes per span
     freeTier?: number;
@@ -144,17 +146,22 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     pricing: {
       tracing: {
         basePrice: 0,
-        pricePerGB: 0.109, // $0.09/GB ingest + $0.019/GB retention per month (Complete tier)
+        // Elastic APM pricing is trace-based with retention costs included
+        // Based on Elastic's public calculator: 60k traces/min with 30d retention = $116k/year
+        // This equates to ~$3.73 per million traces (includes retention)
+        pricePerMillionTraces: 3.73, // Trace-based pricing with retention included
+        // Average spans per trace for conversion (default: 10 spans/trace)
+        spansPerTrace: 10,
         bytesPerSpan: 500,
         freeTier: 0,
-        unit: "per GB/month",
+        unit: "per million traces/month (with retention)",
         egressPricePerGB: 0.05, // $0.05/GB egress after free tier
         egressFreeTier: 50, // 50 GB free egress/month
         egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
       },
     },
     notes: {
-      tracing: "Elastic Serverless Complete: Volume-based pricing (GB). $0.09/GB ingested + $0.019/GB retained per month. High cardinality doesn't directly increase costs - only data volume matters. Source: https://www.elastic.co/pricing/serverless-observability",
+      tracing: "Elastic Serverless APM uses trace-based pricing (not span-based) with retention costs included. The calculator converts your spans per second to traces using an average of 10 spans per trace, then applies pricing of $3.73 per million traces/month (includes retention). This matches Elastic's public calculator: 10k spans/sec = 1,000 traces/sec = 60k traces/min with 30-day retention = $116k/year. High cardinality doesn't directly increase costs - only trace volume matters. Source: Elastic public calculator. Note: Actual pricing may vary based on retention period and volume tiers.",
     },
   },
   {
@@ -479,7 +486,15 @@ export function calculateTracingCost(
   const billableSpans = Math.max(0, monthlySpans - (pricing.freeTier || 0));
   let monthlyGB = 0;
 
-  if (pricing.pricePerGB) {
+  // Trace-based pricing (for Elastic APM)
+  if (pricing.pricePerMillionTraces) {
+    const spansPerTrace = pricing.spansPerTrace || 10; // Default: 10 spans per trace
+    const monthlyTraces = billableSpans / spansPerTrace;
+    cost += (monthlyTraces / 1_000_000) * pricing.pricePerMillionTraces;
+    // Estimate GB for egress calculation (if needed)
+    const bytesPerSpan = pricing.bytesPerSpan || BYTES_PER_SPAN;
+    monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
+  } else if (pricing.pricePerGB) {
     const bytesPerSpan = pricing.bytesPerSpan || BYTES_PER_SPAN;
     monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
     cost += monthlyGB * pricing.pricePerGB;

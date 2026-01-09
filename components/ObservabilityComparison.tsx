@@ -18,6 +18,9 @@ interface ObservabilityComparisonProps {
     eventsPerSecond?: number;
     monthlyEvents?: number;
     monthlyGB?: number;
+    spansPerSecond?: number;
+    monthlySpans?: number;
+    monthlyTraces?: number;
   };
 }
 

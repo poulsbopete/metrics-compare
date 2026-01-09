@@ -686,6 +686,21 @@ export default function Home() {
                           monthlyGB: monthlyGB > 0 ? monthlyGB : undefined,
                         };
                       })()
+                    : activeTab === "tracing"
+                    ? (() => {
+                        // Calculate monthly GB from spans for egress cost display
+                        const bytesPerSpan = 500; // BYTES_PER_SPAN
+                        const monthlyGB = monthlySpans
+                          ? (monthlySpans * bytesPerSpan) / (1024 * 1024 * 1024)
+                          : 0;
+                        return {
+                          spansPerSecond,
+                          monthlySpans,
+                          // Calculate monthly traces for Elastic APM (assumes 10 spans per trace)
+                          monthlyTraces: monthlySpans / 10,
+                          monthlyGB: monthlyGB > 0 ? monthlyGB : undefined,
+                        };
+                      })()
                     : undefined
                 }
               />
