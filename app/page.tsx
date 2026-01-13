@@ -706,6 +706,31 @@ export default function Home() {
               />
             )}
           </div>
+
+          {/* Try Elastic Metrics - Instruqt */}
+          {activeTab === "metrics" && (
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full mr-3" />
+                Try Elastic Metrics
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Experience Elastic Serverless Metrics hands-on with this interactive tutorial. Learn how to ingest, query, and visualize metrics at scale.
+              </p>
+              <div className="w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-gray-900">
+                <iframe
+                  width="100%"
+                  height="640"
+                  sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts allow-popups-to-escape-sandbox"
+                  src="https://play.instruqt.com/embed/elastic/tracks/elastic-metrics-firehose?token=em_u0mX9BSdbwxtRoO3"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  className="w-full"
+                  title="Elastic Metrics Firehose Tutorial"
+                />
+              </div>
+            </div>
+          )}
         </ObservabilityTabs>
 
         {/* Footer */}
