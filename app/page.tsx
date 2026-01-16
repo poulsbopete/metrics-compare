@@ -354,43 +354,17 @@ export default function Home() {
               </h2>
               <div className="space-y-6">
                 {activeTab === "metrics" && (
-                  <>
-                    <MetricSlider
-                      label="Base Metrics per Second"
-                      value={baseVolume}
-                      onChange={setBaseVolume}
-                      min={1}
-                      max={10000}
-                      step={1}
-                      formatValue={(v) => `${v.toLocaleString()}/sec`}
-                    />
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Primary Metric Source Type
-                      </label>
-                      <select
-                        value={primaryMetricType}
-                        onChange={(e) => setPrimaryMetricType(e.target.value as MetricSourceType)}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      >
-                        <option value="Mixed">Mixed (Weighted Average)</option>
-                        <option value="OpenTelemetry">OpenTelemetry (489 bytes/datapoint)</option>
-                        <option value="Prometheus">Prometheus (229 bytes/datapoint)</option>
-                        <option value="ElasticAgent">Elastic Agent/Beats (116 bytes/datapoint)</option>
-                      </select>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Affects volume-based pricing (e.g., Elastic). Different sources have different bytes per datapoint.
-                      </p>
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 mb-4">
+                      <span className="text-4xl">📊</span>
                     </div>
-
-                    <TagManager
-                      tags={tags}
-                      onTagsChange={setTags}
-                      tagValues={tagValues}
-                      onTagValuesChange={setTagValues}
-                    />
-                  </>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      Coming Soon
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      The Metrics comparison tool is currently under development. Check back soon!
+                    </p>
+                  </div>
                 )}
 
                 {activeTab === "tracing" && (
@@ -465,100 +439,19 @@ export default function Home() {
                 {activeTab === "logs" && "Log Volume"}
                 {activeTab === "security" && "Security Event Volume"}
               </h2>
+              {activeTab !== "metrics" && (
               {activeTab === "metrics" && (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                      <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
-                        Base Volume
-                      </div>
-                      <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
-                        <AnimatedNumber
-                          value={baseVolume}
-                          format={(v) => `${v.toLocaleString()}/sec`}
-                        />
-                      </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl p-5 border border-purple-200 dark:border-purple-700/50 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                      <div className="text-sm text-purple-600 dark:text-purple-400 font-semibold mb-2 uppercase tracking-wide">
-                        With Tags
-                      </div>
-                      <div className="text-3xl font-bold text-purple-900 dark:text-purple-100">
-                        <AnimatedNumber
-                          value={metricsPerSecond}
-                          format={formatMetricsPerSecond}
-                        />
-                      </div>
-                      <div className="text-xs text-purple-600 dark:text-purple-400 mt-2 font-medium">
-                        {tags.length > 0
-                          ? `${tags.length} tag(s) × ${tagValues} values = ${multiplier.toLocaleString()}x`
-                          : "No tags added"}
-                      </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                      <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
-                        Monthly Volume
-                      </div>
-                      <div className="text-3xl font-bold text-green-900 dark:text-green-100">
-                        <AnimatedNumber
-                          value={monthlyMetrics}
-                          format={formatMonthlyMetrics}
-                        />
-                      </div>
-                      <div className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
-                        metrics/month
-                      </div>
-                    </div>
+                <div className="text-center py-12">
+                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 mb-6">
+                    <span className="text-5xl">📊</span>
                   </div>
-
-                  {tags.length > 0 && (
-              <div className="mt-6 p-5 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl border-2 border-yellow-300 dark:border-yellow-700/50 shadow-lg animate-pulse-slow">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-yellow-400 dark:bg-yellow-500 rounded-full flex items-center justify-center animate-pulse">
-                      <svg
-                        className="h-6 w-6 text-yellow-900"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="ml-4 flex-1">
-                    <h3 className="text-base font-bold text-yellow-900 dark:text-yellow-200 mb-2">
-                      ⚠️ Cardinality Explosion Detected
-                    </h3>
-                    <div className="text-sm text-yellow-800 dark:text-yellow-300">
-                      <p className="mb-2">
-                        Adding tags has dramatically increased your metric volume due to cardinality multiplication.
-                      </p>
-                      <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 mt-2">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="font-semibold">Base:</span>{" "}
-                            {baseVolume.toLocaleString()}/sec
-                          </div>
-                          <div>
-                            <span className="font-semibold">Multiplier:</span>{" "}
-                            {multiplier.toLocaleString()}x
-                          </div>
-                          <div className="col-span-2">
-                            <span className="font-semibold">Result:</span>{" "}
-                            {formatMetricsPerSecond(metricsPerSecond)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                    </div>
-                  </div>
-                  )}
-                </>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                    Coming Soon
+                  </h3>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                    The Metrics comparison tool is currently under development. Check back soon for comprehensive cost comparisons across all major metrics platforms!
+                  </p>
+                </div>
               )}
 
               {activeTab === "tracing" && (
@@ -660,11 +553,17 @@ export default function Home() {
               Cost Comparison
             </h2>
             {activeTab === "metrics" ? (
-              <CostComparison
-                platforms={platforms}
-                costs={currentCosts}
-                monthlyMetrics={currentVolume}
-              />
+              <div className="text-center py-12">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30 mb-4">
+                  <span className="text-4xl">📊</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Coming Soon
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Cost comparison for Metrics will be available soon.
+                </p>
+              </div>
             ) : (
               <ObservabilityComparison
                 type={activeTab}
@@ -708,7 +607,7 @@ export default function Home() {
           </div>
 
           {/* Try Elastic Metrics - Instruqt */}
-          {activeTab === "metrics" && (
+          {activeTab === "metrics" && false && (
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                 <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full mr-3" />
