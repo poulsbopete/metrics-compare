@@ -439,7 +439,6 @@ export default function Home() {
                 {activeTab === "logs" && "Log Volume"}
                 {activeTab === "security" && "Security Event Volume"}
               </h2>
-              {activeTab !== "metrics" && (
               {activeTab === "metrics" && (
                 <div className="text-center py-12">
                   <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 mb-6">
