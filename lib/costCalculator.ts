@@ -198,20 +198,20 @@ export const platforms: Platform[] = [
     color: "bg-slate-500",
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
-      basePrice: 1000,
+      basePrice: 650,
       pricePerMillionMetrics: 0,
       freeTier: 0,
       unit: "fixed infrastructure cost",
     },
     infrastructure: {
-      compute: 450, // 3 nodes @ $150/month each
-      storage: 300, // SSD storage for time-series data
-      memory: 150, // High memory requirements for Elasticsearch
-      network: 50,
-      other: 50, // Monitoring, backups, operational overhead
-      notes: "3+ node Elasticsearch cluster for HA",
+      compute: 300, // 2 nodes @ $150/month each (improved efficiency allows fewer/lighter nodes)
+      storage: 200, // SSD storage with improved compression for time-series data
+      memory: 100, // Improved memory efficiency reduces requirements
+      network: 30,
+      other: 20, // Reduced operational overhead with improved tooling
+      notes: "2 node Elasticsearch cluster for HA (improved efficiency with product enhancements)",
     },
-    cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. However, high cardinality may require additional storage or compute resources as your infrastructure scales, potentially increasing infrastructure costs over time.",
+    cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. With recent product improvements, Elastic self-hosted offers better resource efficiency, compression, and operational simplicity, making it more competitive with other open-source solutions. High cardinality may still require additional storage or compute resources as your infrastructure scales, potentially increasing infrastructure costs over time.",
   },
   {
     id: "datadog",
