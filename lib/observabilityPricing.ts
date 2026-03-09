@@ -643,27 +643,47 @@ export const securityPlatforms: ObservabilityPlatform[] = [
     },
   },
   {
+    id: "elastic-security-ech",
+    name: "Elastic Security ECH",
+    color: "bg-blue-700",
+    pricing: {
+      security: {
+        basePrice: 300, // Minimum security cluster on ECH
+        pricePerGB: 0.06, // Variable cost per GB; cheaper than Serverless at scale
+        bytesPerEvent: BYTES_PER_SECURITY_EVENT,
+        freeTier: 0,
+        unit: "per GB/month + base cluster",
+        egressPricePerGB: 0.09,
+        egressFreeTier: 100,
+        egressPricePerGBWithPrivateLink: 0.001,
+      },
+    },
+    notes: {
+      security: "Elastic Cloud Hosted (ECH) Security uses a hybrid pricing model: fixed cluster cost + variable ingest. Benefits from all modern Elastic security improvements (logsdb for security events, BBQ compression, AI-driven detection) with lower per-GB cost than Serverless at high ingest volumes. More cost-effective than Serverless above ~5 TB/month ingest. Contact Elastic for custom pricing.",
+    },
+  },
+  {
     id: "elastic-security-self-hosted",
     name: "Elastic Security (Self-hosted)",
     color: "bg-slate-600",
     pricing: {
       security: {
-        basePrice: 1000,
+        basePrice: 600,
         pricePerGB: 0,
         freeTier: 0,
         unit: "fixed infrastructure cost",
       },
     },
     infrastructure: {
-      compute: 450, // 3+ Elasticsearch nodes @ $150/month each
-      storage: 300, // SSD storage for security event indexing and search
-      memory: 150, // High memory requirements for Elasticsearch
-      network: 50,
-      other: 50, // Monitoring, backups, operational overhead
-      notes: "3+ node Elasticsearch cluster for HA with Security features (Elastic Stack). Open source on-premises deployment. Includes Elasticsearch, Kibana, and Security features (SIEM, threat detection, security analytics). No licensing costs for open source version.",
+      compute: 250, // 3 nodes (smaller instances with efficient logsdb indexing)
+      storage: 200, // Reduced by 2–5× vs. legacy: logsdb + BBQ compression for security event data
+      memory: 100, // Smaller JVM heap needed with columnar/synthetic source storage
+      network: 30,
+      other: 20, // Monitoring, backups, operational overhead
+      notes: "3-node Elasticsearch cluster with Security features. Modern logsdb index mode and Better Binary Quantization (BBQ) cut storage requirements 2–5× for security event data. Open source, no licensing cost. Includes SIEM, detection rules, Kibana Security UI, and Elastic AI Assistant.",
     },
     notes: {
-      security: "Fixed infrastructure cost. Elastic Security (self-hosted) uses the open source Elastic Stack (Elasticsearch, Kibana) with Security features. Includes SIEM, threat detection, security analytics, and log analysis capabilities. Open source version available at no licensing cost. Requires infrastructure for Elasticsearch cluster, Kibana, and security event processing. Costs scale with data volume and retention requirements.",
+      security: "Elastic Security self-hosted with modern storage improvements. logsdb index mode, Better Binary Quantization (BBQ), and synthetic source (introduced in Elasticsearch 8.15+) reduce security event storage by 2–5× vs. legacy setups, significantly lowering TCO. Includes full SIEM, AI-driven threat detection, UEBA, Elastic AI Assistant, and detection rule frameworks — all open source with no licensing cost. Costs scale with event volume and retention requirements.",
     },
   },
   {
