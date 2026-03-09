@@ -235,6 +235,30 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     },
   },
   {
+    id: "elastic-apm-self-hosted",
+    name: "Elastic APM (Self-hosted)",
+    color: "bg-slate-600",
+    pricing: {
+      tracing: {
+        basePrice: 800, // Elasticsearch cluster + APM Server + Kibana
+        pricePerMillionSpans: 0,
+        freeTier: 0,
+        unit: "fixed infrastructure cost",
+      },
+    },
+    infrastructure: {
+      compute: 350, // 3 Elasticsearch nodes + APM Server node
+      storage: 250, // Trace & span storage (hot/warm tiers)
+      memory: 150, // Elasticsearch memory requirements
+      network: 30,
+      other: 20, // Monitoring, backups, operational overhead
+      notes: "3-node Elasticsearch cluster + APM Server + Kibana. Open source Elastic Stack (no licensing cost). Scales with trace volume and retention requirements.",
+    },
+    notes: {
+      tracing: "Elastic APM self-hosted uses the open source Elastic Stack (Elasticsearch, APM Server, Kibana). No licensing costs — infrastructure only. Includes distributed tracing, service maps, anomaly detection, and full Kibana APM UI. Fixed infrastructure cost shown; actual costs scale with trace volume and retention. Comparable functionality to Elastic Serverless APM at a predictable cost for high-volume deployments.",
+    },
+  },
+  {
     id: "jaeger-self-hosted",
     name: "Jaeger (Self-hosted)",
     color: "bg-red-500",
