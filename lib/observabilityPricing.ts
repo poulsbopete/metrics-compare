@@ -213,6 +213,28 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     },
   },
   {
+    id: "elastic-ech-tracing",
+    name: "Elastic Cloud Hosted (ECH) APM",
+    color: "bg-blue-700",
+    pricing: {
+      tracing: {
+        basePrice: 300, // Minimum 2-node APM + ES cluster
+        // Trace-based pricing; ECH is cheaper than Serverless at high volume due to fixed infra amortization
+        pricePerMillionTraces: 2.00,
+        spansPerTrace: 10,
+        bytesPerSpan: 500,
+        freeTier: 0,
+        unit: "per million traces/month + base cluster",
+        egressPricePerGB: 0.09,
+        egressFreeTier: 100,
+        egressPricePerGBWithPrivateLink: 0.001,
+      },
+    },
+    notes: {
+      tracing: "Elastic Cloud Hosted (ECH) APM uses a hybrid pricing model: fixed cluster cost (compute/RAM-hours for minimum deployment) + variable trace storage. Uses trace-based pricing for consistency (10 spans per trace assumed). ECH becomes more cost-effective than Serverless above ~50K traces/month due to amortized infrastructure. Pricing estimated based on Elastic hardware pricing; contact Elastic for a custom quote.",
+    },
+  },
+  {
     id: "jaeger-self-hosted",
     name: "Jaeger (Self-hosted)",
     color: "bg-red-500",
@@ -400,6 +422,26 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     },
     notes: {
       logs: "Charges per GiB ingested. 60-day retention included. Snowflake backend.",
+    },
+  },
+  {
+    id: "elastic-ech-logs",
+    name: "Elastic Cloud Hosted (ECH) Logs",
+    color: "bg-blue-700",
+    pricing: {
+      logs: {
+        basePrice: 250, // Minimum 2-node hot cluster (compute/RAM-hours)
+        // Variable cost per GB ingested; ECH beats Serverless above ~4TB/month ingest
+        pricePerGB: 0.05,
+        freeTier: 0,
+        unit: "per GB/month + base cluster",
+        egressPricePerGB: 0.09,
+        egressFreeTier: 100,
+        egressPricePerGBWithPrivateLink: 0.001,
+      },
+    },
+    notes: {
+      logs: "Elastic Cloud Hosted (ECH) uses a hybrid pricing model: fixed cluster cost (compute/RAM-hours for minimum 2-node hot deployment) + variable ingest cost. ECH becomes more cost-effective than Serverless (~$0.109/GB) above ~4 TB/month ingest, and significantly cheaper at enterprise scale (10s–100s of TB/day). Pricing estimated based on Elastic hardware pricing; contact Elastic for a custom quote.",
     },
   },
   {

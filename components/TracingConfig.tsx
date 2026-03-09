@@ -7,6 +7,12 @@ interface TracingConfigProps {
   onSpansPerSecondChange: (value: number) => void;
 }
 
+function formatSpansPerSecond(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M/sec`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K/sec`;
+  return `${v.toLocaleString()}/sec`;
+}
+
 export default function TracingConfig({
   spansPerSecond,
   onSpansPerSecondChange,
@@ -18,9 +24,10 @@ export default function TracingConfig({
         value={spansPerSecond}
         onChange={onSpansPerSecondChange}
         min={1}
-        max={10000}
+        max={1_000_000}
         step={1}
-        formatValue={(v) => `${v.toLocaleString()}/sec`}
+        logarithmic={true}
+        formatValue={formatSpansPerSecond}
       />
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
         <p className="text-sm text-blue-800 dark:text-blue-200">
@@ -28,18 +35,19 @@ export default function TracingConfig({
         </p>
         <div className="border-t border-blue-200 dark:border-blue-700 pt-3">
           <p className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>Quick reference:</strong> 1K spans/sec = small app · 10K spans/sec = medium scale · 100K spans/sec = high traffic · 1M spans/sec = enterprise scale
+          </p>
+        </div>
+        <div className="border-t border-blue-200 dark:border-blue-700 pt-3">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
             <strong>Note on Pricing Models:</strong> Different platforms use different pricing models:
           </p>
           <ul className="text-sm text-blue-800 dark:text-blue-200 mt-2 space-y-1 ml-4 list-disc">
             <li><strong>Span-based pricing:</strong> Most platforms charge per million spans ingested</li>
-            <li><strong>Trace-based pricing:</strong> Elastic Serverless APM charges per million traces (assumes ~10 spans per trace) with retention costs included</li>
+            <li><strong>Trace-based pricing:</strong> Elastic Serverless and ECH APM charge per million traces (assumes ~10 spans per trace) with retention costs included</li>
           </ul>
-          <p className="text-sm text-blue-800 dark:text-blue-200 mt-2">
-            For accurate Elastic APM pricing, the calculator converts spans to traces using an average of 10 spans per trace, matching Elastic's public calculator.
-          </p>
         </div>
       </div>
     </div>
   );
 }
-

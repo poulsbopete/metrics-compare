@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import MetricSlider from "@/components/MetricSlider";
 import TagManager from "@/components/TagManager";
-import CostComparison from "@/components/CostComparison";
 import ObservabilityComparison from "@/components/ObservabilityComparison";
 import ObservabilityTabs, { type ObservabilityTab } from "@/components/ObservabilityTabs";
 import TracingConfig from "@/components/TracingConfig";
@@ -15,6 +14,7 @@ import {
   calculateMetricVolume,
   metricsPerSecondToMonthly,
   calculatePlatformCost,
+  BYTES_PER_DATAPOINT,
   type MetricConfig,
   type MetricSourceType,
 } from "@/lib/costCalculator";
@@ -354,16 +354,47 @@ export default function Home() {
               </h2>
               <div className="space-y-6">
                 {activeTab === "metrics" && (
-                  <div className="text-center py-8">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 mb-4">
-                      <span className="text-4xl">📊</span>
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        Metric Source Type
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["OpenTelemetry", "Prometheus", "ElasticAgent", "Mixed"] as MetricSourceType[]).map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => setPrimaryMetricType(type)}
+                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+                              primaryMetricType === type
+                                ? "bg-blue-600 text-white shadow-md"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                            }`}
+                          >
+                            {type === "ElasticAgent" ? "Elastic Agent" : type}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                      Coming Soon
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      The Metrics comparison tool is currently under development. Check back soon!
-                    </p>
+                    <MetricSlider
+                      label="Base Metrics per Second"
+                      value={baseVolume}
+                      onChange={setBaseVolume}
+                      min={1}
+                      max={100_000}
+                      step={1}
+                      logarithmic={true}
+                      formatValue={(v) => {
+                        if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M/sec`;
+                        if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K/sec`;
+                        return `${v}/sec`;
+                      }}
+                    />
+                    <TagManager
+                      tags={tags}
+                      onTagsChange={setTags}
+                      tagValues={tagValues}
+                      onTagValuesChange={setTagValues}
+                    />
                   </div>
                 )}
 
@@ -440,16 +471,45 @@ export default function Home() {
                 {activeTab === "security" && "Security Event Volume"}
               </h2>
               {activeTab === "metrics" && (
-                <div className="text-center py-12">
-                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 mb-6">
-                    <span className="text-5xl">📊</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 rounded-xl p-5 border border-indigo-200 dark:border-indigo-700/50 shadow-md">
+                    <div className="text-sm text-indigo-600 dark:text-indigo-400 font-semibold mb-2 uppercase tracking-wide">
+                      Metric Source
+                    </div>
+                    <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
+                      {primaryMetricType === "ElasticAgent" ? "Elastic Agent" : primaryMetricType}
+                    </div>
+                    <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                      {BYTES_PER_DATAPOINT[primaryMetricType]} bytes/datapoint
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                    Coming Soon
-                  </h3>
-                  <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-                    The Metrics comparison tool is currently under development. Check back soon for comprehensive cost comparisons across all major metrics platforms!
-                  </p>
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md">
+                    <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
+                      Metrics per Second
+                    </div>
+                    <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                      <AnimatedNumber
+                        value={metricsPerSecond}
+                        format={formatMetricsPerSecond}
+                      />
+                    </div>
+                    {tags.length > 0 && (
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        {multiplier.toLocaleString()}× cardinality multiplier
+                      </div>
+                    )}
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
+                    <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
+                      Monthly Metrics
+                    </div>
+                    <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                      <AnimatedNumber
+                        value={monthlyMetrics}
+                        format={formatMonthlyMetrics}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -481,18 +541,22 @@ export default function Home() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md">
                     <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
-                      GB per Day
+                      Daily Ingest
                     </div>
                     <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
-                      {gbPerDay.toFixed(1)} GB/day
+                      {gbPerDay >= 1000
+                        ? `${(gbPerDay / 1000).toFixed(1)} TB/day`
+                        : `${gbPerDay.toFixed(1)} GB/day`}
                     </div>
                   </div>
                   <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
                     <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
-                      Monthly GB
+                      Monthly Ingest
                     </div>
                     <div className="text-3xl font-bold text-green-900 dark:text-green-100">
-                      {monthlyGB.toFixed(1)} GB/month
+                      {monthlyGB >= 1000
+                        ? `${(monthlyGB / 1000).toFixed(1)} TB/month`
+                        : `${monthlyGB.toFixed(1)} GB/month`}
                     </div>
                   </div>
                 </div>
@@ -551,58 +615,41 @@ export default function Home() {
               <span className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full mr-3" />
               Cost Comparison
             </h2>
-            {activeTab === "metrics" ? (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30 mb-4">
-                  <span className="text-4xl">📊</span>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Coming Soon
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Cost comparison for Metrics will be available soon.
-                </p>
-              </div>
-            ) : (
-              <ObservabilityComparison
-                type={activeTab}
-                platforms={currentPlatforms}
-                costs={currentCosts}
-                volume={currentVolume}
-                volumeLabel={currentVolumeLabel}
-                calculationContext={
-                  activeTab === "security"
-                    ? (() => {
-                        // Calculate monthly GB from events: events × bytes per event ÷ bytes per GB
-                        const bytesPerEvent = 1000; // BYTES_PER_SECURITY_EVENT
-                        const monthlyGB = monthlyEvents
-                          ? (monthlyEvents * bytesPerEvent) / (1024 * 1024 * 1024)
-                          : 0;
-                        return {
-                          eventsPerSecond,
-                          monthlyEvents,
-                          monthlyGB: monthlyGB > 0 ? monthlyGB : undefined,
-                        };
-                      })()
-                    : activeTab === "tracing"
-                    ? (() => {
-                        // Calculate monthly GB from spans for egress cost display
-                        const bytesPerSpan = 500; // BYTES_PER_SPAN
-                        const monthlyGB = monthlySpans
-                          ? (monthlySpans * bytesPerSpan) / (1024 * 1024 * 1024)
-                          : 0;
-                        return {
-                          spansPerSecond,
-                          monthlySpans,
-                          // Calculate monthly traces for Elastic APM (assumes 10 spans per trace)
-                          monthlyTraces: monthlySpans / 10,
-                          monthlyGB: monthlyGB > 0 ? monthlyGB : undefined,
-                        };
-                      })()
-                    : undefined
-                }
-              />
-            )}
+            <ObservabilityComparison
+              type={activeTab}
+              platforms={currentPlatforms}
+              costs={currentCosts}
+              volume={currentVolume}
+              volumeLabel={currentVolumeLabel}
+              calculationContext={
+                activeTab === "security"
+                  ? (() => {
+                      const bytesPerEvent = 1000; // BYTES_PER_SECURITY_EVENT
+                      const secMonthlyGB = monthlyEvents
+                        ? (monthlyEvents * bytesPerEvent) / (1024 * 1024 * 1024)
+                        : 0;
+                      return {
+                        eventsPerSecond,
+                        monthlyEvents,
+                        monthlyGB: secMonthlyGB > 0 ? secMonthlyGB : undefined,
+                      };
+                    })()
+                  : activeTab === "tracing"
+                  ? (() => {
+                      const bytesPerSpan = 500; // BYTES_PER_SPAN
+                      const tracingMonthlyGB = monthlySpans
+                        ? (monthlySpans * bytesPerSpan) / (1024 * 1024 * 1024)
+                        : 0;
+                      return {
+                        spansPerSecond,
+                        monthlySpans,
+                        monthlyTraces: monthlySpans / 10,
+                        monthlyGB: tracingMonthlyGB > 0 ? tracingMonthlyGB : undefined,
+                      };
+                    })()
+                  : undefined
+              }
+            />
           </div>
 
           {/* Try Elastic Metrics - Instruqt */}
