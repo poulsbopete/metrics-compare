@@ -398,10 +398,11 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     color: "bg-orange-700",
     pricing: {
       logs: {
-        basePrice: 1200,
-        pricePerGB: 0,
+        basePrice: 1200, // 3-4 indexer + search head cluster
+        // Splunk's indexing overhead is higher than Loki/ES, so compute scales faster with volume
+        pricePerGB: 0.06,
         freeTier: 0,
-        unit: "fixed infrastructure cost",
+        unit: "per GB/month + base cluster",
       },
     },
     infrastructure: {
@@ -413,7 +414,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
       notes: "3-4 node Splunk cluster for HA, high-performance storage, requires Splunk Enterprise licensing",
     },
     notes: {
-      logs: "Fixed infrastructure cost. Splunk Core (self-hosted) requires Splunk Enterprise licenses and infrastructure. High-performance storage and compute required for indexing and search operations. Costs scale with data volume and retention requirements.",
+      logs: "Splunk Core self-hosted: $1,200/month base cluster + $0.06/GB variable. Base covers 3-4 indexer nodes and search heads. Variable cost reflects Splunk's compute-intensive indexing pipeline, which requires significantly more hardware per GB than Loki or Elasticsearch. Requires Splunk Enterprise licenses for production use (license cost not included). Costs scale steeply with ingest volume.",
     },
   },
   {
@@ -474,10 +475,13 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     color: "bg-indigo-600",
     pricing: {
       logs: {
-        basePrice: 300,
-        pricePerGB: 0,
+        basePrice: 300, // Minimum cluster: distributor, ingester, querier nodes
+        // Variable cost: object storage (S3 ~$0.023/GB) + compute scaling with throughput
+        // With ~5:1 log compression, 1 GB ingested ≈ 0.2 GB stored → ~$0.005/GB storage
+        // + ingester/querier compute scaling: ~$0.015/GB → total ~$0.02/GB
+        pricePerGB: 0.02,
         freeTier: 0,
-        unit: "fixed infrastructure cost",
+        unit: "per GB/month + base cluster",
       },
     },
     infrastructure: {
@@ -485,9 +489,10 @@ export const logsPlatforms: ObservabilityPlatform[] = [
       storage: 100,
       memory: 30,
       network: 20,
+      notes: "Base cluster cost (distributor, ingester, querier). Variable storage and compute costs scale with ingest volume.",
     },
     notes: {
-      logs: "Fixed infrastructure cost. Highly efficient log aggregation system.",
+      logs: "Grafana Loki self-hosted: $300/month base cluster + $0.02/GB variable cost. Variable cost covers object storage (S3/GCS) and the compute scaling required for ingesters and queriers at higher throughput. At small volumes (<15 TB/month) Loki can be very cost-effective; at enterprise scale (100s of TB/day) infrastructure costs grow substantially. Loki does not index log content — only labels — so full-text search requires LogQL pattern matching, which can be limiting vs. Elasticsearch.",
     },
   },
   {
@@ -496,10 +501,12 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     color: "bg-slate-600",
     pricing: {
       logs: {
-        basePrice: 500,
-        pricePerGB: 0,
+        basePrice: 500, // Minimum cluster: 2 data nodes + master
+        // Variable cost: storage (logsdb 2–5× compression reduces this) + compute scaling
+        // ~$0.025/GB: slightly higher than Loki due to indexing overhead, but richer query capability
+        pricePerGB: 0.025,
         freeTier: 0,
-        unit: "fixed infrastructure cost",
+        unit: "per GB/month + base cluster",
       },
     },
     infrastructure: {
@@ -511,7 +518,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
       notes: "2 data nodes + 1 master node. Leverages logsdb index mode (columnar storage, synthetic source, Better Binary Quantization) for 2–5× storage reduction vs. legacy Elasticsearch. Open source, no licensing cost.",
     },
     notes: {
-      logs: "Elasticsearch self-hosted with modern logsdb index mode. Recent improvements (columnar storage via synthetic source, Better Binary Quantization (BBQ), and the logsdb index mode introduced in 8.15+) cut storage requirements 2–5× vs. older Elasticsearch setups, making it far more competitive with Loki. Includes full-text search, ESQL, Kibana dashboards, and ML-powered anomaly detection — capabilities Loki doesn't offer natively. No licensing costs. Costs scale with log volume and retention requirements.",
+      logs: "Elasticsearch self-hosted with modern logsdb index mode: $500/month base + $0.025/GB variable. logsdb, synthetic source, and BBQ (8.15+) cut storage 2–5× vs. legacy Elasticsearch — making variable costs very competitive with Loki. Includes full-text search, ESQL, Kibana dashboards, and ML anomaly detection. No licensing costs. Variable cost covers additional node compute and storage that scales with ingest volume.",
     },
   },
 ];
