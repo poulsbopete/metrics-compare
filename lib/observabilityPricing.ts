@@ -496,21 +496,22 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     color: "bg-slate-600",
     pricing: {
       logs: {
-        basePrice: 1000,
+        basePrice: 500,
         pricePerGB: 0,
         freeTier: 0,
         unit: "fixed infrastructure cost",
       },
     },
     infrastructure: {
-      compute: 450,
-      storage: 300,
-      memory: 150,
-      network: 50,
-      other: 50,
+      compute: 200, // 2 data nodes + 1 master — smaller cluster needed with logsdb efficiency
+      storage: 150, // Dramatically reduced: logsdb + synthetic source achieves 2–5× compression vs. standard
+      memory: 100, // Still needs JVM heap, but smaller nodes suffice
+      network: 30,
+      other: 20, // Monitoring, backups, operational overhead
+      notes: "2 data nodes + 1 master node. Leverages logsdb index mode (columnar storage, synthetic source, Better Binary Quantization) for 2–5× storage reduction vs. legacy Elasticsearch. Open source, no licensing cost.",
     },
     notes: {
-      logs: "Fixed infrastructure cost. Full-text search and log analytics.",
+      logs: "Elasticsearch self-hosted with modern logsdb index mode. Recent improvements (columnar storage via synthetic source, Better Binary Quantization (BBQ), and the logsdb index mode introduced in 8.15+) cut storage requirements 2–5× vs. older Elasticsearch setups, making it far more competitive with Loki. Includes full-text search, ESQL, Kibana dashboards, and ML-powered anomaly detection — capabilities Loki doesn't offer natively. No licensing costs. Costs scale with log volume and retention requirements.",
     },
   },
 ];
