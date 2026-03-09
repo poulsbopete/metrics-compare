@@ -380,11 +380,11 @@ export default function Home() {
                       value={baseVolume}
                       onChange={setBaseVolume}
                       min={1}
-                      max={100_000}
+                      max={1_000_000}
                       step={1}
                       logarithmic={true}
                       formatValue={(v) => {
-                        if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M/sec`;
+                        if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M/sec`;
                         if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K/sec`;
                         return `${v}/sec`;
                       }}
