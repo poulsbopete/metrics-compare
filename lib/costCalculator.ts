@@ -193,6 +193,23 @@ export const platforms: Platform[] = [
     cardinalityNote: "Elastic Serverless Complete charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Pricing shown: $0.109/GB ($0.09 ingest + $0.019 retention) for TOP VOLUME TIER. Cost differences between metric types come from bytes per datapoint (OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B). Select your primary metric type for accurate TCO. Note: No official Elastic metrics-only pricing exists; using Complete tier pricing as reference.",
   },
   {
+    id: "elastic-ech",
+    name: "Elastic Cloud Hosted (ECH)",
+    color: "bg-blue-700",
+    metricTypes: ["Prometheus", "OpenTelemetry", "ElasticAgent", "Custom"],
+    pricing: {
+      basePrice: 200, // Minimum 2-node hot cluster (compute/RAM-hours)
+      pricePerGB: 0.05, // Variable cost per GB ingested; beats Serverless above ~4 GB/month
+      bytesPerDatapoint: 320,
+      freeTier: 0,
+      unit: "per GB/month + base cluster",
+      egressPricePerGB: 0.09,
+      egressFreeTier: 100,
+      egressPricePerGBWithPrivateLink: 0.001,
+    },
+    cardinalityNote: "Elastic Cloud Hosted (ECH) charges based on data volume (GB), not per metric — same model as Elastic Serverless but with a fixed cluster cost and a lower per-GB rate at higher volumes. ECH becomes more cost-effective than Serverless above ~4 GB/month ingest and significantly cheaper at enterprise scale (millions of metrics/sec). High cardinality does not directly increase costs beyond additional data volume. Pricing estimated from Elastic hardware pricing; contact Elastic for a custom quote.",
+  },
+  {
     id: "elastic-self-hosted",
     name: "Elastic (Self-hosted)",
     color: "bg-slate-500",
