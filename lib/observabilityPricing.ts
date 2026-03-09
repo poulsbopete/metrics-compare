@@ -624,7 +624,7 @@ export function gbPerDayToMonthly(gbPerDay: number): number {
 export const securityPlatforms: ObservabilityPlatform[] = [
   {
     id: "elastic-security",
-    name: "Elastic Security",
+    name: "Elastic Security Serverless",
     color: "bg-blue-500",
     pricing: {
       security: {
