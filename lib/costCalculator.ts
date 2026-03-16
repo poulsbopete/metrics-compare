@@ -215,20 +215,20 @@ export const platforms: Platform[] = [
     color: "bg-slate-500",
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
-      basePrice: 650,
+      basePrice: 600,
       pricePerMillionMetrics: 0,
       freeTier: 0,
       unit: "fixed infrastructure cost",
     },
     infrastructure: {
-      compute: 300, // 2 nodes @ $150/month each (improved efficiency allows fewer/lighter nodes)
-      storage: 200, // SSD storage with improved compression for time-series data
-      memory: 100, // Improved memory efficiency reduces requirements
+      compute: 250, // 2 ES data nodes — TSDB mode allows lighter instances vs. standard ES
+      storage: 150, // TSDB mode provides 2–5× compression for time-series data vs. standard indices
+      memory: 120, // JVM heap still requires dedicated RAM; higher than JVM-free tools like VictoriaMetrics
       network: 30,
-      other: 20, // Reduced operational overhead with improved tooling
-      notes: "2 node Elasticsearch cluster for HA (improved efficiency with product enhancements)",
+      other: 50, // Kibana node + monitoring + backups (Kibana is heavier than Grafana)
+      notes: "2-node Elasticsearch cluster with TSDB index mode (8.7+). TSDB reduces storage 2–5× for time-series metrics; lighter nodes possible vs. general-purpose ES. Still costs more than VictoriaMetrics due to JVM heap overhead and Kibana. Open source, no licensing cost.",
     },
-    cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. With recent product improvements, Elastic self-hosted offers better resource efficiency, compression, and operational simplicity, making it more competitive with other open-source solutions. High cardinality may still require additional storage or compute resources as your infrastructure scales, potentially increasing infrastructure costs over time.",
+    cardinalityNote: "Fixed infrastructure cost — cardinality doesn't directly impact monthly costs. Elasticsearch TSDB mode (8.7+) provides 2–5× compression for time-series metrics, making storage costs comparable to Prometheus. However, JVM heap requirements and a dedicated Kibana node mean Elastic self-hosted carries more overhead than purpose-built tools like VictoriaMetrics (no JVM, single binary). High cardinality may still require storage or compute scaling over time, but at a much lower rate than per-metric SaaS platforms.",
   },
   {
     id: "datadog",
