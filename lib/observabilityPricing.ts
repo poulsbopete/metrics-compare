@@ -240,22 +240,22 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     color: "bg-slate-600",
     pricing: {
       tracing: {
-        basePrice: 800, // Elasticsearch cluster + APM Server + Kibana
+        basePrice: 700, // 2-node Elasticsearch cluster + lightweight APM Server + Kibana
         pricePerMillionSpans: 0,
         freeTier: 0,
         unit: "fixed infrastructure cost",
       },
     },
     infrastructure: {
-      compute: 350, // 3 Elasticsearch nodes + APM Server node
-      storage: 250, // Trace & span storage (hot/warm tiers)
-      memory: 150, // Elasticsearch memory requirements
+      compute: 280, // 2 ES data nodes @ ~$120/month + APM Server (Go binary, lightweight ~$40/month)
+      storage: 200, // Span & trace storage — BBQ compression reduces hot-tier footprint
+      memory: 150, // JVM heap for Elasticsearch nodes (APM Server itself is Go, near-zero memory overhead)
       network: 30,
-      other: 20, // Monitoring, backups, operational overhead
-      notes: "3-node Elasticsearch cluster + APM Server + Kibana. Open source Elastic Stack (no licensing cost). Scales with trace volume and retention requirements.",
+      other: 40, // Kibana node + monitoring + backups
+      notes: "2-node Elasticsearch cluster + APM Server (lightweight Go binary) + Kibana. APM Server does not require a dedicated heavy node — Go binary with minimal CPU/memory. Open source Elastic Stack, no licensing cost.",
     },
     notes: {
-      tracing: "Elastic APM self-hosted uses the open source Elastic Stack (Elasticsearch, APM Server, Kibana). No licensing costs — infrastructure only. Includes distributed tracing, service maps, anomaly detection, and full Kibana APM UI. Fixed infrastructure cost shown; actual costs scale with trace volume and retention. Comparable functionality to Elastic Serverless APM at a predictable cost for high-volume deployments.",
+      tracing: "Elastic APM self-hosted: $700/month fixed infrastructure regardless of span volume. At low volumes this is more expensive than per-span SaaS tools (e.g. Datadog breaks even at ~160 spans/sec: $700 ÷ $1.70/M spans ≈ 412M spans/month). Above ~160 spans/sec, self-hosted becomes dramatically cheaper. APM Server is a lightweight Go binary — not a JVM service — so it adds minimal compute overhead vs. the Elasticsearch cluster itself. Includes distributed tracing, service maps, anomaly detection, and full Kibana APM UI. No licensing costs.",
     },
   },
   {
