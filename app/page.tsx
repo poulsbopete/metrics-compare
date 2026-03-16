@@ -10,6 +10,7 @@ import TracingConfig from "@/components/TracingConfig";
 import LogsConfig from "@/components/LogsConfig";
 import SecurityConfig from "@/components/SecurityConfig";
 import AnimatedNumber from "@/components/AnimatedNumber";
+import FullStackComparison from "@/components/FullStackComparison";
 import {
   platforms,
   calculateMetricVolume,
@@ -301,7 +302,8 @@ export default function Home() {
     if (activeTab === "metrics") return metricsCosts;
     if (activeTab === "tracing") return tracingCosts;
     if (activeTab === "logs") return logsCosts;
-    return securityCosts;
+    if (activeTab === "security") return securityCosts;
+    return {};
   }, [activeTab, metricsCosts, tracingCosts, logsCosts, securityCosts]);
 
   const currentPlatforms = useMemo(() => {
@@ -390,7 +392,20 @@ export default function Home() {
 
         {/* Tabs */}
         <ObservabilityTabs activeTab={activeTab} onTabChange={setActiveTab}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Full Stack TCO tab */}
+          {activeTab === "fullstack" && (
+            <div className="animate-fade-in-up">
+              <FullStackComparison
+                metricsCosts={metricsCosts}
+                tracingCosts={tracingCosts}
+                logsCosts={logsCosts}
+                securityCosts={securityCosts}
+              />
+            </div>
+          )}
+
+          {activeTab !== "fullstack" && (
+          <><div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
             {/* Configuration Panel */}
             <div className="lg:col-span-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-slide-in">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
@@ -839,7 +854,7 @@ export default function Home() {
           </div>
 
           {/* Try Elastic Metrics - Instruqt */}
-          {activeTab === "metrics" && false && (
+          {activeTab === "metrics" && false && false && (
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                 <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full mr-3" />
@@ -872,13 +887,14 @@ export default function Home() {
               </a>
             </div>
           )}
+          </> )} {/* end activeTab !== "fullstack" */}
         </ObservabilityTabs>
 
         {/* Footer */}
         <div className="mt-12 text-center">
           <div className="inline-block bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl px-6 py-4 border border-gray-200/50 dark:border-gray-700/50 shadow-md">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              💡 Pricing is approximate and based on publicly available information as of March 2026. Elastic Serverless pricing reflects the <a href="https://www.elastic.co/pricing/serverless-observability" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">November 2025 pricing update</a> ($0.09/GB ingest + $0.019/GB retention for all signals — logs, metrics, and APM traces). Actual costs may vary.
+              Pricing is based on publicly available list rates as of March 2026. Elastic Serverless reflects the <a href="https://www.elastic.co/pricing/serverless-observability" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">November 2025 pricing</a>. All figures are estimates — actual costs vary with negotiated discounts, committed use, and deployment configuration. <strong>Use the Full Stack TCO tab for a complete cross-signal comparison.</strong> Contact your SE for a custom TCO analysis.
             </p>
           </div>
         </div>

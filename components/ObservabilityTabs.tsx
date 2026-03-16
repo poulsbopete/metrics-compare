@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 
-export type ObservabilityTab = "metrics" | "tracing" | "logs" | "security";
+export type ObservabilityTab = "metrics" | "tracing" | "logs" | "security" | "fullstack";
 
 interface ObservabilityTabsProps {
   activeTab: ObservabilityTab;
@@ -15,11 +15,12 @@ export default function ObservabilityTabs({
   onTabChange,
   children,
 }: ObservabilityTabsProps) {
-  const tabs: { id: ObservabilityTab; label: string; icon: string }[] = [
+  const tabs: { id: ObservabilityTab; label: string; icon: string; highlight?: boolean }[] = [
     { id: "metrics", label: "Metrics", icon: "📊" },
     { id: "tracing", label: "Tracing/APM", icon: "🔍" },
     { id: "logs", label: "Logs", icon: "📝" },
     { id: "security", label: "Security", icon: "🔒" },
+    { id: "fullstack", label: "Full Stack TCO", icon: "⚡", highlight: true },
   ];
 
   return (
@@ -33,7 +34,11 @@ export default function ObservabilityTabs({
               onClick={() => onTabChange(tab.id)}
               className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
                 activeTab === tab.id
-                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md transform scale-105"
+                  ? tab.highlight
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md transform scale-105"
+                    : "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md transform scale-105"
+                  : tab.highlight
+                  ? "text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 border border-amber-300 dark:border-amber-700"
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
             >

@@ -6,7 +6,7 @@ import { useState } from "react";
 import CostBarChart from "./CostBarChart";
 import PlatformRow from "./PlatformRow";
 
-type ObservabilityType = "metrics" | "tracing" | "logs" | "security";
+type ObservabilityType = "metrics" | "tracing" | "logs" | "security" | "fullstack";
 
 interface ObservabilityComparisonProps {
   type: ObservabilityType;
@@ -44,6 +44,16 @@ export default function ObservabilityComparison({
   const sortedPlatforms = [...platforms].sort(
     (a, b) => (costs[a.id] || 0) - (costs[b.id] || 0)
   );
+
+  // Find Datadog cost for this tab to compute savings %
+  const DATADOG_IDS: Partial<Record<ObservabilityType, string>> = {
+    metrics: "datadog",
+    tracing: "datadog-tracing",
+    logs: "datadog-logs",
+    security: "datadog-security",
+  };
+  const datadogId = DATADOG_IDS[type];
+  const datadogCost = datadogId ? (costs[datadogId] ?? 0) : 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -135,11 +145,19 @@ export default function ObservabilityComparison({
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                         Annual Cost
                       </th>
+                      {datadogCost > 0 && (
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                          vs Datadog
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {sortedPlatforms.map((platform, index) => {
                       const cost = costs[platform.id] || 0;
+                      const savingsPct = datadogCost > 0 && platform.id !== datadogId
+                        ? ((datadogCost - cost) / datadogCost) * 100
+                        : null;
                       
                       return (
                         <PlatformRow
@@ -150,6 +168,8 @@ export default function ObservabilityComparison({
                           formatCurrency={formatCurrency}
                           formatNumber={formatNumber}
                           index={index}
+                          savingsVsDatadog={savingsPct}
+                          showSavingsColumn={datadogCost > 0}
                           calculationContext={calculationContext ? {
                             ...calculationContext,
                             cost,

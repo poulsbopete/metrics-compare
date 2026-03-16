@@ -13,6 +13,8 @@ interface PlatformRowProps {
   formatCurrency: (value: number) => string;
   formatNumber: (value: number) => string;
   index: number;
+  savingsVsDatadog?: number | null;
+  showSavingsColumn?: boolean;
   calculationContext?: {
     // Metrics
     monthlyMetrics?: number;
@@ -39,6 +41,8 @@ export default function PlatformRow({
   formatCurrency,
   formatNumber,
   index,
+  savingsVsDatadog,
+  showSavingsColumn,
   calculationContext,
 }: PlatformRowProps) {
   const [expanded, setExpanded] = useState(false);
@@ -113,10 +117,33 @@ export default function PlatformRow({
             <AnimatedNumber value={annualCost} format={formatCurrency} />
           </span>
         </td>
+        {showSavingsColumn && (
+          <td className="px-6 py-4 whitespace-nowrap">
+            {savingsVsDatadog !== null && savingsVsDatadog !== undefined ? (
+              <span
+                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                  savingsVsDatadog > 0
+                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                    : savingsVsDatadog < 0
+                    ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                    : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                }`}
+              >
+                {savingsVsDatadog > 0
+                  ? `${savingsVsDatadog.toFixed(0)}% cheaper`
+                  : savingsVsDatadog < 0
+                  ? `${Math.abs(savingsVsDatadog).toFixed(0)}% pricier`
+                  : "Same"}
+              </span>
+            ) : (
+              <span className="text-xs text-gray-400">—</span>
+            )}
+          </td>
+        )}
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={4} className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
+          <td colSpan={showSavingsColumn ? 5 : 4} className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
             <PlatformDetails platform={platform} calculationContext={calculationContext} />
           </td>
         </tr>
