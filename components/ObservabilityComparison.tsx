@@ -1,11 +1,9 @@
 "use client";
 
-"use client";
-
 import { Platform } from "@/lib/costCalculator";
 import { ObservabilityPlatform } from "@/lib/observabilityPricing";
 import { getOperationalFTE, getFTELabel } from "@/lib/operationalCosts";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import CostBarChart from "./CostBarChart";
 import PlatformRow from "./PlatformRow";
 
@@ -64,8 +62,17 @@ export default function ObservabilityComparison({
   const [viewMode, setViewMode] = useState<"table" | "chart">("chart");
 
   // Platform picker state — default to Elastic + Datadog for this tab
-  const defaultIds = DEFAULT_PLATFORM_IDS[type] ?? new Set(platforms.map((p) => p.id));
-  const [activePlatformIds, setActivePlatformIds] = useState<Set<string>>(defaultIds);
+  const [activePlatformIds, setActivePlatformIds] = useState<Set<string>>(
+    () => new Set(DEFAULT_PLATFORM_IDS[type] ?? platforms.map((p) => p.id))
+  );
+
+  // Reset defaults whenever the active tab (type) changes
+  useEffect(() => {
+    const defaults = DEFAULT_PLATFORM_IDS[type];
+    setActivePlatformIds(
+      defaults ? new Set(defaults) : new Set(platforms.map((p) => p.id))
+    );
+  }, [type]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const togglePlatform = (id: string) => {
     setActivePlatformIds((prev) => {
