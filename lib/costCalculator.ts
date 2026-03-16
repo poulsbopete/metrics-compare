@@ -405,11 +405,14 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 0,
-      pricePerMillionMetrics: 0.008, // $0.008 per million datapoints per month (13-month retention included)
+      // Observe Inc charges $0.008 per DPM (Data Points per Minute) — a rate-based unit.
+      // 1 DPM = 1 datapoint/min sustained = 43,200 datapoints/month
+      // → $0.008/DPM × (1,000,000 ÷ 43,200) = $0.185 per million metrics/month
+      pricePerMillionMetrics: 0.185,
       freeTier: 0,
       unit: "per million metrics/month",
     },
-    cardinalityNote: "Observe Inc charges per datapoint, so high cardinality directly increases costs. Each unique metric series is counted separately. Built on Snowflake backend, providing scalable data management and analysis capabilities. Pricing: $0.008 per million datapoints per month with 13-month retention included. Very competitive pricing compared to other per-metric platforms.",
+    cardinalityNote: "Observe Inc charges $0.008/DPM (Data Points per Minute) — a rate-based unit. 1 DPM sustained for a month = 43,200 datapoints, so $0.008/DPM ≈ $0.185 per million metrics/month. High cardinality increases DPM and therefore cost proportionally. Includes 13-month retention, unlimited users, and compute. Source: observeinc.com/pricing",
   },
   {
     id: "clickhouse-diy",
