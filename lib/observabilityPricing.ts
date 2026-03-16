@@ -259,6 +259,25 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     },
   },
   {
+    id: "clickstack-tracing",
+    name: "ClickStack (Managed)",
+    color: "bg-yellow-500",
+    pricing: {
+      tracing: {
+        basePrice: 0,
+        // Storage: <$0.03/GB/month, ingest compute: ~$0.01/GB → ~$0.04/GB total
+        // Uses span-volume → GB conversion (500 bytes/span default)
+        pricePerGB: 0.04,
+        bytesPerSpan: 500,
+        freeTier: 0,
+        unit: "per GB/month",
+      },
+    },
+    notes: {
+      tracing: "ClickStack (Managed) prices on infrastructure, not spans or traces. Storage <$0.03/GB/month + ingest compute ~$0.01/GB ≈ $0.04/GB total ingested. No per-span, per-trace, or per-host fees. Full-fidelity, high-cardinality OpenTelemetry traces retained indefinitely — no sampling. Ingest and query compute scale independently. Compute scales to zero when idle. Source: clickhouse.com/blog/introducing-managed-clickstack-beta",
+    },
+  },
+  {
     id: "jaeger-self-hosted",
     name: "Jaeger (Self-hosted)",
     color: "bg-red-500",
@@ -493,6 +512,24 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     },
     notes: {
       logs: "Grafana Loki self-hosted: $300/month base cluster + $0.02/GB variable cost. Variable cost covers object storage (S3/GCS) and the compute scaling required for ingesters and queriers at higher throughput. At small volumes (<15 TB/month) Loki can be very cost-effective; at enterprise scale (100s of TB/day) infrastructure costs grow substantially. Loki does not index log content — only labels — so full-text search requires LogQL pattern matching, which can be limiting vs. Elasticsearch.",
+    },
+  },
+  {
+    id: "clickstack-logs",
+    name: "ClickStack (Managed)",
+    color: "bg-yellow-500",
+    pricing: {
+      logs: {
+        basePrice: 0,
+        // Storage: <$0.03/GB/month, ingest compute: ~$0.01/GB → ~$0.04/GB total
+        // 10–15× compression on raw log data makes effective stored cost even lower
+        pricePerGB: 0.04,
+        freeTier: 0,
+        unit: "per GB/month",
+      },
+    },
+    notes: {
+      logs: "ClickStack (Managed) is ClickHouse's managed observability platform (launched Feb 2026). Prices on infrastructure: storage <$0.03/GB/month + ingest compute ~$0.01/GB ≈ $0.04/GB total ingested. No per-user, per-host, or per-event fees. ClickHouse achieves 10–15× compression on log data; effective stored cost is well under $0.03/GB. Full-fidelity, indefinite retention — no sampling, rollups, or forced expiration. Compute scales to zero when idle. Source: clickhouse.com/blog/introducing-managed-clickstack-beta",
     },
   },
   {

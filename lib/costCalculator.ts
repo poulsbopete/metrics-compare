@@ -415,6 +415,23 @@ export const platforms: Platform[] = [
     cardinalityNote: "Observe Inc charges $0.008/DPM (Data Points per Minute) — a rate-based unit. 1 DPM sustained for a month = 43,200 datapoints, so $0.008/DPM ≈ $0.185 per million metrics/month. High cardinality increases DPM and therefore cost proportionally. Includes 13-month retention, unlimited users, and compute. Source: observeinc.com/pricing",
   },
   {
+    id: "clickstack-managed",
+    name: "ClickStack (Managed)",
+    color: "bg-yellow-500",
+    metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
+    pricing: {
+      basePrice: 0,
+      // ClickStack (Managed ClickStack on ClickHouse Cloud) prices on infrastructure:
+      // Storage: <$0.03/GB/month, Ingest compute: ~$0.01/GB → total ~$0.04/GB
+      // No per-user, per-host, or per-metric fees. Full-fidelity, indefinite retention.
+      pricePerGB: 0.04,
+      bytesPerDatapoint: 320,
+      freeTier: 0,
+      unit: "per GB/month",
+    },
+    cardinalityNote: "ClickStack (Managed) prices on infrastructure, not events or metrics. Storage costs <$0.03/GB/month + ~$0.01/GB ingest compute ≈ $0.04/GB total. High cardinality has zero direct impact on cost — only total data volume matters. Retains full-fidelity OpenTelemetry data indefinitely with no sampling, rollups, or retention tradeoffs. Compute scales independently from storage and scales to zero when idle. Source: clickhouse.com/blog/introducing-managed-clickstack-beta",
+  },
+  {
     id: "clickhouse-diy",
     name: "ClickHouse (Self-hosted)",
     color: "bg-yellow-600",
