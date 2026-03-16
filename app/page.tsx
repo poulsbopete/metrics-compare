@@ -26,6 +26,10 @@ import {
   gbPerDayToMonthlyMetrics,
 } from "@/lib/infrastructureData";
 import {
+  getOperationalCost,
+  DEFAULT_ENGINEER_HOURLY_RATE,
+} from "@/lib/operationalCosts";
+import {
   tracingPlatforms,
   logsPlatforms,
   securityPlatforms,
@@ -115,6 +119,10 @@ export default function Home() {
   // Egress state
   const [includeEgress, setIncludeEgress] = useState(false);
   const [usePrivateLink, setUsePrivateLink] = useState(false);
+
+  // Operational cost state
+  const [includeOperationalCost, setIncludeOperationalCost] = useState(true);
+  const [engineerHourlyRate, setEngineerHourlyRate] = useState(DEFAULT_ENGINEER_HOURLY_RATE);
   
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -297,6 +305,23 @@ export default function Home() {
     return result;
   }, [monthlyEvents, includeEgress, usePrivateLink]);
 
+  // Operational costs — computed for every platform across all tabs
+  const allPlatformIds = useMemo(() => [
+    ...platforms.map(p => p.id),
+    ...tracingPlatforms.map(p => p.id),
+    ...logsPlatforms.map(p => p.id),
+    ...securityPlatforms.map(p => p.id),
+  ], []);
+
+  const operationalCosts = useMemo(() => {
+    if (!includeOperationalCost) return {} as Record<string, number>;
+    const result: Record<string, number> = {};
+    allPlatformIds.forEach(id => {
+      result[id] = getOperationalCost(id, engineerHourlyRate);
+    });
+    return result;
+  }, [includeOperationalCost, engineerHourlyRate, allPlatformIds]);
+
   // Get current costs and platforms based on active tab
   const currentCosts = useMemo(() => {
     if (activeTab === "metrics") return metricsCosts;
@@ -373,10 +398,10 @@ export default function Home() {
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         <div className="text-center mb-8 animate-fade-in-up">
           <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 mb-4">
-            Observability Cost Comparison
+            Observability TCO Comparison
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Compare costs across observability platforms for Metrics, Tracing/APM, Logs, and Security
+            Compare true total cost of ownership — infrastructure <em>and</em> human operational costs — across observability platforms
           </p>
         </div>
 
@@ -400,6 +425,8 @@ export default function Home() {
                 tracingCosts={tracingCosts}
                 logsCosts={logsCosts}
                 securityCosts={securityCosts}
+                operationalCosts={operationalCosts}
+                engineerHourlyRate={engineerHourlyRate}
               />
             </div>
           )}
@@ -522,6 +549,54 @@ export default function Home() {
                     onEventsPerSecondChange={setEventsPerSecond}
                   />
                 )}
+
+                {/* Operational Cost Options */}
+                <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                    Human / Operational Costs
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Self-hosted platforms require engineering time to operate. Enable to see true TCO.
+                  </p>
+                  <div className="space-y-4">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeOperationalCost}
+                        onChange={(e) => setIncludeOperationalCost(e.target.checked)}
+                        className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                      />
+                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Include operational costs in TCO
+                      </span>
+                    </label>
+                    {includeOperationalCost && (
+                      <div className="space-y-2">
+                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                          Engineer fully-loaded rate: <span className="text-blue-600 dark:text-blue-400">${engineerHourlyRate}/hr</span>
+                          <span className="ml-1 font-normal text-gray-400">(${(engineerHourlyRate * 160 * 12).toLocaleString()}/yr)</span>
+                        </label>
+                        <input
+                          type="range"
+                          min={60}
+                          max={250}
+                          step={5}
+                          value={engineerHourlyRate}
+                          onChange={(e) => setEngineerHourlyRate(Number(e.target.value))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                        />
+                        <div className="flex justify-between text-xs text-gray-400">
+                          <span>$60/hr</span>
+                          <span>$120/hr</span>
+                          <span>$250/hr</span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Default $120/hr ≈ $250k/yr fully-loaded (salary + benefits + overhead)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Egress Cost Options */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -798,12 +873,14 @@ export default function Home() {
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
               <span className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full mr-3" />
-              Cost Comparison
+              TCO Comparison
             </h2>
             <ObservabilityComparison
               type={activeTab}
               platforms={currentPlatforms}
               costs={currentCosts}
+              operationalCosts={operationalCosts}
+              engineerHourlyRate={engineerHourlyRate}
               volume={currentVolume}
               volumeLabel={currentVolumeLabel}
               calculationContext={

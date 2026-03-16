@@ -8,6 +8,8 @@ interface FullStackComparisonProps {
   tracingCosts: Record<string, number>;
   logsCosts: Record<string, number>;
   securityCosts: Record<string, number>;
+  operationalCosts?: Record<string, number>;
+  engineerHourlyRate?: number;
 }
 
 type SignalKey = "metrics" | "tracing" | "logs" | "security";
@@ -58,6 +60,8 @@ export default function FullStackComparison({
   tracingCosts,
   logsCosts,
   securityCosts,
+  operationalCosts = {},
+  engineerHourlyRate,
 }: FullStackComparisonProps) {
   const [activeVendors, setActiveVendors] = useState<Set<string>>(DEFAULT_ACTIVE_VENDORS);
 
@@ -97,23 +101,30 @@ export default function FullStackComparison({
       let total = 0;
       let hasAll = true;
 
+      const tco = (id: string | null, base: Record<string, number>) => {
+        if (!id) return null;
+        const infra = base[id] ?? null;
+        if (infra === null) return null;
+        return infra + (operationalCosts[id] || 0);
+      };
+
       if (activeSignals.metrics) {
-        const c = vendor.metricsPlatformId ? (metricsCosts[vendor.metricsPlatformId] ?? null) : null;
+        const c = tco(vendor.metricsPlatformId, metricsCosts);
         signalCosts.metrics = c;
         if (c !== null) total += c; else hasAll = false;
       }
       if (activeSignals.tracing) {
-        const c = vendor.tracingPlatformId ? (tracingCosts[vendor.tracingPlatformId] ?? null) : null;
+        const c = tco(vendor.tracingPlatformId, tracingCosts);
         signalCosts.tracing = c;
         if (c !== null) total += c; else hasAll = false;
       }
       if (activeSignals.logs) {
-        const c = vendor.logsPlatformId ? (logsCosts[vendor.logsPlatformId] ?? null) : null;
+        const c = tco(vendor.logsPlatformId, logsCosts);
         signalCosts.logs = c;
         if (c !== null) total += c; else hasAll = false;
       }
       if (activeSignals.security) {
-        const c = vendor.securityPlatformId ? (securityCosts[vendor.securityPlatformId] ?? null) : null;
+        const c = tco(vendor.securityPlatformId, securityCosts);
         signalCosts.security = c;
         if (c !== null) total += c; else hasAll = false;
       }
@@ -173,7 +184,7 @@ export default function FullStackComparison({
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
               <div className="text-sm font-semibold uppercase tracking-widest opacity-80 mb-1">
-                Full-Stack TCO · Selected Signals
+                Full-Stack TCO · Infrastructure + Human Operational Costs
               </div>
               <h2 className="text-3xl font-extrabold mb-2">
                 Elastic saves{" "}
@@ -230,9 +241,16 @@ export default function FullStackComparison({
       {/* Combined cost bars */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-            Combined Monthly Cost — All Selected Signals
-          </h3>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Combined Monthly TCO — All Selected Signals
+            </h3>
+            {engineerHourlyRate && Object.keys(operationalCosts).length > 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                Includes infrastructure + operational costs at ${engineerHourlyRate}/hr engineer rate
+              </p>
+            )}
+          </div>
           <span className="text-xs text-gray-400">Annual ÷ 12</span>
         </div>
         <div className="p-6 space-y-3">

@@ -2,13 +2,16 @@
 
 import { Platform } from "@/lib/costCalculator";
 import { ObservabilityPlatform } from "@/lib/observabilityPricing";
+import { getOperationalFTE, getFTELabel } from "@/lib/operationalCosts";
 import { useState } from "react";
 import AnimatedNumber from "./AnimatedNumber";
 import PlatformDetails from "./PlatformDetails";
 
 interface PlatformRowProps {
   platform: Platform | ObservabilityPlatform;
-  cost: number;
+  cost: number; // total TCO
+  infraCost?: number;
+  operationalCost?: number;
   monthlyMetrics: number;
   formatCurrency: (value: number) => string;
   formatNumber: (value: number) => string;
@@ -37,6 +40,8 @@ interface PlatformRowProps {
 export default function PlatformRow({
   platform,
   cost,
+  infraCost,
+  operationalCost = 0,
   monthlyMetrics,
   formatCurrency,
   formatNumber,
@@ -47,6 +52,9 @@ export default function PlatformRow({
 }: PlatformRowProps) {
   const [expanded, setExpanded] = useState(false);
   const annualCost = cost * 12;
+  const fte = getOperationalFTE(platform.id);
+  const fteLabel = getFTELabel(fte);
+  const showOpsSplit = operationalCost > 0 && infraCost !== undefined;
 
   const isPlatform = (p: Platform | ObservabilityPlatform): p is Platform => {
     return 'metricTypes' in p;
@@ -108,14 +116,31 @@ export default function PlatformRow({
           {formatNumber(monthlyMetrics)}
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            <AnimatedNumber value={cost} format={formatCurrency} />
-          </span>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              <AnimatedNumber value={cost} format={formatCurrency} />
+            </span>
+            {showOpsSplit && (
+              <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 space-y-0.5">
+                <div>{formatCurrency(infraCost!)} infra</div>
+                <div className="text-amber-600 dark:text-amber-400">+{formatCurrency(operationalCost)} ops ({fte} FTE)</div>
+              </div>
+            )}
+          </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            <AnimatedNumber value={annualCost} format={formatCurrency} />
-          </span>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              <AnimatedNumber value={annualCost} format={formatCurrency} />
+            </span>
+            {showOpsSplit && (
+              <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                <span className="text-amber-600 dark:text-amber-400" title={fteLabel}>
+                  {fteLabel}
+                </span>
+              </div>
+            )}
+          </div>
         </td>
         {showSavingsColumn && (
           <td className="px-6 py-4 whitespace-nowrap">

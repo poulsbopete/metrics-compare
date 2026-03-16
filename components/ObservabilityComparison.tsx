@@ -2,6 +2,7 @@
 
 import { Platform } from "@/lib/costCalculator";
 import { ObservabilityPlatform } from "@/lib/observabilityPricing";
+import { getOperationalFTE, getFTELabel } from "@/lib/operationalCosts";
 import { useState } from "react";
 import CostBarChart from "./CostBarChart";
 import PlatformRow from "./PlatformRow";
@@ -12,6 +13,8 @@ interface ObservabilityComparisonProps {
   type: ObservabilityType;
   platforms: Platform[] | ObservabilityPlatform[];
   costs: Record<string, number>;
+  operationalCosts?: Record<string, number>;
+  engineerHourlyRate?: number;
   volume: number; // metrics, spans, or GB
   volumeLabel: string; // "Monthly Metrics", "Monthly Spans", "Monthly GB"
   calculationContext?: {
@@ -36,16 +39,24 @@ export default function ObservabilityComparison({
   type,
   platforms,
   costs,
+  operationalCosts = {},
+  engineerHourlyRate,
   volume,
   volumeLabel,
   calculationContext,
 }: ObservabilityComparisonProps) {
   const [viewMode, setViewMode] = useState<"table" | "chart">("chart");
-  const sortedPlatforms = [...platforms].sort(
-    (a, b) => (costs[a.id] || 0) - (costs[b.id] || 0)
+
+  // TCO = infrastructure cost + operational cost
+  const tcoCosts = Object.fromEntries(
+    platforms.map((p) => [p.id, (costs[p.id] || 0) + (operationalCosts[p.id] || 0)])
   );
 
-  // Find Datadog cost for this tab to compute savings %
+  const sortedPlatforms = [...platforms].sort(
+    (a, b) => (tcoCosts[a.id] || 0) - (tcoCosts[b.id] || 0)
+  );
+
+  // Find Datadog TCO for this tab to compute savings %
   const DATADOG_IDS: Partial<Record<ObservabilityType, string>> = {
     metrics: "datadog",
     tracing: "datadog-tracing",
@@ -53,7 +64,9 @@ export default function ObservabilityComparison({
     security: "datadog-security",
   };
   const datadogId = DATADOG_IDS[type];
-  const datadogCost = datadogId ? (costs[datadogId] ?? 0) : 0;
+  const datadogCost = datadogId ? (tcoCosts[datadogId] ?? 0) : 0;
+
+  const hasOperationalCosts = Object.keys(operationalCosts).length > 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -115,17 +128,27 @@ export default function ObservabilityComparison({
       {/* Chart View */}
       {viewMode === "chart" && (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 animate-fade-in-up">
-          <CostBarChart platforms={chartPlatforms as Platform[]} costs={costs} />
+          <CostBarChart platforms={chartPlatforms as Platform[]} costs={tcoCosts} />
+          {hasOperationalCosts && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-3">
+              Costs include estimated operational overhead ({engineerHourlyRate ? `$${engineerHourlyRate}/hr` : ""} fully-loaded engineer rate). Toggle in Configuration panel.
+            </p>
+          )}
         </div>
       )}
 
       {/* Table View */}
       {viewMode === "table" && (
         <div className="space-y-3 animate-fade-in-up">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-1.5">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              💡 <strong>Tip:</strong> Click on any platform row to view details and infrastructure cost breakdown (for self-hosted solutions).
+              💡 <strong>Tip:</strong> Click on any platform row to view details and TCO breakdown.
             </p>
+            {hasOperationalCosts && (
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                🧑‍💻 <strong>Operational costs included</strong> at <strong>{engineerHourlyRate ? `$${engineerHourlyRate}/hr` : ""}</strong> fully-loaded rate. Self-hosted solutions require significantly more engineering time. Adjust in Configuration panel.
+              </p>
+            )}
           </div>
           <div className="overflow-x-auto">
             <div className="min-w-full">
@@ -140,10 +163,10 @@ export default function ObservabilityComparison({
                         {volumeLabel}
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                        Monthly Cost
+                        Monthly TCO
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                        Annual Cost
+                        Annual TCO
                       </th>
                       {datadogCost > 0 && (
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
@@ -154,16 +177,20 @@ export default function ObservabilityComparison({
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {sortedPlatforms.map((platform, index) => {
-                      const cost = costs[platform.id] || 0;
+                      const infraCost = costs[platform.id] || 0;
+                      const opsCost = operationalCosts[platform.id] || 0;
+                      const tco = infraCost + opsCost;
                       const savingsPct = datadogCost > 0 && platform.id !== datadogId
-                        ? ((datadogCost - cost) / datadogCost) * 100
+                        ? ((datadogCost - tco) / datadogCost) * 100
                         : null;
                       
                       return (
                         <PlatformRow
                           key={platform.id}
                           platform={platform as Platform | ObservabilityPlatform}
-                          cost={cost}
+                          cost={tco}
+                          infraCost={infraCost}
+                          operationalCost={opsCost}
                           monthlyMetrics={volume}
                           formatCurrency={formatCurrency}
                           formatNumber={formatNumber}
@@ -172,7 +199,7 @@ export default function ObservabilityComparison({
                           showSavingsColumn={datadogCost > 0}
                           calculationContext={calculationContext ? {
                             ...calculationContext,
-                            cost,
+                            cost: tco,
                           } : undefined}
                         />
                       );
