@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import MetricSlider from "@/components/MetricSlider";
 import TagManager from "@/components/TagManager";
+import InfrastructureEstimator from "@/components/InfrastructureEstimator";
 import ObservabilityComparison from "@/components/ObservabilityComparison";
 import ObservabilityTabs, { type ObservabilityTab } from "@/components/ObservabilityTabs";
 import TracingConfig from "@/components/TracingConfig";
@@ -18,6 +19,11 @@ import {
   type MetricConfig,
   type MetricSourceType,
 } from "@/lib/costCalculator";
+import {
+  integrations,
+  gbPerDayToMetricsPerSecond,
+  gbPerDayToMonthlyMetrics,
+} from "@/lib/infrastructureData";
 import {
   tracingPlatforms,
   logsPlatforms,
@@ -39,6 +45,8 @@ interface SavedState {
   tags: string[];
   tagValues: number;
   primaryMetricType?: MetricSourceType;
+  metricsInputMode?: "manual" | "infrastructure";
+  infraItems?: Record<string, number>;
   // Tracing
   spansPerSecond: number;
   // Logs
@@ -91,6 +99,8 @@ export default function Home() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagValues, setTagValues] = useState(10);
   const [primaryMetricType, setPrimaryMetricType] = useState<MetricSourceType>("Mixed");
+  const [metricsInputMode, setMetricsInputMode] = useState<"manual" | "infrastructure">("manual");
+  const [infraItems, setInfraItems] = useState<Record<string, number>>({});
   
   // Tracing state
   const [spansPerSecond, setSpansPerSecond] = useState(100);
@@ -124,6 +134,8 @@ export default function Home() {
       if (savedState.eventsPerSecond) setEventsPerSecond(savedState.eventsPerSecond);
       if (savedState.includeEgress !== undefined) setIncludeEgress(savedState.includeEgress);
       if (savedState.usePrivateLink !== undefined) setUsePrivateLink(savedState.usePrivateLink);
+      if (savedState.metricsInputMode) setMetricsInputMode(savedState.metricsInputMode);
+      if (savedState.infraItems) setInfraItems(savedState.infraItems);
     }
   }, []);
 
@@ -136,6 +148,8 @@ export default function Home() {
         tags,
         tagValues,
         primaryMetricType,
+        metricsInputMode,
+        infraItems,
         spansPerSecond,
         gbPerDay,
         eventsPerSecond,
@@ -143,7 +157,7 @@ export default function Home() {
         usePrivateLink,
       });
     }
-  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, spansPerSecond, gbPerDay, eventsPerSecond, isHydrated]);
+  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, isHydrated]);
 
   const metricConfig: MetricConfig = useMemo(
     () => ({
@@ -165,6 +179,27 @@ export default function Home() {
     [metricsPerSecond]
   );
 
+  // Infrastructure-based metrics estimation
+  const infraGbPerDay = useMemo(() => {
+    return Object.entries(infraItems).reduce((total, [id, count]) => {
+      const integration = integrations.find((i) => i.id === id);
+      return total + (integration?.gbPerDayPerUnit ?? 0) * count;
+    }, 0);
+  }, [infraItems]);
+
+  const infraMetricsPerSecond = useMemo(() => {
+    return gbPerDayToMetricsPerSecond(infraGbPerDay, BYTES_PER_DATAPOINT[primaryMetricType]);
+  }, [infraGbPerDay, primaryMetricType]);
+
+  const infraMonthlyMetrics = useMemo(() => {
+    return gbPerDayToMonthlyMetrics(infraGbPerDay, BYTES_PER_DATAPOINT[primaryMetricType]);
+  }, [infraGbPerDay, primaryMetricType]);
+
+  // Effective monthly metrics: infra-derived or manual
+  const effectiveMonthlyMetrics = useMemo(() => {
+    return metricsInputMode === "infrastructure" ? infraMonthlyMetrics : monthlyMetrics;
+  }, [metricsInputMode, infraMonthlyMetrics, monthlyMetrics]);
+
   // Metrics calculations
   const metricsCosts = useMemo(() => {
     const result: Record<string, number> = {};
@@ -172,7 +207,7 @@ export default function Home() {
       platforms.forEach((platform) => {
         result[platform.id] = calculatePlatformCost(
           platform,
-          monthlyMetrics,
+          effectiveMonthlyMetrics,
           primaryMetricType,
           includeEgress,
           usePrivateLink
@@ -182,7 +217,7 @@ export default function Home() {
       console.error("Error calculating metrics costs:", error);
     }
     return result;
-  }, [monthlyMetrics, primaryMetricType, includeEgress, usePrivateLink]);
+  }, [effectiveMonthlyMetrics, primaryMetricType, includeEgress, usePrivateLink]);
 
   // Tracing calculations
   const monthlySpans = useMemo(
@@ -277,7 +312,7 @@ export default function Home() {
   }, [activeTab]);
 
   const currentVolume = useMemo(() => {
-    if (activeTab === "metrics") return monthlyMetrics;
+    if (activeTab === "metrics") return effectiveMonthlyMetrics;
     if (activeTab === "tracing") return monthlySpans;
     if (activeTab === "logs") return monthlyGB;
     return monthlyEvents;
@@ -364,10 +399,40 @@ export default function Home() {
               </h2>
               <div className="space-y-6">
                 {activeTab === "metrics" && (
-                  <div className="space-y-6">
+                  <div className="space-y-5">
+                    {/* Input mode toggle */}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                        Metric Source Type
+                      <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                        Input Mode
+                      </label>
+                      <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-900 w-full">
+                        <button
+                          onClick={() => setMetricsInputMode("manual")}
+                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
+                            metricsInputMode === "manual"
+                              ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                          }`}
+                        >
+                          Manual
+                        </button>
+                        <button
+                          onClick={() => setMetricsInputMode("infrastructure")}
+                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
+                            metricsInputMode === "infrastructure"
+                              ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                          }`}
+                        >
+                          From Infrastructure
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Metric source type (shown in both modes) */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                        Metric Source
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         {(["OpenTelemetry", "Prometheus", "ElasticAgent", "Mixed"] as MetricSourceType[]).map((type) => (
@@ -385,26 +450,40 @@ export default function Home() {
                         ))}
                       </div>
                     </div>
-                    <MetricSlider
-                      label="Base Metrics per Second"
-                      value={baseVolume}
-                      onChange={setBaseVolume}
-                      min={1}
-                      max={1_000_000}
-                      step={1}
-                      logarithmic={true}
-                      formatValue={(v) => {
-                        if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M/sec`;
-                        if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K/sec`;
-                        return `${v}/sec`;
-                      }}
-                    />
-                    <TagManager
-                      tags={tags}
-                      onTagsChange={setTags}
-                      tagValues={tagValues}
-                      onTagValuesChange={setTagValues}
-                    />
+
+                    {/* Manual mode */}
+                    {metricsInputMode === "manual" && (
+                      <>
+                        <MetricSlider
+                          label="Base Metrics per Second"
+                          value={baseVolume}
+                          onChange={setBaseVolume}
+                          min={1}
+                          max={1_000_000}
+                          step={1}
+                          logarithmic={true}
+                          formatValue={(v) => {
+                            if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M/sec`;
+                            if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K/sec`;
+                            return `${v}/sec`;
+                          }}
+                        />
+                        <TagManager
+                          tags={tags}
+                          onTagsChange={setTags}
+                          tagValues={tagValues}
+                          onTagValuesChange={setTagValues}
+                        />
+                      </>
+                    )}
+
+                    {/* Infrastructure mode */}
+                    {metricsInputMode === "infrastructure" && (
+                      <InfrastructureEstimator
+                        items={infraItems}
+                        onItemsChange={setInfraItems}
+                      />
+                    )}
                   </div>
                 )}
 
@@ -480,7 +559,88 @@ export default function Home() {
                 {activeTab === "logs" && "Log Volume"}
                 {activeTab === "security" && "Security Event Volume"}
               </h2>
-              {activeTab === "metrics" && (
+              {activeTab === "metrics" && metricsInputMode === "infrastructure" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 rounded-xl p-5 border border-indigo-200 dark:border-indigo-700/50 shadow-md">
+                      <div className="text-sm text-indigo-600 dark:text-indigo-400 font-semibold mb-2 uppercase tracking-wide">
+                        Est. Daily Ingest
+                      </div>
+                      <div className="text-3xl font-bold text-indigo-900 dark:text-indigo-100">
+                        <AnimatedNumber
+                          value={infraGbPerDay}
+                          format={(v) => v >= 1 ? `${v.toFixed(1)} GB` : `${(v * 1000).toFixed(0)} MB`}
+                        />
+                      </div>
+                      <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">per day</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md">
+                      <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
+                        Metrics per Second
+                      </div>
+                      <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                        <AnimatedNumber
+                          value={infraMetricsPerSecond}
+                          format={formatMetricsPerSecond}
+                        />
+                      </div>
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        {BYTES_PER_DATAPOINT[primaryMetricType]}B/datapoint ({primaryMetricType === "ElasticAgent" ? "Elastic Agent" : primaryMetricType})
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
+                      <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
+                        Monthly Metrics
+                      </div>
+                      <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                        <AnimatedNumber
+                          value={infraMonthlyMetrics}
+                          format={formatMonthlyMetrics}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Infrastructure breakdown table */}
+                  {Object.keys(infraItems).length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                        Infrastructure Breakdown
+                      </div>
+                      <div className="space-y-1.5">
+                        {integrations
+                          .filter((i) => (infraItems[i.id] ?? 0) > 0)
+                          .map((i) => {
+                            const count = infraItems[i.id];
+                            const gb = i.gbPerDayPerUnit * count;
+                            return (
+                              <div key={i.id} className="flex items-center justify-between text-sm">
+                                <span className="text-gray-700 dark:text-gray-300">
+                                  {i.emoji} {count}× {i.name}
+                                </span>
+                                <span className="text-gray-500 dark:text-gray-400 tabular-nums text-xs">
+                                  {gb >= 1 ? `${gb.toFixed(1)} GB/day` : `${(gb * 1000).toFixed(0)} MB/day`}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        <div className="pt-1.5 mt-1.5 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center font-semibold text-sm">
+                          <span className="text-gray-700 dark:text-gray-300">Total</span>
+                          <span className="text-blue-600 dark:text-blue-400 tabular-nums">
+                            {infraGbPerDay >= 1 ? `${infraGbPerDay.toFixed(1)} GB/day` : `${(infraGbPerDay * 1000).toFixed(0)} MB/day`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {Object.keys(infraItems).length === 0 && (
+                    <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+                      <div className="text-4xl mb-2">🏗️</div>
+                      <p className="text-sm">Add infrastructure in the Configuration panel to see volume estimates</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeTab === "metrics" && metricsInputMode === "manual" && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 rounded-xl p-5 border border-indigo-200 dark:border-indigo-700/50 shadow-md">
                     <div className="text-sm text-indigo-600 dark:text-indigo-400 font-semibold mb-2 uppercase tracking-wide">
