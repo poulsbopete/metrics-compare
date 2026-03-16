@@ -334,13 +334,23 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <div className="text-center mb-12 animate-fade-in-up">
+        <div className="text-center mb-8 animate-fade-in-up">
           <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 mb-4">
             Observability Cost Comparison
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Compare costs across observability platforms for Metrics, Tracing/APM, Logs, and Security
           </p>
+        </div>
+
+        {/* Disclaimer Banner */}
+        <div className="mb-10 animate-fade-in-up">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-6 py-4 flex items-start gap-3 shadow-sm">
+            <span className="text-amber-500 text-xl mt-0.5 shrink-0">⚠️</span>
+            <p className="text-sm text-amber-900 dark:text-amber-200 leading-relaxed">
+              <strong>Estimation purposes only.</strong> All pricing is approximate and based on publicly available list pricing as of early 2026. Actual costs vary based on negotiated contracts, committed-use discounts, data compression ratios, retention policies, and deployment configuration. Self-hosted cost estimates reflect typical infrastructure sizing and do not include staffing, licensing, or operational overhead unless noted. Contact vendors directly for accurate quotes.
+            </p>
+          </div>
         </div>
 
         {/* Tabs */}
