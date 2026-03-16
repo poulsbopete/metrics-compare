@@ -299,13 +299,10 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   : 'N/A'}
               </span>
             </div>
-            {/* Show trace conversion for Elastic APM (trace-based pricing) */}
+            {/* Show trace-based pricing if platform uses pricePerMillionTraces */}
             {platform.pricing.tracing.pricePerMillionTraces && calculationContext.monthlyTraces !== undefined && (
               <>
                 <div className="pt-2 border-t border-blue-200 dark:border-blue-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 italic">
-                    Elastic APM uses trace-based pricing (assumes 10 spans per trace)
-                  </p>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Monthly Traces:</span>
                     <span className="font-semibold text-gray-900 dark:text-white">

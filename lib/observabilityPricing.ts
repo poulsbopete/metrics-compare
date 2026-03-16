@@ -146,22 +146,20 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     pricing: {
       tracing: {
         basePrice: 0,
-        // Elastic APM pricing is trace-based with retention costs included
-        // Based on Elastic's public calculator: 60k traces/min with 30d retention = $116k/year
-        // This equates to ~$3.73 per million traces (includes retention)
-        pricePerMillionTraces: 3.73, // Trace-based pricing with retention included
-        // Average spans per trace for conversion (default: 10 spans/trace)
-        spansPerTrace: 10,
+        // Elastic Serverless charges per GB ingested + per GB retained — same model as Logs/Metrics.
+        // Complete tier (November 2025 pricing): $0.09/GB ingest + $0.019/GB retention = $0.109/GB total.
+        // APM data (spans, transactions, metrics) is billed as standard ingest GB.
+        pricePerGB: 0.109,
         bytesPerSpan: 500,
         freeTier: 0,
-        unit: "per million traces/month (with retention)",
-        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
-        egressFreeTier: 50, // 50 GB free egress/month
-        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
+        unit: "per GB/month",
+        egressPricePerGB: 0.05,
+        egressFreeTier: 50,
+        egressPricePerGBWithPrivateLink: 0.001,
       },
     },
     notes: {
-      tracing: "Elastic Serverless APM uses trace-based pricing (not span-based) with retention costs included. The calculator converts your spans per second to traces using an average of 10 spans per trace, then applies pricing of $3.73 per million traces/month (includes retention). This matches Elastic's public calculator: 10k spans/sec = 1,000 traces/sec = 60k traces/min with 30-day retention = $116k/year. High cardinality doesn't directly increase costs - only trace volume matters. Source: Elastic public calculator. Note: Actual pricing may vary based on retention period and volume tiers.",
+      tracing: "Elastic Serverless APM (Complete tier, November 2025 pricing): $0.09/GB ingested + $0.019/GB retained per month = $0.109/GB total. APM spans, transactions, and service metrics are all billed as ingested GB — the same model as Elastic Serverless Logs and Metrics. High cardinality does not directly increase costs; only total data volume matters. Pricing shown is the top-volume 'as low as' rate; smaller deployments may be at higher per-GB tiers. Source: elastic.co/pricing/serverless-observability (effective November 1, 2025).",
     },
   },
   {
@@ -218,20 +216,20 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     color: "bg-blue-700",
     pricing: {
       tracing: {
-        basePrice: 300, // Minimum 2-node APM + ES cluster
-        // Trace-based pricing; ECH is cheaper than Serverless at high volume due to fixed infra amortization
-        pricePerMillionTraces: 2.00,
-        spansPerTrace: 10,
+        basePrice: 300, // Minimum 2-node APM + ES cluster (compute/RAM-hours)
+        // ECH charges per GB ingested at a lower variable rate than Serverless
+        // because the fixed cluster cost amortizes ingest overhead.
+        pricePerGB: 0.05,
         bytesPerSpan: 500,
         freeTier: 0,
-        unit: "per million traces/month + base cluster",
+        unit: "per GB/month + base cluster",
         egressPricePerGB: 0.09,
         egressFreeTier: 100,
         egressPricePerGBWithPrivateLink: 0.001,
       },
     },
     notes: {
-      tracing: "Elastic Cloud Hosted (ECH) APM uses a hybrid pricing model: fixed cluster cost (compute/RAM-hours for minimum deployment) + variable trace storage. Uses trace-based pricing for consistency (10 spans per trace assumed). ECH becomes more cost-effective than Serverless above ~50K traces/month due to amortized infrastructure. Pricing estimated based on Elastic hardware pricing; contact Elastic for a custom quote.",
+      tracing: "Elastic Cloud Hosted (ECH) APM uses a hybrid pricing model: fixed cluster cost ($300/month for minimum 2-node hot deployment) + variable per-GB ingest. ECH's per-GB rate ($0.05/GB) is lower than Serverless ($0.109/GB) because dedicated infrastructure eliminates Serverless overhead — ECH becomes more cost-effective than Serverless above a moderate trace volume. Contact Elastic for a custom quote based on your specific deployment size.",
     },
   },
   {

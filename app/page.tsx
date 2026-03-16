@@ -878,7 +878,7 @@ export default function Home() {
         <div className="mt-12 text-center">
           <div className="inline-block bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl px-6 py-4 border border-gray-200/50 dark:border-gray-700/50 shadow-md">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              💡 Pricing is approximate and based on publicly available information as of 2025. Elastic Serverless pricing based on <a href="https://www.elastic.co/pricing/serverless-observability" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">official pricing page</a> ($0.09/GB ingest + $0.019/GB retention, converted to metrics). Actual costs may vary.
+              💡 Pricing is approximate and based on publicly available information as of March 2026. Elastic Serverless pricing reflects the <a href="https://www.elastic.co/pricing/serverless-observability" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">November 2025 pricing update</a> ($0.09/GB ingest + $0.019/GB retention for all signals — logs, metrics, and APM traces). Actual costs may vary.
             </p>
           </div>
         </div>
