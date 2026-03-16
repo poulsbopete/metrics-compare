@@ -6,12 +6,20 @@ import { ObservabilityPlatform } from "@/lib/observabilityPricing";
 interface PlatformDetailsProps {
   platform: Platform | ObservabilityPlatform;
   calculationContext?: {
-    eventsPerSecond?: number;
-    monthlyEvents?: number;
-    monthlyGB?: number;
+    // Metrics
+    monthlyMetrics?: number;
+    metricsPerSecond?: number;
+    primaryMetricType?: string;
+    bytesPerDatapoint?: number;
+    // Tracing
     spansPerSecond?: number;
     monthlySpans?: number;
     monthlyTraces?: number;
+    // Security
+    eventsPerSecond?: number;
+    monthlyEvents?: number;
+    // Shared
+    monthlyGB?: number;
     cost: number;
   };
 }
@@ -101,6 +109,164 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
             </div>
           )}
         </>
+      )}
+
+      {/* TCO Calculation Breakdown for Metrics */}
+      {calculationContext &&
+       calculationContext.monthlyMetrics !== undefined &&
+       isPlatform(platform) && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <h4 className="text-xs font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-3">
+            📊 TCO Calculation Breakdown
+          </h4>
+          <div className="space-y-2 text-sm">
+            {/* Volume */}
+            {calculationContext.metricsPerSecond !== undefined && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 dark:text-gray-400">Metrics per Second:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {calculationContext.metricsPerSecond >= 1_000_000
+                    ? `${(calculationContext.metricsPerSecond / 1_000_000).toFixed(2)}M/sec`
+                    : calculationContext.metricsPerSecond >= 1_000
+                    ? `${(calculationContext.metricsPerSecond / 1_000).toFixed(1)}K/sec`
+                    : `${calculationContext.metricsPerSecond.toFixed(1)}/sec`}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 dark:text-gray-400">Monthly Metrics:</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {calculationContext.monthlyMetrics >= 1_000_000_000_000
+                  ? `${(calculationContext.monthlyMetrics / 1_000_000_000_000).toFixed(2)}T`
+                  : calculationContext.monthlyMetrics >= 1_000_000_000
+                  ? `${(calculationContext.monthlyMetrics / 1_000_000_000).toFixed(2)}B`
+                  : calculationContext.monthlyMetrics >= 1_000_000
+                  ? `${(calculationContext.monthlyMetrics / 1_000_000).toFixed(2)}M`
+                  : calculationContext.monthlyMetrics >= 1_000
+                  ? `${(calculationContext.monthlyMetrics / 1_000).toFixed(1)}K`
+                  : calculationContext.monthlyMetrics.toLocaleString()}
+              </span>
+            </div>
+
+            {/* Per-GB pricing (Elastic Serverless, ECH) */}
+            {platform.pricing.pricePerGB && platform.pricing.pricePerGB > 0 && (
+              <>
+                <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
+                {calculationContext.bytesPerDatapoint && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Bytes per Datapoint ({calculationContext.primaryMetricType ?? "Mixed"}):
+                    </span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {calculationContext.bytesPerDatapoint} B
+                    </span>
+                  </div>
+                )}
+                {calculationContext.monthlyGB !== undefined && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Monthly GB (calculated):</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {calculationContext.monthlyGB >= 1000
+                        ? `${(calculationContext.monthlyGB / 1000).toFixed(2)} TB`
+                        : `${calculationContext.monthlyGB.toFixed(2)} GB`}
+                    </span>
+                  </div>
+                )}
+                {platform.pricing.basePrice !== undefined && platform.pricing.basePrice > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Base cluster cost:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(platform.pricing.basePrice)}/month
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Price per GB:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(platform.pricing.pricePerGB)}/GB
+                  </span>
+                </div>
+              </>
+            )}
+
+            {/* Per-million-metrics pricing (Datadog, New Relic, Grafana, etc.) */}
+            {platform.pricing.pricePerMillionMetrics !== undefined &&
+             platform.pricing.pricePerMillionMetrics > 0 && (
+              <>
+                <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
+                {platform.pricing.freeTier !== undefined && platform.pricing.freeTier > 0 && (
+                  <>
+                    <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                      <span>Free Tier:</span>
+                      <span className="font-semibold">
+                        {platform.pricing.freeTier >= 1_000_000_000
+                          ? `${(platform.pricing.freeTier / 1_000_000_000).toFixed(0)}B metrics`
+                          : platform.pricing.freeTier >= 1_000_000
+                          ? `${(platform.pricing.freeTier / 1_000_000).toFixed(0)}M metrics`
+                          : `${platform.pricing.freeTier.toLocaleString()} metrics`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Billable Metrics:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {(() => {
+                          const billable = Math.max(0, calculationContext.monthlyMetrics! - platform.pricing.freeTier!);
+                          return billable >= 1_000_000_000
+                            ? `${(billable / 1_000_000_000).toFixed(2)}B`
+                            : billable >= 1_000_000
+                            ? `${(billable / 1_000_000).toFixed(2)}M`
+                            : billable >= 1_000
+                            ? `${(billable / 1_000).toFixed(1)}K`
+                            : billable.toLocaleString();
+                        })()}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Price per Million Metrics:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(platform.pricing.pricePerMillionMetrics)}/M
+                  </span>
+                </div>
+                {platform.id === "observe-inc" && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    Observe charges $0.008/DPM (Data Points per Minute). $0.185/M metrics = $0.008 × (1M ÷ 43,200 datapoints/DPM)
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Fixed infrastructure (self-hosted) */}
+            {platform.pricing.basePrice !== undefined &&
+             platform.pricing.basePrice > 0 &&
+             !platform.pricing.pricePerGB &&
+             !platform.pricing.pricePerMillionMetrics && (
+              <>
+                <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Fixed Infrastructure Cost:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(platform.pricing.basePrice)}/month
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  Self-hosted — fixed monthly cost regardless of metric volume (see breakdown below)
+                </p>
+              </>
+            )}
+
+            {/* Total */}
+            <div className="pt-2 border-t border-blue-200 dark:border-blue-700">
+              <div className="flex justify-between items-center font-semibold">
+                <span className="text-blue-900 dark:text-blue-200">Total Monthly Cost:</span>
+                <span className="text-blue-900 dark:text-blue-200 text-lg">
+                  {formatCurrency(calculationContext.cost)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* TCO Calculation Breakdown for Tracing */}

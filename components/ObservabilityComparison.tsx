@@ -15,12 +15,20 @@ interface ObservabilityComparisonProps {
   volume: number; // metrics, spans, or GB
   volumeLabel: string; // "Monthly Metrics", "Monthly Spans", "Monthly GB"
   calculationContext?: {
-    eventsPerSecond?: number;
-    monthlyEvents?: number;
-    monthlyGB?: number;
+    // Metrics
+    monthlyMetrics?: number;
+    metricsPerSecond?: number;
+    primaryMetricType?: string;
+    bytesPerDatapoint?: number;
+    // Tracing
     spansPerSecond?: number;
     monthlySpans?: number;
     monthlyTraces?: number;
+    // Security
+    eventsPerSecond?: number;
+    monthlyEvents?: number;
+    // Shared
+    monthlyGB?: number;
   };
 }
 

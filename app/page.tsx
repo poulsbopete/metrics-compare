@@ -792,7 +792,23 @@ export default function Home() {
               volume={currentVolume}
               volumeLabel={currentVolumeLabel}
               calculationContext={
-                activeTab === "security"
+                activeTab === "metrics"
+                  ? (() => {
+                      const bpd = BYTES_PER_DATAPOINT[primaryMetricType];
+                      const metricsMonthlyGB = effectiveMonthlyMetrics
+                        ? (effectiveMonthlyMetrics * bpd) / (1024 * 1024 * 1024)
+                        : 0;
+                      return {
+                        monthlyMetrics: effectiveMonthlyMetrics,
+                        metricsPerSecond: metricsInputMode === "infrastructure"
+                          ? infraMetricsPerSecond
+                          : metricsPerSecond,
+                        primaryMetricType,
+                        bytesPerDatapoint: bpd,
+                        monthlyGB: metricsMonthlyGB > 0 ? metricsMonthlyGB : undefined,
+                      };
+                    })()
+                  : activeTab === "security"
                   ? (() => {
                       const bytesPerEvent = 1000; // BYTES_PER_SECURITY_EVENT
                       const secMonthlyGB = monthlyEvents

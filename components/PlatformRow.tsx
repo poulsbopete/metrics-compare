@@ -14,8 +14,19 @@ interface PlatformRowProps {
   formatNumber: (value: number) => string;
   index: number;
   calculationContext?: {
+    // Metrics
+    monthlyMetrics?: number;
+    metricsPerSecond?: number;
+    primaryMetricType?: string;
+    bytesPerDatapoint?: number;
+    // Tracing
+    spansPerSecond?: number;
+    monthlySpans?: number;
+    monthlyTraces?: number;
+    // Security
     eventsPerSecond?: number;
     monthlyEvents?: number;
+    // Shared
     monthlyGB?: number;
     cost: number;
   };
