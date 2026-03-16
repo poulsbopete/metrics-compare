@@ -50,12 +50,30 @@ function CapabilityBadge({ level, label }: { level: CapabilityLevel; label: stri
   );
 }
 
+// Vendors shown by default — Datadog + both Elastic options
+const DEFAULT_ACTIVE_VENDORS = new Set(["datadog", "elastic-serverless", "elastic-ech"]);
+
 export default function FullStackComparison({
   metricsCosts,
   tracingCosts,
   logsCosts,
   securityCosts,
 }: FullStackComparisonProps) {
+  const [activeVendors, setActiveVendors] = useState<Set<string>>(DEFAULT_ACTIVE_VENDORS);
+
+  const toggleVendor = (id: string) => {
+    setActiveVendors((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        // Always keep at least one vendor
+        if (next.size > 1) next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   const [activeSignals, setActiveSignals] = useState<Record<SignalKey, boolean>>({
     metrics: true,
     tracing: true,
@@ -67,9 +85,14 @@ export default function FullStackComparison({
     setActiveSignals((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const visibleVendors = useMemo(
+    () => FULL_STACK_VENDORS.filter((v) => activeVendors.has(v.id)),
+    [activeVendors]
+  );
+
   // Compute total costs per vendor across selected signals
   const vendorTotals = useMemo(() => {
-    return FULL_STACK_VENDORS.map((vendor) => {
+    return visibleVendors.map((vendor) => {
       const signalCosts: Partial<Record<SignalKey, number | null>> = {};
       let total = 0;
       let hasAll = true;
@@ -97,7 +120,7 @@ export default function FullStackComparison({
 
       return { vendor, total, signalCosts, hasAll };
     }).sort((a, b) => a.total - b.total);
-  }, [activeSignals, metricsCosts, tracingCosts, logsCosts, securityCosts]);
+  }, [visibleVendors, activeSignals, metricsCosts, tracingCosts, logsCosts, securityCosts]);
 
   const datadogEntry = vendorTotals.find((v) => v.vendor.id === "datadog");
   const datadogTotal = datadogEntry?.total ?? 0;
@@ -113,6 +136,37 @@ export default function FullStackComparison({
 
   return (
     <div className="space-y-8">
+      {/* Vendor picker */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5">
+        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+          Compare vendors — Datadog shown by default, add others to compare
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {FULL_STACK_VENDORS.map((vendor) => {
+            const isActive = activeVendors.has(vendor.id);
+            return (
+              <button
+                key={vendor.id}
+                onClick={() => toggleVendor(vendor.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold border transition-all ${
+                  isActive
+                    ? vendor.isElastic
+                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                      : "bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 border-gray-700 dark:border-gray-300 shadow-sm"
+                    : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-400"
+                }`}
+              >
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${vendor.color}`} />
+                {vendor.name}
+                {isActive && (
+                  <span className="ml-1 opacity-70 text-xs">✓</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Hero savings callout */}
       {elasticVsDatadogSavings > 0 && (
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-xl">
@@ -265,7 +319,7 @@ export default function FullStackComparison({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide w-48">
                   Capability
                 </th>
-                {FULL_STACK_VENDORS.map((v) => (
+                {visibleVendors.map((v) => (
                   <th key={v.id} className={`px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide ${v.isElastic ? "text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-900/10" : "text-gray-500 dark:text-gray-400"}`}>
                     <div className="flex flex-col items-center gap-1">
                       <div className={`w-2 h-2 rounded-full ${v.color}`} />
@@ -281,7 +335,7 @@ export default function FullStackComparison({
                   <td className="px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300">
                     {capLabel}
                   </td>
-                  {FULL_STACK_VENDORS.map((v) => (
+                  {visibleVendors.map((v) => (
                     <td
                       key={v.id}
                       className={`px-3 py-3 text-center ${v.isElastic ? "bg-blue-50/50 dark:bg-blue-900/10" : ""}`}
