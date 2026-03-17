@@ -1,60 +1,61 @@
 export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { NodeSDK } = await import('@opentelemetry/sdk-node');
-    const { OTLPTraceExporter } = await import('@opentelemetry/exporter-trace-otlp-http');
-    const { OTLPMetricExporter } = await import('@opentelemetry/exporter-metrics-otlp-http');
-    const { Resource } = await import('@opentelemetry/resources');
-    const { SemanticResourceAttributes } = await import('@opentelemetry/semantic-conventions');
-    const { getNodeAutoInstrumentations } = await import('@opentelemetry/auto-instrumentations-node');
-    const { MeterProvider, PeriodicExportingMetricReader } = await import('@opentelemetry/sdk-metrics');
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { NodeSDK } = await import("@opentelemetry/sdk-node");
+    const { OTLPTraceExporter } = await import(
+      "@opentelemetry/exporter-trace-otlp-http"
+    );
+    const { OTLPMetricExporter } = await import(
+      "@opentelemetry/exporter-metrics-otlp-http"
+    );
+    const { OTLPLogExporter } = await import(
+      "@opentelemetry/exporter-logs-otlp-http"
+    );
+    const { Resource } = await import("@opentelemetry/resources");
+    const { SEMRESATTRS_SERVICE_NAME, SEMRESATTRS_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } =
+      await import("@opentelemetry/semantic-conventions");
+    const { getNodeAutoInstrumentations } = await import(
+      "@opentelemetry/auto-instrumentations-node"
+    );
+    const { MeterProvider, PeriodicExportingMetricReader } = await import(
+      "@opentelemetry/sdk-metrics"
+    );
+    const { LoggerProvider, SimpleLogRecordProcessor } = await import(
+      "@opentelemetry/sdk-logs"
+    );
+    const { SimpleSpanProcessor } = await import("@opentelemetry/sdk-trace-base");
+    const { logs } = await import("@opentelemetry/api-logs");
 
-    // Get configuration from environment variables (required in Vercel)
     const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim();
     const apiKey = process.env.OTEL_API_KEY?.trim();
-    
-    // Skip initialization if required environment variables are not set
+
     if (!endpoint || !apiKey) {
-      console.warn('OpenTelemetry: OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_API_KEY must be set. Skipping instrumentation.');
+      console.warn(
+        "[OTel] Missing OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_API_KEY — skipping instrumentation."
+      );
       return;
     }
-    
-    // Validate endpoint format
-    if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
-      console.error('OpenTelemetry: OTEL_EXPORTER_OTLP_ENDPOINT must be a valid URL starting with http:// or https://');
-      console.error(`Current value appears to be: ${endpoint.substring(0, 50)}...`);
-      console.error('Please set OTEL_EXPORTER_OTLP_ENDPOINT to your Elastic endpoint URL (e.g., https://your-deployment-id.ingest.region.aws.elastic.cloud:443)');
-      return;
-    }
-    
-    // Validate API key doesn't look like a URL
-    if (apiKey.startsWith('http://') || apiKey.startsWith('https://')) {
-      console.error('OpenTelemetry: OTEL_API_KEY appears to be a URL. Please set it to your API key value only.');
-      console.error('The API key should be just the key value, not the endpoint URL.');
-      return;
-    }
-    
-    // Determine environment from Vercel or default
-    const deploymentEnv = process.env.OTEL_DEPLOYMENT_ENVIRONMENT || 
-                          process.env.VERCEL_ENV || 
-                          'production';
+
+    const base = endpoint.replace(/\/$/, "");
+    const authHeaders = { Authorization: `ApiKey ${apiKey}` };
 
     const resource = new Resource({
-      [SemanticResourceAttributes.SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'metrics-compare',
-      [SemanticResourceAttributes.SERVICE_VERSION]: process.env.OTEL_SERVICE_VERSION || process.env.VERCEL_GIT_COMMIT_SHA?.substring(0, 7) || '0.1.0',
-      [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: deploymentEnv,
+      [SEMRESATTRS_SERVICE_NAME]:
+        process.env.OTEL_SERVICE_NAME || "metrics-compare",
+      [SEMRESATTRS_SERVICE_VERSION]: "1.0.0",
+      [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]:
+        process.env.OTEL_DEPLOYMENT_ENVIRONMENT || "production",
     });
 
-    // Set up metrics
-    // Ensure endpoint doesn't have trailing slash
-    const metricsUrl = endpoint.endsWith('/') 
-      ? `${endpoint.slice(0, -1)}/v1/metrics`
-      : `${endpoint}/v1/metrics`;
-    
+    // ── Traces ──────────────────────────────────────────────────────────────
+    const traceExporter = new OTLPTraceExporter({
+      url: `${base}/v1/traces`,
+      headers: authHeaders,
+    });
+
+    // ── Metrics ─────────────────────────────────────────────────────────────
     const metricExporter = new OTLPMetricExporter({
-      url: metricsUrl,
-      headers: {
-        'Authorization': `ApiKey ${apiKey}`,
-      },
+      url: `${base}/v1/metrics`,
+      headers: authHeaders,
     });
 
     const meterProvider = new MeterProvider({
@@ -62,80 +63,65 @@ export async function register() {
       readers: [
         new PeriodicExportingMetricReader({
           exporter: metricExporter,
-          exportIntervalMillis: 10000, // Export every 10 seconds
+          exportIntervalMillis: 5_000,
         }),
       ],
     });
 
-    // Set the global meter provider
-    const { metrics } = await import('@opentelemetry/api');
+    const { metrics } = await import("@opentelemetry/api");
     metrics.setGlobalMeterProvider(meterProvider);
 
-    // Set up traces
-    // Ensure endpoint doesn't have trailing slash
-    const tracesUrl = endpoint.endsWith('/') 
-      ? `${endpoint.slice(0, -1)}/v1/traces`
-      : `${endpoint}/v1/traces`;
-    
-    const traceExporter = new OTLPTraceExporter({
-      url: tracesUrl,
-      headers: {
-        'Authorization': apiKey.startsWith('ApiKey ') ? apiKey : `ApiKey ${apiKey}`,
-      },
+    // ── Logs ─────────────────────────────────────────────────────────────────
+    const logExporter = new OTLPLogExporter({
+      url: `${base}/v1/logs`,
+      headers: authHeaders,
     });
-    
+
+    const loggerProvider = new LoggerProvider({ resource });
+    loggerProvider.addLogRecordProcessor(
+      new SimpleLogRecordProcessor(logExporter)
+    );
+    logs.setGlobalLoggerProvider(loggerProvider);
+
+    // ── SDK (traces + auto-instrumentation) ─────────────────────────────────
+    // Use SimpleSpanProcessor so each span is exported synchronously before
+    // the Vercel function exits (BatchSpanProcessor loses data in serverless).
     const sdk = new NodeSDK({
       resource,
-      traceExporter,
+      spanProcessors: [new SimpleSpanProcessor(traceExporter)],
       instrumentations: [
         getNodeAutoInstrumentations({
-          // Exclude instrumentations that require optional dependencies
-          '@opentelemetry/instrumentation-winston': {
-            enabled: false,
-          },
-          // HTTP instrumentation is enabled by default and will capture all HTTP requests
+          "@opentelemetry/instrumentation-winston": { enabled: false },
+          "@opentelemetry/instrumentation-fs": { enabled: false },
         }),
       ],
     });
 
     try {
       sdk.start();
-      
-      // Log initialization with service details
-      const serviceName = process.env.OTEL_SERVICE_NAME || 'metrics-compare';
-      console.log('='.repeat(60));
-      console.log('OpenTelemetry instrumentation initialized');
-      console.log(`Service Name: ${serviceName}`);
-      console.log(`Environment: ${deploymentEnv}`);
-      console.log(`Traces Endpoint: ${tracesUrl}`);
-      console.log(`Metrics Endpoint: ${metricsUrl}`);
-      console.log(`API Key configured: ${apiKey ? 'Yes (***' + apiKey.slice(-4) + ')' : 'No'}`);
-      console.log('='.repeat(60));
-      
-      // Create a test span to verify tracing is working
-      const { trace } = await import('@opentelemetry/api');
-      const tracer = trace.getTracer('metrics-compare-init', '1.0.0');
-      const span = tracer.startSpan('instrumentation-startup', {
-        attributes: {
-          'service.name': serviceName,
-          'deployment.environment': deploymentEnv,
-          'init.timestamp': new Date().toISOString(),
-        }
+
+      const serviceName = process.env.OTEL_SERVICE_NAME || "metrics-compare";
+      console.log(`[OTel] Initialized — service: ${serviceName}`);
+      console.log(`[OTel]   traces  → ${base}/v1/traces`);
+      console.log(`[OTel]   metrics → ${base}/v1/metrics`);
+      console.log(`[OTel]   logs    → ${base}/v1/logs`);
+
+      // Emit a startup log record to Elastic
+      const logger = logs.getLogger("metrics-compare", "1.0.0");
+      logger.emit({
+        severityText: "INFO",
+        body: `[metrics-compare] OTel instrumentation started — service: ${serviceName}`,
+        attributes: { "init.timestamp": new Date().toISOString() },
       });
-      
-      // Ensure span is sampled
-      const spanContext = span.spanContext();
-      const isSampled = (spanContext.traceFlags & 1) === 1;
-      console.log(`Startup span - TraceId: ${spanContext.traceId}, SpanId: ${spanContext.spanId}, Sampled: ${isSampled}`);
-      
+
+      // Send a startup trace so you can verify connectivity immediately
+      const { trace } = await import("@opentelemetry/api");
+      const tracer = trace.getTracer("metrics-compare", "1.0.0");
+      const span = tracer.startSpan("startup");
+      span.setAttribute("service.name", serviceName);
       span.end();
-      console.log('Test span created and sent');
-      console.log('Note: Traces are exported in batches. Allow 10-30 seconds for traces to appear in Elastic.');
-      console.log(`To test tracing, visit: /api/trace-test or /api/trace-ping`);
-    } catch (error) {
-      console.error('Error initializing OpenTelemetry:', error);
-      throw error;
+    } catch (err) {
+      console.error("[OTel] Failed to start SDK:", err);
     }
   }
 }
-
