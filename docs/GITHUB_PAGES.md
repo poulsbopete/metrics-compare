@@ -7,9 +7,10 @@
 
 ## Slides on GitHub Pages
 
-Workflow: [`.github/workflows/deploy-slides.yml`](../.github/workflows/deploy-slides.yml)
+Workflow: [`.github/workflows/deploy-slides.yml`](../.github/workflows/deploy-slides.yml) (**GitHub Pages — slides only**)
 
-- **Triggers:** pushes to `main` that change files under `slides/`, or **Actions → Deploy Slides to GitHub Pages → Run workflow** (manual redeploy).
+- **Triggers:** every push to `main` (so the live site is never stuck on an old artifact), or **Actions → GitHub Pages — slides only → Run workflow** for a manual redeploy.
+- If you previously deployed a **Next.js `out/`** build to Pages, run this workflow once (or push any commit to `main`) to overwrite it with `slides/` only.
 - **Repo settings:** **Pages → Source:** **GitHub Actions**.
 
 After a successful run, slides are served from:

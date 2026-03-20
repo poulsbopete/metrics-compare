@@ -1,12 +1,11 @@
-# Serves the static `slides/` folder on GitHub Pages (Slides in git → Pages).
-# Host the Next.js app separately (e.g. Vercel).
-name: Deploy Slides to GitHub Pages
+# Publishes ONLY the git `slides/` folder to GitHub Pages.
+# The Next.js app lives on Vercel — do not add a workflow that uploads `out/` here.
+name: GitHub Pages — slides only
 
 on:
   push:
     branches: [main]
-    paths:
-      - "slides/**"
+    # Run on every push so we replace any stale artifact (e.g. old Next static export).
   workflow_dispatch:
 
 permissions:
@@ -31,11 +30,11 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload slides as artifact
+      - name: Upload slides folder (site root = contents of slides/)
         uses: actions/upload-pages-artifact@v3
         with:
           path: slides/
 
-      - name: Deploy to GitHub Pages
+      - name: Publish to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
