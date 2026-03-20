@@ -1,0 +1,190 @@
+{
+  "title": "metrics-compare — App Observability",
+  "description": "Traces, logs, and Node.js metrics from the metrics-compare Next.js app via OpenTelemetry → Elastic Serverless",
+  "time_range": { "from": "now-90d", "to": "now" },
+  "panels": [
+    {
+      "type": "DASHBOARD_MARKDOWN",
+      "uid": "header",
+      "grid": { "x": 0, "y": 0, "w": 48, "h": 3 },
+      "config": {
+        "content": "## metrics-compare — OpenTelemetry Observability\n\nTraces · Logs · Node.js runtime metrics from [o11y-compare.vercel.app](https://o11y-compare.vercel.app) via OTel → Elastic Serverless."
+      }
+    },
+    {
+      "type": "lens",
+      "uid": "kpi-requests",
+      "grid": { "x": 0, "y": 3, "w": 12, "h": 7 },
+      "config": {
+        "attributes": {
+          "title": "Total Requests (Traces)",
+          "type": "metric",
+          "dataset": {
+            "type": "esql",
+            "query": "FROM traces-apm* | STATS requests = COUNT(*)"
+          },
+          "metrics": [{ "type": "primary", "operation": "value", "column": "requests" }]
+        }
+      }
+    },
+    {
+      "type": "lens",
+      "uid": "kpi-avg-duration",
+      "grid": { "x": 12, "y": 3, "w": 12, "h": 7 },
+      "config": {
+        "attributes": {
+          "title": "Avg Response Time (ms)",
+          "type": "metric",
+          "dataset": {
+            "type": "esql",
+            "query": "FROM traces-apm* | WHERE `transaction.duration.us` IS NOT NULL | STATS avg_us = AVG(`transaction.duration.us`) | EVAL avg_ms = ROUND(avg_us / 1000, 1)"
+          },
+          "metrics": [{ "type": "primary", "operation": "value", "column": "avg_ms" }]
+        }
+      }
+    },
+    {
+      "type": "lens",
+      "uid": "kpi-log-errors",
+      "grid": { "x": 24, "y": 3, "w": 12, "h": 7 },
+      "config": {
+        "attributes": {
+          "title": "Application Errors (Logs)",
+          "type": "metric",
+          "dataset": {
+            "type": "esql",
+            "query": "FROM logs-generic.otel-default | WHERE `resource.attributes.service.name` == \"metrics-compare\" AND `attributes.exception.type` IS NOT NULL | STATS errors = COUNT(*)"
+          },
+          "metrics": [{ "type": "primary", "operation": "value", "column": "errors" }]
+        }
+      }
+    },
+    {
+      "type": "lens",
+      "uid": "kpi-log-total",
+      "grid": { "x": 36, "y": 3, "w": 12, "h": 7 },
+      "config": {
+        "attributes": {
+          "title": "Total Log Events",
+          "type": "metric",
+          "dataset": {
+            "type": "esql",
+            "query": "FROM logs-generic.otel-default | WHERE `resource.attributes.service.name` == \"metrics-compare\" | STATS total = COUNT(*)"
+          },
+          "metrics": [{ "type": "primary", "operation": "value", "column": "total" }]
+        }
+      }
+    },
+    {
+      "type": "lens",
+      "uid": "chart-requests",
+      "grid": { "x": 0, "y": 10, "w": 24, "h": 10 },
+      "config": {
+        "attributes": {
+          "title": "Requests Over Time (Traces)",
+          "type": "xy",
+          "layers": [
+            {
+              "type": "bar",
+              "dataset": {
+                "type": "esql",
+                "query": "FROM traces-apm* | STATS count = COUNT(*) BY bucket = BUCKET(@timestamp, 75, ?_tstart, ?_tend) | SORT bucket ASC"
+              },
+              "x": { "operation": "value", "column": "bucket" },
+              "y": [{ "operation": "value", "column": "count" }]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "lens",
+      "uid": "chart-duration",
+      "grid": { "x": 24, "y": 10, "w": 24, "h": 10 },
+      "config": {
+        "attributes": {
+          "title": "Avg Transaction Duration (ms)",
+          "type": "xy",
+          "layers": [
+            {
+              "type": "area",
+              "dataset": {
+                "type": "esql",
+                "query": "FROM traces-apm* | WHERE `transaction.duration.us` IS NOT NULL | STATS avg_us = AVG(`transaction.duration.us`) BY bucket = BUCKET(@timestamp, 75, ?_tstart, ?_tend) | EVAL avg_ms = avg_us / 1000 | SORT bucket ASC"
+              },
+              "x": { "operation": "value", "column": "bucket" },
+              "y": [{ "operation": "value", "column": "avg_ms" }]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "lens",
+      "uid": "chart-logs",
+      "grid": { "x": 0, "y": 20, "w": 24, "h": 10 },
+      "config": {
+        "attributes": {
+          "title": "Log Events Over Time (metrics-compare)",
+          "type": "xy",
+          "layers": [
+            {
+              "type": "bar",
+              "dataset": {
+                "type": "esql",
+                "query": "FROM logs-generic.otel-default | WHERE `resource.attributes.service.name` == \"metrics-compare\" | STATS count = COUNT(*) BY bucket = BUCKET(@timestamp, 75, ?_tstart, ?_tend) | SORT bucket ASC"
+              },
+              "x": { "operation": "value", "column": "bucket" },
+              "y": [{ "operation": "value", "column": "count" }]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "lens",
+      "uid": "chart-eventloop",
+      "grid": { "x": 24, "y": 20, "w": 24, "h": 10 },
+      "config": {
+        "attributes": {
+          "title": "Node.js Event Loop Delay (max ms)",
+          "type": "xy",
+          "layers": [
+            {
+              "type": "line",
+              "dataset": {
+                "type": "esql",
+                "query": "FROM metrics-generic.otel-default | WHERE `resource.attributes.service.name` == \"metrics-compare\" | STATS max_delay = MAX(`metrics.nodejs.eventloop.delay.max`) BY bucket = BUCKET(@timestamp, 75, ?_tstart, ?_tend) | SORT bucket ASC"
+              },
+              "x": { "operation": "value", "column": "bucket" },
+              "y": [{ "operation": "value", "column": "max_delay" }]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "lens",
+      "uid": "table-errors",
+      "grid": { "x": 0, "y": 30, "w": 48, "h": 10 },
+      "config": {
+        "attributes": {
+          "title": "Application Errors by Type",
+          "type": "datatable",
+          "dataset": {
+            "type": "esql",
+            "query": "FROM logs-generic.otel-default | WHERE `resource.attributes.service.name` == \"metrics-compare\" AND `attributes.exception.type` IS NOT NULL | STATS count = COUNT(), last_seen = MAX(@timestamp) BY error_type = `attributes.exception.type`, error_msg = `attributes.exception.message` | SORT count DESC | LIMIT 20"
+          },
+          "rows": [
+            { "operation": "value", "column": "error_type" },
+            { "operation": "value", "column": "error_msg" }
+          ],
+          "metrics": [
+            { "operation": "value", "column": "count" },
+            { "operation": "value", "column": "last_seen" }
+          ]
+        }
+      }
+    }
+  ]
+}
