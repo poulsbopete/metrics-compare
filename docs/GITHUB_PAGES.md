@@ -1,36 +1,23 @@
-# GitHub Pages
+# GitHub Pages vs Vercel
 
-The **Next.js app** is deployed as a **static export** on every push to `main` via [`.github/workflows/github-pages.yml`](../.github/workflows/github-pages.yml).
+| What | Where |
+|------|--------|
+| **Metrics-compare Next.js app** | **Vercel** (full SSR, `/api/*`, OpenTelemetry) |
+| **Static slides** (`slides/` in git) | **GitHub Pages** |
 
-## Setup (one-time)
+## Slides on GitHub Pages
 
-1. Repo **Settings → Pages**
-2. **Build and deployment → Source:** **GitHub Actions** (not “Deploy from a branch”).
-3. Push to `main` or run the workflow manually (**Actions → Deploy to GitHub Pages → Run workflow**).
+Workflow: [`.github/workflows/deploy-slides.yml`](../.github/workflows/deploy-slides.yml)
 
-After the first successful run, the site is at:
+- **Triggers:** pushes to `main` that change files under `slides/`, or **Actions → Deploy Slides to GitHub Pages → Run workflow** (manual redeploy).
+- **Repo settings:** **Pages → Source:** **GitHub Actions**.
+
+After a successful run, slides are served from:
 
 `https://<user>.github.io/<repo>/`
 
-Example: `https://poulsbopete.github.io/metrics-compare/`
+Example: `https://poulsbopete.github.io/metrics-compare/` → root is whatever is in `slides/` (e.g. `slides/index.html`).
 
-## Limitations (static host)
+## App on Vercel
 
-- **`/api/*` routes are not included** on GitHub Pages (no Node server). Trace-test and health APIs exist only on [Vercel](https://o11y-compare.vercel.app/) (or other full Next hosts).
-- **OpenTelemetry `instrumentation.ts`** does not run in the browser bundle the same way as on Vercel.
-
-## Local static build
-
-```bash
-export GITHUB_PAGES=true
-export BASE_PATH=/metrics-compare   # match your GitHub repo name
-rm -rf app/api   # restore from git after: git checkout -- app/api
-npm run build
-npx serve out
-```
-
-Restore API routes after testing: `git checkout -- app/api`
-
-## Slides
-
-Optional files under `slides/` are copied to `out/slides/` during CI so they remain available at `.../<repo>/slides/`.
+Connect the repo to Vercel and deploy the **root** of the project (default Next.js preset). No GitHub Pages workflow is needed for the app.
