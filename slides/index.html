@@ -238,7 +238,41 @@
   </div>
 </section>
 
-<!-- ── 2. OPPORTUNITY ────────────────────────────────────────────────────── -->
+<!-- ── 2. PROBLEM STATEMENT (SELLER FRAMING) ──────────────────────────────── -->
+<section data-background-color="#F2F6FA">
+  <div class="slide-header">
+    <span class="eyebrow">Internal — frame the problem</span>
+    <h2>Why the Datadog metrics bill explodes</h2>
+  </div>
+  <p style="font-size:0.72em; color:var(--text-md); margin:0.2rem 0 0.85rem; max-width:52rem;">
+    Many sellers haven’t had to think about <strong>how</strong> Datadog prices metrics. This slide is the one-liner for your talk track.
+  </p>
+  <div class="card" style="border-left:4px solid #00BFB3; padding:0.65rem 0.85rem; margin-bottom:0.75rem;">
+    <p style="font-size:0.68em; font-weight:700; color:var(--navy); margin:0 0 0.35rem;">What are “custom metrics”?</p>
+    <p style="font-size:0.64em; line-height:1.45; color:var(--text-md); margin:0;">
+      Metrics <strong>you</strong> (or the app) emit beyond built-in host/agent defaults: golden signals per service, queue depth, business or product KPIs, fine-grained tags, endpoints, cache hit rate — the telemetry that makes dashboards and alerts <em>actually</em> answer “what broke?” and “who’s impacted?”. Not optional fluff — it’s how teams get real value.
+    </p>
+  </div>
+  <div class="cols cols-2" style="gap:0.85rem; align-items:stretch;">
+    <div class="card" style="margin:0; border-left:4px solid #64748B;">
+      <p style="font-size:0.62em; font-weight:700; color:var(--text-dk); margin:0 0 0.4rem;">Out of the box isn’t enough</p>
+      <p style="font-size:0.6em; line-height:1.45; color:var(--text-md); margin:0;">
+        Default host and packaged integrations are table stakes. Customers don’t buy observability to stare at CPU charts — they need <strong>their</strong> apps and <strong>their</strong> journeys instrumented. That means custom metrics (and often lots of them).
+      </p>
+    </div>
+    <div class="card red" style="margin:0;">
+      <p style="font-size:0.62em; font-weight:700; color:#C53030; margin:0 0 0.4rem;">That’s where Datadog gets you</p>
+      <p style="font-size:0.6em; line-height:1.45; margin:0;">
+        The pricing model is built around metering those <strong>custom</strong> metrics (commonly per metric × host or service). The moment they instrument properly to get value, <strong>spend jumps</strong> — and “unexpected bill” stories follow.
+      </p>
+    </div>
+  </div>
+  <div class="action-line" style="margin-top:0.85rem;">
+    Talk track: “Defaults don’t run the business — your metrics do. Datadog makes that step expensive on purpose.”
+  </div>
+</section>
+
+<!-- ── 3. OPPORTUNITY ────────────────────────────────────────────────────── -->
 <section data-background-color="#F2F6FA">
   <div class="slide-header">
     <span class="eyebrow">The Opportunity</span>
@@ -250,7 +284,7 @@
         <div class="number" style="color:#C53030;">$$$</div>
         <div class="label" style="font-weight:700; color:#C53030;">Custom Metrics Pricing</div>
       </div>
-      <p style="margin-top:0.5rem;">Datadog charges per custom metric per host. At scale, this becomes the #1 observability budget line item — and every customer knows it.</p>
+      <p style="margin-top:0.5rem;">Once they move past OOB dashboards, Datadog bills every meaningful metric they add. At scale, <strong>custom metrics</strong> become the #1 line item — anchored to the value story above.</p>
     </div>
     <div class="card teal">
       <div class="stat">
@@ -268,11 +302,11 @@
     </div>
   </div>
   <div class="action-line">
-    Ask first: "What are you paying Datadog today for custom metrics?" — Let the number land before you say anything else.
+    Ask first: "What are you paying Datadog today for <strong>custom</strong> metrics — the ones you added beyond defaults?" Let the number land before you pitch Elastic.
   </div>
 </section>
 
-<!-- ── 3. CUSTOMER VOICE ─────────────────────────────────────────────────── -->
+<!-- ── 4. CUSTOMER VOICE ───────────────────────────────────────────────────── -->
 <section class="dark" data-background-color="#1A3A5C">
   <div style="padding: 0 0.5rem;">
     <span class="pill teal" style="margin-bottom:0.8rem; display:inline-block;">Customer Voice</span>
@@ -301,7 +335,7 @@
   </div>
 </section>
 
-<!-- ── 4. WHERE ELASTIC WINS ─────────────────────────────────────────────── -->
+<!-- ── 5. WHERE ELASTIC WINS ─────────────────────────────────────────────── -->
 <section data-background-color="#F2F6FA">
   <div class="slide-header">
     <span class="eyebrow">Where We Win</span>
@@ -356,7 +390,7 @@
   </div>
 </section>
 
-<!-- ── 5. ELASTIC STREAMS ────────────────────────────────────────────────── -->
+<!-- ── 6. ELASTIC STREAMS ────────────────────────────────────────────────── -->
 <section data-background-color="#F2F6FA">
   <div class="slide-header teal">
     <span class="eyebrow" style="color:white;">★ The Headline Differentiator</span>
@@ -395,7 +429,7 @@
   </div>
 </section>
 
-<!-- ── 6. TCO ─────────────────────────────────────────────────────────────── -->
+<!-- ── 7. TCO ─────────────────────────────────────────────────────────────── -->
 <section data-background-color="#F2F6FA">
   <div class="slide-header">
     <span class="eyebrow">Cost</span>
@@ -428,7 +462,7 @@
   </div>
 </section>
 
-<!-- ── 7. DEMO FLOW ───────────────────────────────────────────────────────── -->
+<!-- ── 8. DEMO FLOW ───────────────────────────────────────────────────────── -->
 <section data-background-color="#F2F6FA">
   <div class="slide-header">
     <span class="eyebrow">Field Motion</span>
@@ -478,7 +512,7 @@
   </div>
 </section>
 
-<!-- ── 8. KNOW THE GAPS ──────────────────────────────────────────────────── -->
+<!-- ── 9. KNOW THE GAPS ──────────────────────────────────────────────────── -->
 <section data-background-color="#F2F6FA">
   <div class="slide-header">
     <span class="eyebrow">Honesty Builds Trust</span>
@@ -518,7 +552,7 @@
   </table>
 </section>
 
-<!-- ── 9. OBJECTIONS ─────────────────────────────────────────────────────── -->
+<!-- ── 10. OBJECTIONS ─────────────────────────────────────────────────────── -->
 <section data-background-color="#F2F6FA">
   <div class="slide-header">
     <span class="eyebrow">Objection Handling</span>
@@ -544,7 +578,7 @@
   </div>
 </section>
 
-<!-- ── 10. ROADMAP ───────────────────────────────────────────────────────── -->
+<!-- ── 11. ROADMAP ───────────────────────────────────────────────────────── -->
 <section data-background-color="#F2F6FA">
   <div class="slide-header">
     <span class="eyebrow">Roadmap</span>
@@ -589,7 +623,7 @@
   </div>
 </section>
 
-<!-- ── 11. CLOSE ─────────────────────────────────────────────────────────── -->
+<!-- ── 12. CLOSE ─────────────────────────────────────────────────────────── -->
 <section class="dark" data-background-color="#0D1F3C">
   <div style="padding: 0 0.5rem;">
     <div style="border-left: 6px solid #00BFB3; padding-left: 1.2rem; margin-top:0.5rem;">
