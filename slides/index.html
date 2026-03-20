@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Displacing Datadog — Elastic Metrics Playbook</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.0/reset.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.0/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.0/theme/white.min.css">
+  <style>
+    /* ── Variables ─────────────────────────────────────────────── */
+    :root {
+      --navy:    #0D1F3C;
+      --navy2:   #1A3A5C;
+      --teal:    #00BFB3;
+      --teal-dk: #007C76;
+      --teal-text: #005C57;
+      --blue:    #0066CC;
+      --orange:  #DD6B20;
+      --red:     #C53030;
+      --light:   #F2F6FA;
+      --border:  #D1DCE8;
+      --text-dk: #0D1F3C;
+      --text-md: #334E68;
+      --text-lt: #64748B;
+    }
+
+    /* ── Base overrides ────────────────────────────────────────── */
+    .reveal { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .reveal .slides section { text-align: left; }
+    .reveal h1, .reveal h2, .reveal h3 { font-weight: 700; letter-spacing: -0.02em; }
+    .reveal p, .reveal li { font-size: 0.82em; }
+
+    /* Progress & controls */
+    .reveal .progress { color: var(--teal); height: 4px; }
+    .reveal .controls { color: var(--teal); }
+    .reveal .slide-number { color: var(--text-lt); font-size: 12px; }
+
+    /* ── Layout helpers ────────────────────────────────────────── */
+    .cols { display: grid; gap: 1.2rem; }
+    .cols-2 { grid-template-columns: 1fr 1fr; }
+    .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .cols-5-3 { grid-template-columns: 5fr 3fr; }
+    .cols-3-5 { grid-template-columns: 3fr 5fr; }
+
+    /* ── Header band (used on content slides) ─────────────────── */
+    .slide-header {
+      background: var(--navy);
+      color: white;
+      margin: -0.5rem -1rem 1.5rem -1rem;
+      padding: 0.55rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .slide-header .eyebrow {
+      font-size: 0.48em;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: var(--teal);
+      text-transform: uppercase;
+    }
+    .slide-header h2 {
+      font-size: 0.95em;
+      color: white;
+      margin: 0;
+      text-align: right;
+    }
+
+    /* ── Teal header variant ──────────────────────────────────── */
+    .slide-header.teal { background: var(--teal-dk); }
+
+    /* ── Card ─────────────────────────────────────────────────── */
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.9rem 0.9rem 0.9rem 1.1rem;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 5px;
+    }
+    .card.teal::before  { background: var(--teal); }
+    .card.blue::before  { background: var(--blue); }
+    .card.orange::before { background: var(--orange); }
+    .card.red::before   { background: var(--red); }
+    .card h3 { font-size: 0.78em; margin: 0 0 0.3rem; color: var(--text-dk); }
+    .card p  { font-size: 0.68em; color: var(--text-md); margin: 0; line-height: 1.5; }
+
+    /* ── Icon circle ──────────────────────────────────────────── */
+    .icon-circle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 2.2rem; height: 2.2rem;
+      border-radius: 50%;
+      font-size: 1rem; font-weight: 700;
+      flex-shrink: 0;
+      margin-right: 0.6rem;
+    }
+    .icon-circle.teal   { background: var(--teal); color: var(--navy); }
+    .icon-circle.blue   { background: var(--blue); color: white; }
+    .icon-circle.orange { background: var(--orange); color: white; }
+    .icon-circle.red    { background: var(--red); color: white; }
+    .icon-circle.navy   { background: var(--navy); color: white; }
+
+    .card-row { display: flex; align-items: flex-start; gap: 0.5rem; }
+
+    /* ── Pill / badge ─────────────────────────────────────────── */
+    .pill {
+      display: inline-block;
+      padding: 0.18em 0.65em;
+      border-radius: 4px;
+      font-size: 0.52em;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .pill.teal   { background: var(--teal); color: var(--navy); }
+    .pill.blue   { background: var(--blue); color: white; }
+    .pill.orange { background: var(--orange); color: white; }
+    .pill.gray   { background: #8B9BB4; color: white; }
+
+    /* ── Quote block ──────────────────────────────────────────── */
+    .quote-block {
+      border-left: 5px solid var(--teal);
+      padding: 0.8rem 1.2rem;
+      background: rgba(0,191,179,0.07);
+      border-radius: 0 6px 6px 0;
+      margin: 0.6rem 0;
+    }
+    .quote-block p { font-size: 0.82em; font-style: italic; color: #BDD5EA; line-height: 1.6; margin: 0; }
+    .quote-block .attribution { font-size: 0.6em; color: var(--teal); margin-top: 0.6rem; font-style: normal; font-weight: 600; }
+
+    /* ── Table ────────────────────────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.62em; }
+    .data-table th { background: var(--navy); color: var(--teal); padding: 0.45em 0.7em; text-align: left; font-size: 0.85em; letter-spacing: 0.1em; text-transform: uppercase; }
+    .data-table td { padding: 0.5em 0.7em; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text-md); line-height: 1.4; }
+    .data-table tr:nth-child(even) td { background: #F5F8FB; }
+    .data-table td:first-child { font-weight: 700; color: var(--text-dk); width: 22%; }
+    .data-table td:last-child { color: var(--teal-text); }
+
+    /* ── Comparison columns ───────────────────────────────────── */
+    .compare-col { border-radius: 8px; overflow: hidden; }
+    .compare-col .compare-header { padding: 0.6rem 0.9rem; text-align: center; }
+    .compare-col .compare-header h3 { color: white; margin: 0; font-size: 0.82em; }
+    .compare-col .compare-header .sub { font-size: 0.6em; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 0.2rem; }
+    .compare-col .compare-body { padding: 0.8rem 1rem; }
+    .compare-col.bad  { background: #FFF5F5; border: 1px solid #FED7D7; }
+    .compare-col.bad  .compare-header { background: var(--red); }
+    .compare-col.bad  .compare-header .sub { color: #FFC5C5; }
+    .compare-col.good { background: #F0FAFA; border: 2px solid var(--teal); }
+    .compare-col.good .compare-header { background: var(--teal); }
+    .compare-col.good .compare-header h3 { color: var(--navy); }
+    .compare-col.good .compare-header .sub { color: #004040; }
+
+    .compare-item { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.55rem; }
+    .compare-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 0.3em; }
+    .compare-item .dot.red  { background: var(--red); }
+    .compare-item .dot.teal { background: var(--teal); }
+    .compare-item p { font-size: 0.68em; color: var(--text-md); margin: 0; line-height: 1.4; }
+
+    /* ── Roadmap row ──────────────────────────────────────────── */
+    .roadmap-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+    .roadmap-row:last-child { border-bottom: none; }
+    .roadmap-row .status { width: 6.5rem; flex-shrink: 0; text-align: center; }
+    .roadmap-row .capability { flex: 1; font-size: 0.68em; color: var(--text-dk); font-weight: 600; line-height: 1.35; }
+    .roadmap-row .say { width: 38%; font-size: 0.62em; color: var(--teal-text); font-style: italic; line-height: 1.35; }
+
+    /* ── Step row (demo flow) ─────────────────────────────────── */
+    .step-row { display: flex; align-items: flex-start; gap: 0.8rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+    .step-row:last-child { border-bottom: none; }
+    .step-num { width: 1.8rem; height: 1.8rem; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78em; }
+    .step-body .step-title { font-size: 0.7em; font-weight: 700; color: var(--text-dk); }
+    .step-body .step-desc  { font-size: 0.63em; color: var(--text-md); line-height: 1.4; margin-top: 0.1rem; }
+    .step-body .step-tag   { font-size: 0.52em; font-weight: 700; padding: 0.1em 0.5em; border-radius: 3px; margin-left: 0.5em; }
+
+    /* ── Objection Q&A ────────────────────────────────────────── */
+    .qa-card { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 0.9rem; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    .qa-card .q { font-size: 0.68em; font-style: italic; font-weight: 700; color: var(--text-dk); margin-bottom: 0.4rem; display: flex; gap: 0.4rem; align-items: flex-start; }
+    .qa-card .a { font-size: 0.64em; color: var(--text-md); line-height: 1.5; display: flex; gap: 0.4rem; align-items: flex-start; }
+    .qa-label { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; border-radius: 3px; font-size: 0.85em; font-weight: 700; flex-shrink: 0; }
+    .qa-label.q { background: var(--orange); color: white; }
+    .qa-label.a { background: var(--navy); color: white; }
+
+    /* ── Dark slide specifics ─────────────────────────────────── */
+    section.dark { background: var(--navy) !important; }
+    section.dark h1, section.dark h2 { color: white; }
+    section.dark p, section.dark li  { color: #BDD5EA; }
+
+    /* ── Bottom callout bar ───────────────────────────────────── */
+    .callout-bar {
+      background: var(--navy);
+      color: var(--teal);
+      padding: 0.5rem 1rem;
+      margin: 0.8rem -1rem -0.5rem;
+      font-size: 0.62em;
+      font-style: italic;
+      border-radius: 0 0 4px 4px;
+    }
+
+    /* ── Stat callout ─────────────────────────────────────────── */
+    .stat { text-align: center; padding: 0.5rem; }
+    .stat .number { font-size: 2.4em; font-weight: 700; line-height: 1; }
+    .stat .label  { font-size: 0.6em; color: var(--text-md); margin-top: 0.3rem; line-height: 1.3; }
+
+    /* ── Pain list ────────────────────────────────────────────── */
+    .pain-list { list-style: none; padding: 0; margin: 0.6rem 0 0; }
+    .pain-list li { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.65em; color: #BDD5EA; margin-bottom: 0.4rem; line-height: 1.4; }
+    .pain-list li .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 0.3em; }
+
+    /* ── Teal action line ─────────────────────────────────────── */
+    .action-line { background: var(--teal); color: var(--navy); text-align: center; padding: 0.4rem 1rem; font-size: 0.6em; font-weight: 700; border-radius: 4px; margin-top: 0.8rem; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ── 1. TITLE ─────────────────────────────────────────────────────────── -->
+<section class="dark" data-background-color="#0D1F3C">
+  <div style="padding: 0 1rem;">
+    <div style="border-left: 6px solid #00BFB3; padding-left: 1.2rem; margin-top: 1rem;">
+      <p style="font-size:0.55em; font-weight:700; letter-spacing:0.18em; color:#00BFB3; text-transform:uppercase; margin:0 0 0.4rem;">
+        Elastic Observability &nbsp;·&nbsp; Field Playbook
+      </p>
+      <h1 style="font-size:2.4em; color:white; margin:0; line-height:1.05;">Displacing Datadog</h1>
+      <p style="font-size:1.15em; color:#8BBDD9; margin:0.4rem 0 0;">with Elastic's New Metrics Platform</p>
+    </div>
+    <div style="margin-top:3.5rem; border-top:1px solid #1A3A5C; padding-top:0.6rem; display:flex; justify-content:space-between; font-size:0.48em; color:#4A6FA5;">
+      <span>March 2026 &nbsp;·&nbsp; Peter Simkins &nbsp;·&nbsp; Elastic</span>
+      <span>INTERNAL USE</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── 2. OPPORTUNITY ────────────────────────────────────────────────────── -->
+<section data-background-color="#F2F6FA">
+  <div class="slide-header">
+    <span class="eyebrow">The Opportunity</span>
+    <h2>The Market Is Ready to Move</h2>
+  </div>
+  <div class="cols cols-3" style="margin-top:0.5rem;">
+    <div class="card red">
+      <div class="stat">
+        <div class="number" style="color:#C53030;">$$$</div>
+        <div class="label" style="font-weight:700; color:#C53030;">Custom Metrics Pricing</div>
+      </div>
+      <p style="margin-top:0.5rem;">Datadog charges per custom metric per host. At scale, this becomes the #1 observability budget line item — and every customer knows it.</p>
+    </div>
+    <div class="card teal">
+      <div class="stat">
+        <div class="number" style="color:#00BFB3;">OTel</div>
+        <div class="label" style="font-weight:700; color:#007C76;">Native OTel Adoption Surging</div>
+      </div>
+      <p style="margin-top:0.5rem;">The market has converged on OpenTelemetry. Datadog still routes OTel through proprietary agents. Elastic stores it natively, as-shipped.</p>
+    </div>
+    <div class="card orange">
+      <div class="stat">
+        <div class="number" style="color:#DD6B20;">⚙</div>
+        <div class="label" style="font-weight:700; color:#DD6B20;">Agent Sprawl Fatigue</div>
+      </div>
+      <p style="margin-top:0.5rem;">Datadog's client-side pipeline model means agent redeployment for every rule change. Teams are exhausted by the config management burden.</p>
+    </div>
+  </div>
+  <div class="action-line">
+    Ask first: "What are you paying Datadog today for custom metrics?" — Let the number land before you say anything else.
+  </div>
+</section>
+
+<!-- ── 3. CUSTOMER VOICE ─────────────────────────────────────────────────── -->
+<section class="dark" data-background-color="#1A3A5C">
+  <div style="padding: 0 0.5rem;">
+    <span class="pill teal" style="margin-bottom:0.8rem; display:inline-block;">Customer Voice</span>
+    <div class="quote-block">
+      <p>"My largest issue with Elastic as an Observability Platform comes down to UX and DevEx. There's a lot of friction in both getting data into Elastic and getting usable insights quickly out of Elastic."</p>
+      <div class="attribution">— Jon Klein, Enterprise Customer &nbsp;|&nbsp; Also uses Datadog &amp; Grafana</div>
+    </div>
+    <div class="cols cols-2" style="margin-top:0.9rem; gap:0.8rem;">
+      <div>
+        <p style="font-size:0.48em; font-weight:700; letter-spacing:0.12em; color:#00BFB3; text-transform:uppercase; margin-bottom:0.4rem;">Pain Points</p>
+        <ul class="pain-list">
+          <li><span class="dot" style="background:#00BFB3;"></span>Navigation keeps changing — hard to re-find sections</li>
+          <li><span class="dot" style="background:#00BFB3;"></span>Elastic jargon (indices, data views, KQL vs ESQL) alienates non-experts</li>
+          <li><span class="dot" style="background:#00BFB3;"></span>Infrastructure view is VM-centric, missing memory utilization</li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-size:0.48em; font-weight:700; letter-spacing:0.12em; color:#DD6B20; text-transform:uppercase; margin-bottom:0.4rem;">More Pain Points</p>
+        <ul class="pain-list">
+          <li><span class="dot" style="background:#DD6B20;"></span>Slow — even on the demo environment</li>
+          <li><span class="dot" style="background:#DD6B20;"></span>No out-of-the-box insights or anomaly callouts</li>
+          <li><span class="dot" style="background:#DD6B20;"></span>Metrics Explorer creates separate graphs instead of multi-line</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 4. WHERE ELASTIC WINS ─────────────────────────────────────────────── -->
+<section data-background-color="#F2F6FA">
+  <div class="slide-header">
+    <span class="eyebrow">Where We Win</span>
+    <h2>5 Reasons Elastic Wins on Metrics</h2>
+  </div>
+  <div class="cols cols-2" style="gap:0.8rem;">
+    <div class="card teal">
+      <div class="card-row">
+        <span class="icon-circle teal">S</span>
+        <div>
+          <h3>⭐ Elastic Streams</h3>
+          <p>Server-side retention + downsampling across OTel, Prom, StatsD. Change rules in the UI — zero agent redeployment required.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card blue">
+      <div class="card-row">
+        <span class="icon-circle blue">→</span>
+        <div>
+          <h3>Managed OTLP Endpoint</h3>
+          <p>One endpoint, one API key. Logs + metrics + traces + profiles all in. Simpler than Grafana or Datadog agent setup.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card teal">
+      <div class="card-row">
+        <span class="icon-circle teal">AI</span>
+        <div>
+          <h3>Agent Builder</h3>
+          <p>Build real incident triage workflows — not just dashboards. No add-on SKU. Datadog charges extra for each AI feature.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card orange">
+      <div class="card-row">
+        <span class="icon-circle orange">$</span>
+        <div>
+          <h3>Cost Advantage</h3>
+          <p>No per-metric, per-host pricing. Storage-based model + Streams downsampling = predictable TCO at scale.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card blue" style="margin-top:0.8rem; max-width:55%; margin-left:auto; margin-right:auto;">
+    <div class="card-row">
+      <span class="icon-circle navy">∞</span>
+      <div>
+        <h3>Open Data Ownership</h3>
+        <p>PROMQL, ESQL, KQL on the same data. Your data in open formats — not behind a proprietary query wall.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 5. ELASTIC STREAMS ────────────────────────────────────────────────── -->
+<section data-background-color="#F2F6FA">
+  <div class="slide-header teal">
+    <span class="eyebrow" style="color:white;">★ The Headline Differentiator</span>
+    <h2>Elastic Streams vs. Datadog Pipelines</h2>
+  </div>
+  <div class="cols cols-2" style="gap:1rem; align-items:stretch;">
+    <div class="compare-col bad">
+      <div class="compare-header">
+        <h3>Datadog Pipelines (Vector)</h3>
+        <div class="sub" style="color:#FFC5C5;">Client-Side</div>
+      </div>
+      <div class="compare-body">
+        <div class="compare-item"><span class="dot red"></span><p>Rules configured on the agent / collector</p></div>
+        <div class="compare-item"><span class="dot red"></span><p>Must touch every instrumentation point</p></div>
+        <div class="compare-item"><span class="dot red"></span><p>Requires agent redeployment for each change</p></div>
+        <div class="compare-item"><span class="dot red"></span><p>Fleet-wide config management burden</p></div>
+        <div class="compare-item"><span class="dot red"></span><p>Delay between rule change and effect</p></div>
+      </div>
+    </div>
+    <div class="compare-col good">
+      <div class="compare-header">
+        <h3>Elastic Streams</h3>
+        <div class="sub">Server-Side</div>
+      </div>
+      <div class="compare-body">
+        <div class="compare-item"><span class="dot teal"></span><p>Rules configured in the Kibana UI or API</p></div>
+        <div class="compare-item"><span class="dot teal"></span><p>Zero instrumentation changes required</p></div>
+        <div class="compare-item"><span class="dot teal"></span><p>Changes take effect immediately — no redeploy</p></div>
+        <div class="compare-item"><span class="dot teal"></span><p>One pipeline for OTel, Prom, and StatsD</p></div>
+        <div class="compare-item"><span class="dot teal"></span><p>Per-stream retention + downsampling = lower TCO</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout-bar">
+    ★ Talking Point: "You just changed retention and downsampling in 30 seconds from the UI. With Datadog, that's a redeployment."
+  </div>
+</section>
+
+<!-- ── 6. TCO ─────────────────────────────────────────────────────────────── -->
+<section data-background-color="#F2F6FA">
+  <div class="slide-header">
+    <span class="eyebrow">Cost</span>
+    <h2>The TCO Story That Wins Deals</h2>
+  </div>
+  <div class="cols cols-2" style="gap:1rem;">
+    <div>
+      <p style="font-size:0.62em; font-weight:700; color:#C53030; margin:0 0 0.5rem;">❌ Datadog Pricing Pain</p>
+      <div style="font-size:0.66em; color:var(--text-md); line-height:1.6;">
+        <p><strong style="color:#C53030;">Per-host pricing:</strong> Every monitored host = another line item</p>
+        <p><strong style="color:#C53030;">Custom metrics tax:</strong> Unique metric name × cardinality = $$</p>
+        <p><strong style="color:#C53030;">Log management tiers:</strong> Full-text search is a separate, extra cost</p>
+        <p><strong style="color:#C53030;">AI add-ons:</strong> Watchdog + Bits AI + Workflow Automation = 3 SKUs</p>
+        <p><strong style="color:#C53030;">Client-side overhead:</strong> Agent management at scale = hidden ops cost</p>
+      </div>
+    </div>
+    <div>
+      <p style="font-size:0.62em; font-weight:700; color:var(--teal-dk); margin:0 0 0.5rem;">✅ Elastic Pricing Model</p>
+      <div style="font-size:0.66em; color:var(--text-md); line-height:1.6;">
+        <p><strong style="color:var(--teal-dk);">Storage-based pricing:</strong> Pay for what you store, not metric shape</p>
+        <p><strong style="color:var(--teal-dk);">Streams downsampling:</strong> Reduce resolution over time — keep trends, cut cost</p>
+        <p><strong style="color:var(--teal-dk);">Retention control:</strong> Hot → warm → cold per stream, from the UI</p>
+        <p><strong style="color:var(--teal-dk);">Logs + metrics together:</strong> No separate log management tier</p>
+        <p><strong style="color:var(--teal-dk);">No AI add-on SKUs:</strong> Agent Builder is part of the platform</p>
+      </div>
+    </div>
+  </div>
+  <div class="action-line">
+    Use <strong>o11y-compare.vercel.app</strong> with the customer's actual metric volumes — let the math close the deal.
+  </div>
+</section>
+
+<!-- ── 7. DEMO FLOW ───────────────────────────────────────────────────────── -->
+<section data-background-color="#F2F6FA">
+  <div class="slide-header">
+    <span class="eyebrow">Field Motion</span>
+    <h2>The Recommended Demo Flow</h2>
+  </div>
+  <div style="margin-top:0.3rem;">
+    <div class="step-row">
+      <div class="step-num" style="background:#00BFB3; color:#0D1F3C;">1</div>
+      <div class="step-body">
+        <span class="step-title">Open with Elastic Streams</span>
+        <span class="step-tag pill teal">WOW MOMENT</span>
+        <div class="step-desc">Show a live metrics stream with retention policy + downsampling configured. Explain server-side vs. client-side. This is the opening hook.</div>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="step-num" style="background:#DD6B20; color:white;">2</div>
+      <div class="step-body">
+        <span class="step-title">Run the TCO Calculator</span>
+        <span class="step-tag pill orange">CLOSE HOOK</span>
+        <div class="step-desc">Open o11y-compare.vercel.app with their rough metric volumes. Let the cost delta speak. Don't narrate — just show the number.</div>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="step-num" style="background:#0066CC; color:white;">3</div>
+      <div class="step-body">
+        <span class="step-title">Show Managed OTLP Ingest</span>
+        <span class="step-tag pill blue">SIMPLICITY</span>
+        <div class="step-desc">One endpoint, one API key. Compare to the Grafana multi-endpoint or Datadog agent setup flow. The contrast lands immediately.</div>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="step-num" style="background:#007C76; color:white;">4</div>
+      <div class="step-body">
+        <span class="step-title">OTel-Native Dashboards + Dashboards-as-Code API</span>
+        <span class="step-tag pill teal">LIVE NOW</span>
+        <div class="step-desc">Navigate to auto-generated service and infra views. Show that a new service's dashboard appears automatically when data arrives.</div>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="step-num" style="background:#00BFB3; color:#0D1F3C;">5</div>
+      <div class="step-body">
+        <span class="step-title">Agent Builder Triage Flow</span>
+        <span class="step-tag pill teal">WOW MOMENT</span>
+        <div class="step-desc">Alert fires → logs pulled → PagerDuty summary drafted. No add-on SKU. Close with: "Does Datadog let you do this without paying extra for three products?"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 8. KNOW THE GAPS ──────────────────────────────────────────────────── -->
+<section data-background-color="#F2F6FA">
+  <div class="slide-header">
+    <span class="eyebrow">Honesty Builds Trust</span>
+    <h2>Know the Gaps — and How to Bridge Them</h2>
+  </div>
+  <table class="data-table" style="margin-top:0.3rem;">
+    <thead>
+      <tr><th>Gap</th><th>Honest Assessment</th><th>Your Bridge</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Out-of-box Dashboards</td>
+        <td>OTel has great content. Prom users must build or import from Grafana. DD wins here today.</td>
+        <td>Demo dashboards-as-code API. Agent Builder auto-generates views. v9.4 brings Prom migration tooling.</td>
+      </tr>
+      <tr>
+        <td>Navigation / UX</td>
+        <td>Side menu shifts. Elastic jargon. Slower than DD in some envs.</td>
+        <td>Acknowledge it. Show Serverless — materially better. Ask them to time the same workflow in both tools.</td>
+      </tr>
+      <tr>
+        <td>Infra Inventory</td>
+        <td>DD's infra map is better. Memory missing from Hosts view. Uptime is irrelevant for k8s.</td>
+        <td>Lead with APM / service-centric view. Hosts view is a known gap — Vinay's team is actively on it.</td>
+      </tr>
+      <tr>
+        <td>Schema Normalization</td>
+        <td>No forced schema convergence. OTel, Prom, OCSF honored as-shipped. One dashboard won't cover all sources by default.</td>
+        <td>OTel gets first-class UX. AI-generated dashboards bridge cross-schema views. This is a deliberate architectural bet — not a gap.</td>
+      </tr>
+      <tr>
+        <td>Onboarding for New Users</td>
+        <td>Still requires some Elastic knowledge. Guided onboarding is in flight.</td>
+        <td>Walk them through it. Don't leave them to discover it. Managed OTLP path is slick when someone shows them.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ── 9. OBJECTIONS ─────────────────────────────────────────────────────── -->
+<section data-background-color="#F2F6FA">
+  <div class="slide-header">
+    <span class="eyebrow">Objection Handling</span>
+    <h2>Responses That Build Confidence</h2>
+  </div>
+  <div class="cols cols-2" style="gap:0.8rem; margin-top:0.3rem;">
+    <div class="qa-card" style="border-left:4px solid #DD6B20;">
+      <div class="q"><span class="qa-label q" style="background:#DD6B20;">Q</span>"We have Datadog Pipelines for data shaping."</div>
+      <div class="a"><span class="qa-label a">A</span>Pipelines are client-side — every rule change means redeployment. Elastic Streams is server-side: change retention or downsampling from the UI, zero agent changes. One pipeline for OTel, Prom, and StatsD.</div>
+    </div>
+    <div class="qa-card" style="border-left:4px solid #C53030;">
+      <div class="q"><span class="qa-label q" style="background:#C53030;">Q</span>"The UX in Elastic isn't as good as Datadog."</div>
+      <div class="a"><span class="qa-label a">A</span>Agree — navigation and jargon are real issues. Run this workflow in both tools and time it: alert fires → root cause → identify owner. Serverless is materially better than what most customers have seen.</div>
+    </div>
+    <div class="qa-card" style="border-left:4px solid #0066CC;">
+      <div class="q"><span class="qa-label q" style="background:#0066CC;">Q</span>"Datadog already has OTel support."</div>
+      <div class="a"><span class="qa-label a">A</span>They do, but they still map OTel through their schema and proprietary agents. You don't own your data in native form. With Elastic, what you send is what's stored — no lock-in on your telemetry format.</div>
+    </div>
+    <div class="qa-card" style="border-left:4px solid #007C76;">
+      <div class="q"><span class="qa-label q" style="background:#007C76;">Q</span>"Isn't this just Splunk all over again — schema sprawl?"</div>
+      <div class="a"><span class="qa-label a">A</span>Different bet. Elastic is going AI-first for cross-schema UX rather than forcing ECS convergence. OTel gets full first-class UX. Prom gets onboarding + migration tooling. AI-generated views close the gap.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 10. ROADMAP ───────────────────────────────────────────────────────── -->
+<section data-background-color="#F2F6FA">
+  <div class="slide-header">
+    <span class="eyebrow">Roadmap</span>
+    <h2>What to Promise — and When</h2>
+  </div>
+  <div style="margin-top:0.3rem;">
+    <div class="roadmap-row">
+      <div class="status"><span class="pill teal">LIVE NOW</span></div>
+      <div class="capability">Elastic Streams — server-side retention + downsampling (OTel, Prom, StatsD)</div>
+      <div class="say">Show in 2 min. Live in Serverless today.</div>
+    </div>
+    <div class="roadmap-row">
+      <div class="status"><span class="pill teal">LIVE NOW</span></div>
+      <div class="capability">Dashboards-as-Code API — auto-generate dashboards on new data arrival</div>
+      <div class="say">New service → dashboard auto-appears. No manual build.</div>
+    </div>
+    <div class="roadmap-row">
+      <div class="status"><span class="pill teal">LIVE NOW</span></div>
+      <div class="capability">OTel first-class UX — full end-to-end service + infra content out of the box</div>
+      <div class="say">On OTel? This is fully built out today.</div>
+    </div>
+    <div class="roadmap-row">
+      <div class="status"><span class="pill blue">v9.4</span></div>
+      <div class="capability">Prom remote_write onboarding + Grafana/DD dashboard migration tooling</div>
+      <div class="say">Existing dashboards don't need to be rebuilt from scratch.</div>
+    </div>
+    <div class="roadmap-row">
+      <div class="status"><span class="pill orange">IN FLIGHT</span></div>
+      <div class="capability">Guided onboarding → lands user on the right dashboard after setup</div>
+      <div class="say">Better onboarding actively in build — preview in Serverless now.</div>
+    </div>
+    <div class="roadmap-row">
+      <div class="status"><span class="pill orange">IN FLIGHT</span></div>
+      <div class="capability">Generative infra dashboards via Agent Builder — auto-created on new streams</div>
+      <div class="say">Goal: you never manually build a dashboard again.</div>
+    </div>
+    <div class="roadmap-row">
+      <div class="status"><span class="pill gray">DIRECTIONAL</span></div>
+      <div class="capability">AI-first cross-schema UX — schemas unified through abstraction, not convergence</div>
+      <div class="say">Strategic direction set at Shay level. OTel gets first-class UX first.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 11. CLOSE ─────────────────────────────────────────────────────────── -->
+<section class="dark" data-background-color="#0D1F3C">
+  <div style="padding: 0 0.5rem;">
+    <div style="border-left: 6px solid #00BFB3; padding-left: 1.2rem; margin-top:0.5rem;">
+      <span class="pill teal" style="margin-bottom:0.8rem; display:inline-block;">The Pitch in One Line</span>
+      <h2 style="font-size:1.55em; line-height:1.25; color:white;">
+        Elastic embraces your schemas.<br>
+        Datadog constrains them.<br>
+        Our AI makes them feel like one.
+      </h2>
+    </div>
+    <hr style="border-color:#1A3A5C; margin:1.2rem 0 0.8rem;">
+    <p style="font-size:0.5em; font-weight:700; letter-spacing:0.15em; color:#00BFB3; text-transform:uppercase; margin-bottom:0.6rem;">Your Next Steps</p>
+    <ul class="pain-list" style="columns:2; gap:1.5rem;">
+      <li><span class="dot" style="background:#00BFB3;"></span>Book a Streams demo — show server-side vs. client-side in 5 minutes</li>
+      <li><span class="dot" style="background:#00BFB3;"></span>Run the TCO calculator with real customer metric volumes</li>
+      <li><span class="dot" style="background:#00BFB3;"></span>Get them on Serverless — existing feedback was on older UI</li>
+      <li><span class="dot" style="background:#00BFB3;"></span>Connect high-value customers to Vinay's roadmap sessions</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.0/reveal.min.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    progress: true,
+    controls: true,
+    center: false,
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    backgroundTransition: 'fade',
+    width: 1280,
+    height: 720,
+    margin: 0.06,
+    plugins: []
+  });
+</script>
+</body>
+</html>
