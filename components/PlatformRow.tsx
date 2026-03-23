@@ -34,6 +34,8 @@ interface PlatformRowProps {
     // Shared
     monthlyGB?: number;
     cost: number;
+    infraCost?: number;
+    operationalCost?: number;
   };
 }
 
@@ -169,7 +171,14 @@ export default function PlatformRow({
       {expanded && (
         <tr>
           <td colSpan={showSavingsColumn ? 5 : 4} className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
-            <PlatformDetails platform={platform} calculationContext={calculationContext} />
+            <PlatformDetails
+              platform={platform}
+              calculationContext={
+                calculationContext
+                  ? { ...calculationContext, cost, infraCost, operationalCost }
+                  : undefined
+              }
+            />
           </td>
         </tr>
       )}

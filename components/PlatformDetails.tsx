@@ -1,6 +1,10 @@
 "use client";
 
-import { Platform } from "@/lib/costCalculator";
+import {
+  ELASTIC_PRICE_PER_GB,
+  MetricSourceType,
+  Platform,
+} from "@/lib/costCalculator";
 import { ObservabilityPlatform } from "@/lib/observabilityPricing";
 
 interface PlatformDetailsProps {
@@ -21,7 +25,24 @@ interface PlatformDetailsProps {
     // Shared
     monthlyGB?: number;
     cost: number;
+    /** SaaS infra subtotal (excludes operational FTE $) — matches table “infra” when shown */
+    infraCost?: number;
+    operationalCost?: number;
   };
+}
+
+function getEffectiveMetricsPricePerGB(
+  platform: Platform,
+  primaryMetricType?: string
+): number {
+  let pricePerGB = platform.pricing.pricePerGB ?? 0;
+  if (platform.id === "elastic-serverless" && primaryMetricType) {
+    const mt = primaryMetricType as MetricSourceType;
+    if (ELASTIC_PRICE_PER_GB[mt] != null) {
+      pricePerGB = ELASTIC_PRICE_PER_GB[mt];
+    }
+  }
+  return pricePerGB;
 }
 
 export default function PlatformDetails({ platform, calculationContext }: PlatformDetailsProps) {
@@ -34,6 +55,15 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
     }).format(value);
   };
 
+  /** Rates like $/M or $/GB — avoid rounding $0.75 to “$1” */
+  const formatUnitRate = (value: number, suffix: string) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }).format(value) + suffix;
+
   const totalInfra = platform.infrastructure
     ? Object.values(platform.infrastructure)
         .filter((v): v is number => typeof v === "number")
@@ -43,6 +73,61 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
   const isPlatform = (p: Platform | ObservabilityPlatform): p is Platform => {
     return 'metricTypes' in p;
   };
+
+  /** Precompute so expanded metrics breakdown matches table infra + TCO */
+  let metricsBreakdown:
+    | {
+        monthlyGB: number;
+        effectivePricePerGB: number;
+        volumeChargeGB: number;
+        baseCluster: number;
+        infraSubtotalFromGB: number;
+        billableMetrics: number;
+        metricsVolumeCharge: number;
+        infraSubtotalFromMetrics: number;
+      }
+    | null = null;
+
+  if (
+    calculationContext &&
+    calculationContext.monthlyMetrics !== undefined &&
+    isPlatform(platform)
+  ) {
+    const monthlyGB = calculationContext.monthlyGB ?? 0;
+    const effectivePricePerGB = getEffectiveMetricsPricePerGB(
+      platform,
+      calculationContext.primaryMetricType
+    );
+    const hasPerGB = !!(platform.pricing.pricePerGB && platform.pricing.pricePerGB > 0);
+    const baseCluster = platform.pricing.basePrice ?? 0;
+    const volumeChargeGB = hasPerGB ? monthlyGB * effectivePricePerGB : 0;
+    const computedInfraGB = hasPerGB ? baseCluster + volumeChargeGB : 0;
+    const billableMetrics = Math.max(
+      0,
+      calculationContext.monthlyMetrics - (platform.pricing.freeTier || 0)
+    );
+    const ppm = platform.pricing.pricePerMillionMetrics ?? 0;
+    const metricsVolumeCharge =
+      ppm > 0 ? (billableMetrics / 1_000_000) * ppm : 0;
+    const infraSubtotalFromMetrics =
+      ppm > 0
+        ? calculationContext.infraCost ?? metricsVolumeCharge
+        : 0;
+    const infraSubtotalFromGB = hasPerGB
+      ? calculationContext.infraCost ?? computedInfraGB
+      : 0;
+
+    metricsBreakdown = {
+      monthlyGB,
+      effectivePricePerGB,
+      volumeChargeGB,
+      baseCluster,
+      infraSubtotalFromGB,
+      billableMetrics,
+      metricsVolumeCharge,
+      infraSubtotalFromMetrics,
+    };
+  }
 
   return (
     <div className="space-y-4">
@@ -149,7 +234,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
             </div>
 
             {/* Per-GB pricing (Elastic Serverless, ECH) */}
-            {platform.pricing.pricePerGB && platform.pricing.pricePerGB > 0 && (
+            {platform.pricing.pricePerGB && platform.pricing.pricePerGB > 0 && metricsBreakdown && (
               <>
                 <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
                 {calculationContext.bytesPerDatapoint && (
@@ -162,36 +247,50 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                     </span>
                   </div>
                 )}
-                {calculationContext.monthlyGB !== undefined && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Monthly GB (calculated):</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {metricsBreakdown.monthlyGB >= 1000
+                      ? `${(metricsBreakdown.monthlyGB / 1000).toFixed(2)} TB`
+                      : `${metricsBreakdown.monthlyGB.toFixed(2)} GB`}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Price per GB (effective):</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatUnitRate(metricsBreakdown.effectivePricePerGB, "/GB")}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Ingest / volume charge:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(metricsBreakdown.volumeChargeGB)}/month
+                  </span>
+                </div>
+                {metricsBreakdown.baseCluster > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Monthly GB (calculated):</span>
+                    <span className="text-gray-600 dark:text-gray-400">Base cluster (minimum):</span>
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      {calculationContext.monthlyGB >= 1000
-                        ? `${(calculationContext.monthlyGB / 1000).toFixed(2)} TB`
-                        : `${calculationContext.monthlyGB.toFixed(2)} GB`}
-                    </span>
-                  </div>
-                )}
-                {platform.pricing.basePrice !== undefined && platform.pricing.basePrice > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Base cluster cost:</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(platform.pricing.basePrice)}/month
+                      {formatCurrency(metricsBreakdown.baseCluster)}/month
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Price per GB:</span>
+                  <span className="text-gray-600 dark:text-gray-400">Infrastructure subtotal:</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {formatCurrency(platform.pricing.pricePerGB)}/GB
+                    {formatCurrency(metricsBreakdown.infraSubtotalFromGB)}/month
                   </span>
                 </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  Volume + base matches the table’s infrastructure line (before operational FTE, if any).
+                </p>
               </>
             )}
 
             {/* Per-million-metrics pricing (Datadog, New Relic, Grafana, etc.) */}
             {platform.pricing.pricePerMillionMetrics !== undefined &&
-             platform.pricing.pricePerMillionMetrics > 0 && (
+             platform.pricing.pricePerMillionMetrics > 0 &&
+             metricsBreakdown && (
               <>
                 <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
                 {platform.pricing.freeTier !== undefined && platform.pricing.freeTier > 0 && (
@@ -224,11 +323,28 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   </>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Price per Million Metrics:</span>
+                  <span className="text-gray-600 dark:text-gray-400">Blended rate (model):</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {formatCurrency(platform.pricing.pricePerMillionMetrics)}/M
+                    {formatUnitRate(platform.pricing.pricePerMillionMetrics, "/M")}
                   </span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Estimated metrics charge:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(metricsBreakdown.metricsVolumeCharge)}/month
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Infrastructure subtotal:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(metricsBreakdown.infraSubtotalFromMetrics)}/month
+                  </span>
+                </div>
+                {platform.id === "datadog" && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    Datadog’s published model is per **custom metric time series**, not this tool’s datapoint/month tally — real spend is often higher. Treat this row as a directional comparison; validate with Usage / invoices.
+                  </p>
+                )}
                 {platform.id === "observe-inc" && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                     Observe charges $0.008/DPM (Data Points per Minute). $0.185/M metrics = $0.008 × (1M ÷ 43,200 datapoints/DPM)
@@ -256,14 +372,26 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
               </>
             )}
 
+            {(calculationContext.operationalCost ?? 0) > 0 && (
+              <div className="flex justify-between items-center text-amber-800 dark:text-amber-200">
+                <span>Operational burden (est. FTE):</span>
+                <span className="font-semibold">
+                  +{formatCurrency(calculationContext.operationalCost!)}/month
+                </span>
+              </div>
+            )}
+
             {/* Total */}
             <div className="pt-2 border-t border-blue-200 dark:border-blue-700">
               <div className="flex justify-between items-center font-semibold">
-                <span className="text-blue-900 dark:text-blue-200">Total Monthly Cost:</span>
+                <span className="text-blue-900 dark:text-blue-200">Total monthly TCO:</span>
                 <span className="text-blue-900 dark:text-blue-200 text-lg">
                   {formatCurrency(calculationContext.cost)}
                 </span>
               </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Same total as the comparison table (infrastructure + operational, when applicable).
+              </p>
             </div>
           </div>
         </div>

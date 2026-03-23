@@ -237,14 +237,17 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 0,
-      pricePerMillionMetrics: 0.75,
+      // Simplified blended rate for **ingested datapoints/month** (this tool’s “monthly metrics”).
+      // Datadog’s real bill uses **unique custom metric time series** (hourly average), hosts, plan tier, and commits — often **higher** than this proxy at high cardinality. Calibrate against an actual DD invoice.
+      pricePerMillionMetrics: 1.25,
       freeTier: 0,
-      unit: "per million metrics/month",
+      unit: "per million metrics/month (simplified proxy)",
       egressPricePerGB: 0.05, // $0.05/GB egress after free tier
       egressFreeTier: 10, // 10 GB free egress/month
       egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
     },
-    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series (including all tag combinations) is counted separately. Adding high-cardinality tags multiplies your metric count and costs proportionally.",
+    cardinalityNote:
+      "Datadog bills **unique custom metric time series** (name + tag combinations), averaged per hour — not raw datapoint volume the same way Elastic prices GB. This calculator maps your **monthly datapoint estimate** to an approximate $/M **blended** rate for comparison only; high-cardinality tag explosions on real DD bills often push cost **well above** this line. Each unique series is separately billable after host allotments. Use a customer’s Datadog usage statement for a real TCO.",
   },
   {
     id: "new-relic",

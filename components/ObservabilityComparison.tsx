@@ -46,6 +46,10 @@ interface ObservabilityComparisonProps {
     monthlyEvents?: number;
     // Shared
     monthlyGB?: number;
+    /** Filled per-row in PlatformRow for breakdown reconciliation */
+    cost?: number;
+    infraCost?: number;
+    operationalCost?: number;
   };
 }
 
