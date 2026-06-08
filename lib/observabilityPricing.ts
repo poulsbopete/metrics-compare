@@ -2,12 +2,22 @@
 
 import {
   calculateElasticServerlessCost,
+  calculateEchVolumeCost,
   DEFAULT_ELASTIC_PRICING_OPTIONS,
   elasticLogsMeteredMonthlyGB,
   type ElasticServerlessPricingOptions,
 } from "./elasticServerlessPricing";
+import {
+  calculateDatadogApmHostCost,
+  DATADOG_APM_HOST_PRO_USD_PER_MONTH,
+} from "./datadogPricing";
+import {
+  DEFAULT_TCO_PRICING_CONTEXT,
+  type TcoPricingContext,
+} from "./tcoPricingContext";
 
-export type { ElasticServerlessPricingOptions };
+export type { ElasticServerlessPricingOptions, TcoPricingContext };
+export { DEFAULT_TCO_PRICING_CONTEXT };
 
 export type ObservabilityType = "metrics" | "tracing" | "logs" | "security";
 
@@ -31,6 +41,8 @@ export interface ObservabilityPricing {
     pricePerMillionSpans?: number;
     pricePerMillionTraces?: number; // Trace-based pricing (for Elastic APM)
     spansPerTrace?: number; // Average spans per trace for conversion (default: 10)
+    /** Datadog APM Pro: $/host/month (list). */
+    pricePerApmHostPerMonth?: number;
     pricePerGB?: number;
     bytesPerSpan?: number; // Average bytes per span
     freeTier?: number;
@@ -119,16 +131,18 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     pricing: {
       tracing: {
         basePrice: 0,
-        pricePerMillionSpans: 1.70, // $1.70 per million spans
+        pricePerApmHostPerMonth: DATADOG_APM_HOST_PRO_USD_PER_MONTH,
+        bytesPerSpan: 500,
         freeTier: 0,
-        unit: "per million spans/month",
-        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
-        egressFreeTier: 10, // 10 GB free egress/month
-        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
+        unit: "per APM Pro host/month",
+        egressPricePerGB: 0.05,
+        egressFreeTier: 10,
+        egressPricePerGBWithPrivateLink: 0.001,
       },
     },
     notes: {
-      tracing: "Charges per span ingested. Includes distributed tracing, APM, and error tracking. Free tier: 100K spans/month.",
+      tracing:
+        "APM Pro host licensing ($31/host/mo list). Host count is estimated from your infrastructure inventory (or GB/day heuristic) — same as Infrastructure Pro on the Metrics tab. Span ingest overages and committed discounts are not modeled.",
     },
   },
   {
@@ -251,7 +265,8 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
       },
     },
     notes: {
-      tracing: "Elastic Cloud Hosted (ECH) APM uses a hybrid pricing model: fixed cluster cost ($300/month for minimum 2-node hot deployment) + variable per-GB ingest. ECH's per-GB rate ($0.05/GB) is lower than Serverless ($0.109/GB) because dedicated infrastructure eliminates Serverless overhead — ECH becomes more cost-effective than Serverless above a moderate trace volume. Contact Elastic for a custom quote based on your specific deployment size.",
+      tracing:
+        "Elastic Cloud Hosted APM: fixed cluster minimum + variable ingest ($0.05/GB) + retention using the Observability Complete retention tier table (same as Serverless). Adjust retention months in Configuration.",
     },
   },
   {
@@ -510,7 +525,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
       },
     },
     notes: {
-      logs: "Elastic Cloud Hosted (ECH) uses a hybrid pricing model: fixed cluster cost (compute/RAM-hours for minimum 2-node hot deployment) + variable ingest cost. ECH becomes more cost-effective than Serverless (~$0.109/GB) above ~4 TB/month ingest, and significantly cheaper at enterprise scale (10s–100s of TB/day). Pricing estimated based on Elastic hardware pricing; contact Elastic for a custom quote.",
+      logs: "Elastic Cloud Hosted logs: fixed cluster minimum + ingest ($0.05/GB) + retention via Observability Complete retention tiers (configurable months). Serverless logs use 1.66× enrichment metering; ECH uses raw GB ingest here.",
     },
   },
   {
@@ -614,14 +629,28 @@ export function calculateTracingCost(
   monthlySpans: number,
   includeEgress: boolean = false,
   usePrivateLink: boolean = false,
-  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
+  pricingContext: TcoPricingContext = DEFAULT_TCO_PRICING_CONTEXT
 ): number {
   const pricing = platform.pricing.tracing;
   if (!pricing) return 0;
 
+  const { elastic: elasticPricing, datadog: datadogHosts } = pricingContext;
   let cost = pricing.basePrice || 0;
   const billableSpans = Math.max(0, monthlySpans - (pricing.freeTier || 0));
   let monthlyGB = 0;
+  const bytesPerSpan = pricing.bytesPerSpan || BYTES_PER_SPAN;
+
+  if (platform.id === "datadog-tracing") {
+    cost += calculateDatadogApmHostCost(
+      datadogHosts.apmHosts,
+      datadogHosts.pricePerApmHostPerMonth ?? pricing.pricePerApmHostPerMonth
+    );
+    monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
+    if (includeEgress && monthlyGB > 0) {
+      cost += calculateObservabilityEgressCost(platform, monthlyGB, "tracing", usePrivateLink);
+    }
+    return Math.max(0, cost);
+  }
 
   if (pricing.pricePerMillionTraces) {
     const spansPerTrace = pricing.spansPerTrace || 10;
@@ -636,6 +665,12 @@ export function calculateTracingCost(
       cost += calculateElasticServerlessCost(monthlyGB, {
         ...elasticPricing,
         productTier: "observability-complete",
+      }).volumeCost;
+    } else if (platform.id === "elastic-ech-tracing") {
+      cost += calculateEchVolumeCost(monthlyGB, {
+        retentionMonths: elasticPricing.retentionMonths,
+        useRetentionTiers: elasticPricing.useVolumeTiers,
+        pricePerIngestGB: pricing.pricePerGB,
       }).volumeCost;
     } else {
       cost += monthlyGB * pricing.pricePerGB;
@@ -672,8 +707,10 @@ export interface LogsCostBreakdown {
 export function calculateLogsCostBreakdown(
   platform: ObservabilityPlatform,
   monthlyGB: number,
-  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
+  pricingContext: TcoPricingContext | ElasticServerlessPricingOptions = DEFAULT_TCO_PRICING_CONTEXT
 ): LogsCostBreakdown {
+  const elasticPricing: ElasticServerlessPricingOptions =
+    "elastic" in pricingContext ? pricingContext.elastic : pricingContext;
   const pricing = platform.pricing.logs;
   if (!pricing) {
     return { monthlyRawGB: monthlyGB, ingestCost: 0, indexCost: 0, indexedEvents: 0 };
@@ -702,6 +739,14 @@ export function calculateLogsCostBreakdown(
     });
     ingestCost = elasticBreakdown.ingestCost;
     indexCost = elasticBreakdown.retentionCost;
+  } else if (platform.id === "elastic-ech-logs" && pricing.pricePerGB) {
+    elasticBreakdown = calculateEchVolumeCost(monthlyGB, {
+      retentionMonths: elasticPricing.retentionMonths,
+      useRetentionTiers: elasticPricing.useVolumeTiers,
+      pricePerIngestGB: pricing.pricePerGB,
+    });
+    ingestCost = elasticBreakdown.ingestCost;
+    indexCost = elasticBreakdown.retentionCost;
   } else if (pricing.pricePerGB) {
     ingestCost = ingestBillableGB * pricing.pricePerGB;
   }
@@ -721,13 +766,13 @@ export function calculateLogsCost(
   monthlyGB: number,
   includeEgress: boolean = false,
   usePrivateLink: boolean = false,
-  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
+  pricingContext: TcoPricingContext = DEFAULT_TCO_PRICING_CONTEXT
 ): number {
   const pricing = platform.pricing.logs;
   if (!pricing) return 0;
 
   let cost = pricing.basePrice || 0;
-  const breakdown = calculateLogsCostBreakdown(platform, monthlyGB, elasticPricing);
+  const breakdown = calculateLogsCostBreakdown(platform, monthlyGB, pricingContext);
   cost += breakdown.ingestCost + breakdown.indexCost;
 
   if (includeEgress && monthlyGB > 0) {
@@ -980,10 +1025,12 @@ export function calculateSecurityCost(
   monthlyEvents: number,
   includeEgress: boolean = false,
   usePrivateLink: boolean = false,
-  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
+  pricingContext: TcoPricingContext = DEFAULT_TCO_PRICING_CONTEXT
 ): number {
   const pricing = platform.pricing.security;
   if (!pricing) return 0;
+
+  const { elastic: elasticPricing } = pricingContext;
 
   let cost = pricing.basePrice || 0;
   const billableEvents = Math.max(0, monthlyEvents - (pricing.freeTier || 0));
@@ -996,6 +1043,12 @@ export function calculateSecurityCost(
       cost += calculateElasticServerlessCost(monthlyGB, {
         ...elasticPricing,
         productTier: "security-analytics-complete",
+      }).volumeCost;
+    } else if (platform.id === "elastic-security-ech") {
+      cost += calculateEchVolumeCost(monthlyGB, {
+        retentionMonths: elasticPricing.retentionMonths,
+        useRetentionTiers: elasticPricing.useVolumeTiers,
+        pricePerIngestGB: pricing.pricePerGB,
       }).volumeCost;
     } else {
       cost += monthlyGB * pricing.pricePerGB;

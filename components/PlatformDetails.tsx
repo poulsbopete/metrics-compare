@@ -8,8 +8,16 @@ import {
 } from "@/lib/costCalculator";
 import {
   calculateElasticServerlessCost,
+  calculateEchVolumeCost,
   type ElasticServerlessPricingOptions,
 } from "@/lib/elasticServerlessPricing";
+import {
+  calculateDatadogMetricsCostBreakdown,
+  DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST,
+  DATADOG_INFRA_HOST_PRO_USD_PER_MONTH,
+  calculateDatadogApmHostCost,
+  DATADOG_APM_HOST_PRO_USD_PER_MONTH,
+} from "@/lib/datadogPricing";
 import {
   ObservabilityPlatform,
   calculateLogsCostBreakdown,
@@ -41,6 +49,8 @@ interface PlatformDetailsProps {
     operationalCost?: number;
     elasticRetentionMonths?: number;
     elasticUseVolumeTiers?: boolean;
+    datadogInfraHosts?: number;
+    datadogApmHosts?: number;
   };
 }
 
@@ -100,7 +110,12 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
         infraSubtotalFromMetrics: number;
         uniqueCustomMetrics?: number;
         customMetricsVolumeCharge?: number;
+        datadogInfraHostCount?: number;
+        datadogInfraHostCost?: number;
+        datadogIncludedCustomMetrics?: number;
+        datadogBillableCustomMetrics?: number;
         elasticBreakdown?: ReturnType<typeof calculateElasticServerlessCost>;
+        echBreakdown?: ReturnType<typeof calculateEchVolumeCost>;
       }
     | null = null;
 
@@ -126,7 +141,18 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
             productTier: "observability-complete",
           })
         : undefined;
+    const echBreakdown =
+      platform.id === "elastic-ech" && monthlyGB > 0
+        ? calculateEchVolumeCost(monthlyGB, {
+            retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
+            useRetentionTiers: calculationContext.elasticUseVolumeTiers ?? true,
+            pricePerIngestGB: platform.pricing.pricePerGB,
+          })
+        : undefined;
     const infraSubtotalFromElastic = elasticBreakdown?.volumeCost;
+    const infraSubtotalFromEch = echBreakdown
+      ? (platform.pricing.basePrice ?? 0) + echBreakdown.volumeCost
+      : undefined;
     const billableMetrics = Math.max(
       0,
       calculationContext.monthlyMetrics - (platform.pricing.freeTier || 0)
@@ -135,19 +161,31 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
     const pcm = platform.pricing.pricePerCustomMetricPerMonth ?? 0;
     const uniqueCustomMetrics =
       pcm > 0 ? monthlyDatapointsToUniqueCustomMetrics(billableMetrics) : 0;
-    const customMetricsVolumeCharge =
-      pcm > 0 ? uniqueCustomMetrics * pcm : 0;
+    const datadogBreakdown =
+      platform.id === "datadog" && pcm > 0
+        ? calculateDatadogMetricsCostBreakdown(uniqueCustomMetrics, {
+            infraHosts: calculationContext.datadogInfraHosts ?? 10,
+            apmHosts: calculationContext.datadogApmHosts ?? calculationContext.datadogInfraHosts ?? 10,
+            customMetricsIncludedPerHost:
+              platform.pricing.customMetricsIncludedPerHost ?? DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST,
+            pricePerInfraHostPerMonth:
+              platform.pricing.pricePerInfraHostPerMonth ?? DATADOG_INFRA_HOST_PRO_USD_PER_MONTH,
+          }, pcm)
+        : undefined;
+    const customMetricsVolumeCharge = datadogBreakdown?.customMetricsCost ?? (pcm > 0 ? uniqueCustomMetrics * pcm : 0);
+    const datadogInfraHostCost = datadogBreakdown?.infraHostCost ?? 0;
     const metricsVolumeCharge =
       ppm > 0 ? (billableMetrics / 1_000_000) * ppm : 0;
     const infraSubtotalFromMetrics =
       pcm > 0
-        ? calculationContext.infraCost ?? customMetricsVolumeCharge
+        ? calculationContext.infraCost ??
+          datadogInfraHostCost + customMetricsVolumeCharge
         : ppm > 0
         ? calculationContext.infraCost ?? metricsVolumeCharge
         : 0;
     const infraSubtotalFromGB = hasPerGB
       ? calculationContext.infraCost ??
-        (infraSubtotalFromElastic ?? computedInfraGB)
+        (infraSubtotalFromElastic ?? infraSubtotalFromEch ?? computedInfraGB)
       : 0;
 
     metricsBreakdown = {
@@ -161,7 +199,12 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
       infraSubtotalFromMetrics,
       uniqueCustomMetrics,
       customMetricsVolumeCharge,
+      datadogInfraHostCount: datadogBreakdown?.infraHostCount,
+      datadogInfraHostCost,
+      datadogIncludedCustomMetrics: datadogBreakdown?.includedCustomMetrics,
+      datadogBillableCustomMetrics: datadogBreakdown?.billableCustomMetrics,
       elasticBreakdown,
+      echBreakdown,
     };
   }
 
@@ -291,31 +334,38 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                       : `${metricsBreakdown.monthlyGB.toFixed(2)} GB`}
                   </span>
                 </div>
-                {metricsBreakdown.elasticBreakdown ? (
+                {metricsBreakdown.elasticBreakdown || metricsBreakdown.echBreakdown ? (
                   <>
+                    {(() => {
+                      const vb = metricsBreakdown.elasticBreakdown ?? metricsBreakdown.echBreakdown!;
+                      return (
+                        <>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 dark:text-gray-400">
                         Stored GB ({calculationContext.elasticRetentionMonths ?? 1} mo retention):
                       </span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {metricsBreakdown.elasticBreakdown.storedGB.toFixed(2)} GB
+                        {vb.storedGB.toFixed(2)} GB
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 dark:text-gray-400">Ingest charge:</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {formatCurrency(metricsBreakdown.elasticBreakdown.ingestCost)}/month
+                        {formatCurrency(vb.ingestCost)}/month
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 dark:text-gray-400">Retention charge:</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {formatCurrency(metricsBreakdown.elasticBreakdown.retentionCost)}/month
+                        {formatCurrency(vb.retentionCost)}/month
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                      {metricsBreakdown.elasticBreakdown.ingestRateLabel}; {metricsBreakdown.elasticBreakdown.retentionRateLabel}. Source: Observability Complete pricing table (cloud.elastic.co).
+                      {vb.ingestRateLabel}; {vb.retentionRateLabel}. Source: Observability Complete pricing table (cloud.elastic.co).
                     </p>
+                        </>
+                      );
+                    })()}
                   </>
                 ) : (
                   <>
@@ -359,6 +409,26 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
              metricsBreakdown && (
               <>
                 <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
+                {(metricsBreakdown.datadogInfraHostCount ?? 0) > 0 && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Infrastructure Pro hosts:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {metricsBreakdown.datadogInfraHostCount!.toLocaleString()} ×{" "}
+                        {formatUnitRate(
+                          platform.pricing.pricePerInfraHostPerMonth ?? DATADOG_INFRA_HOST_PRO_USD_PER_MONTH,
+                          "/host/mo"
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Infra host charge:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(metricsBreakdown.datadogInfraHostCost ?? 0)}/month
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Unique custom metrics (est.):</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
@@ -370,6 +440,20 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                         ? `${(n / 1_000).toFixed(1)}K series`
                         : `${Math.round(n).toLocaleString()} series`;
                     })()}
+                  </span>
+                </div>
+                {(metricsBreakdown.datadogIncludedCustomMetrics ?? 0) > 0 && (
+                  <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                    <span>Included with hosts:</span>
+                    <span className="font-semibold">
+                      {(metricsBreakdown.datadogIncludedCustomMetrics ?? 0).toLocaleString()} series/mo
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Billable custom metric series:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {(metricsBreakdown.datadogBillableCustomMetrics ?? metricsBreakdown.uniqueCustomMetrics ?? 0).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -391,7 +475,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                  Derived from your metrics/sec estimate (including tag cardinality). Does not include host/infra SKUs, APM hosts, or committed discounts — validate with Datadog Usage.
+                  Infra Pro hosts + billable custom metric series beyond 100 included per host. APM and log indexing are on their tabs — validate with Datadog Usage.
                 </p>
               </>
             )}
@@ -557,8 +641,27 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                 </div>
               </>
             )}
+            {/* Datadog APM host licensing */}
+            {platform.id === "datadog-tracing" && calculationContext.datadogApmHosts !== undefined && (
+              <>
+                <div className="pt-2 border-t border-blue-200 dark:border-blue-700" />
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">APM Pro hosts:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {calculationContext.datadogApmHosts.toLocaleString()} ×{" "}
+                    {formatUnitRate(DATADOG_APM_HOST_PRO_USD_PER_MONTH, "/host/mo")}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">APM host charge:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(calculateDatadogApmHostCost(calculationContext.datadogApmHosts))}/month
+                  </span>
+                </div>
+              </>
+            )}
             {/* Show span-based pricing for other platforms */}
-            {platform.pricing.tracing.pricePerMillionSpans && (
+            {platform.pricing.tracing.pricePerMillionSpans && platform.id !== "datadog-tracing" && (
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 dark:text-gray-400">Price per Million Spans:</span>
                 <span className="font-semibold text-gray-900 dark:text-white">
@@ -577,6 +680,42 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                         {calculationContext.monthlyGB.toFixed(2)} GB
                       </span>
                     </div>
+                    {(platform.id === "elastic-tracing" || platform.id === "elastic-ech-tracing") &&
+                      calculationContext.elasticRetentionMonths !== undefined && (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Stored GB ({calculationContext.elasticRetentionMonths} mo retention):
+                          </span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {(calculationContext.monthlyGB * calculationContext.elasticRetentionMonths).toFixed(2)} GB
+                          </span>
+                        </div>
+                        {platform.id === "elastic-ech-tracing" && (() => {
+                          const ech = calculateEchVolumeCost(calculationContext.monthlyGB!, {
+                            retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
+                            useRetentionTiers: calculationContext.elasticUseVolumeTiers ?? true,
+                            pricePerIngestGB: platform.pricing.tracing!.pricePerGB,
+                          });
+                          return (
+                            <>
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600 dark:text-gray-400">Ingest charge:</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">
+                                  {formatCurrency(ech.ingestCost)}/month
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-gray-600 dark:text-gray-400">Retention charge:</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">
+                                  {formatCurrency(ech.retentionCost)}/month
+                                </span>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </>
+                    )}
                     {platform.pricing.tracing.freeTier && platform.pricing.tracing.freeTier > 0 && (
                       <div className="flex justify-between items-center text-green-600 dark:text-green-400">
                         <span>Free Tier:</span>
@@ -585,12 +724,14 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                     )}
                   </>
                 )}
+                {platform.id !== "elastic-ech-tracing" && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Price per GB:</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {formatCurrency(platform.pricing.tracing.pricePerGB)}/GB
                   </span>
                 </div>
+                )}
               </>
             )}
             {platform.pricing.tracing.basePrice && platform.pricing.tracing.basePrice > 0 && (
@@ -688,6 +829,11 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   {platform.id === "elastic-logs" && breakdown.elasticBreakdown && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                       {breakdown.elasticBreakdown.ingestRateLabel}; {breakdown.elasticBreakdown.retentionRateLabel}. Source: Observability Complete pricing table.
+                    </p>
+                  )}
+                  {platform.id === "elastic-ech-logs" && breakdown.elasticBreakdown && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      {breakdown.elasticBreakdown.ingestRateLabel}; {breakdown.elasticBreakdown.retentionRateLabel}. ECH raw GB ingest + Complete retention tiers.
                     </p>
                   )}
                 </>

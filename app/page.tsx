@@ -19,8 +19,10 @@ import {
   BYTES_PER_DATAPOINT,
   type MetricConfig,
   type MetricSourceType,
-  type ElasticServerlessPricingOptions,
+  DEFAULT_TCO_PRICING_CONTEXT,
+  type TcoPricingContext,
 } from "@/lib/costCalculator";
+import { estimateMonitoredHosts } from "@/lib/hostEstimation";
 import {
   integrations,
   gbPerDayToMetricsPerSecond,
@@ -65,6 +67,8 @@ interface SavedState {
   usePrivateLink?: boolean;
   elasticRetentionMonths?: number;
   elasticUseVolumeTiers?: boolean;
+  datadogHostsAuto?: boolean;
+  datadogManualHosts?: number;
 }
 
 function loadState(): SavedState | null {
@@ -128,6 +132,10 @@ export default function Home() {
   const [elasticRetentionMonths, setElasticRetentionMonths] = useState(1);
   const [elasticUseVolumeTiers, setElasticUseVolumeTiers] = useState(true);
 
+  // Datadog host licensing (Infra Pro + APM Pro)
+  const [datadogHostsAuto, setDatadogHostsAuto] = useState(true);
+  const [datadogManualHosts, setDatadogManualHosts] = useState(10);
+
   // Operational cost state
   const [includeOperationalCost, setIncludeOperationalCost] = useState(true);
   const [engineerHourlyRate, setEngineerHourlyRate] = useState(DEFAULT_ENGINEER_HOURLY_RATE);
@@ -155,6 +163,8 @@ export default function Home() {
         setElasticRetentionMonths(savedState.elasticRetentionMonths);
       }
       setElasticUseVolumeTiers(savedState.elasticUseVolumeTiers ?? true);
+      if (savedState.datadogHostsAuto !== undefined) setDatadogHostsAuto(savedState.datadogHostsAuto);
+      if (savedState.datadogManualHosts !== undefined) setDatadogManualHosts(savedState.datadogManualHosts);
       if (savedState.metricsInputMode) setMetricsInputMode(savedState.metricsInputMode);
       if (savedState.infraItems) setInfraItems(savedState.infraItems);
     }
@@ -178,11 +188,13 @@ export default function Home() {
         usePrivateLink,
         elasticRetentionMonths,
         elasticUseVolumeTiers,
+        datadogHostsAuto,
+        datadogManualHosts,
       });
     }
-  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, isHydrated]);
+  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, datadogHostsAuto, datadogManualHosts, isHydrated]);
 
-  const elasticPricing: ElasticServerlessPricingOptions = useMemo(
+  const elasticPricing = useMemo(
     () => ({
       retentionMonths: elasticRetentionMonths,
       useVolumeTiers: elasticUseVolumeTiers,
@@ -231,6 +243,30 @@ export default function Home() {
     return metricsInputMode === "infrastructure" ? infraMonthlyMetrics : monthlyMetrics;
   }, [metricsInputMode, infraMonthlyMetrics, monthlyMetrics]);
 
+  const metricsGbPerDay = useMemo(() => {
+    const bpd = BYTES_PER_DATAPOINT[primaryMetricType];
+    return (effectiveMonthlyMetrics * bpd) / (1024 ** 3) / 30;
+  }, [effectiveMonthlyMetrics, primaryMetricType]);
+
+  const estimatedDatadogHosts = useMemo(
+    () => estimateMonitoredHosts(infraItems, { metricsGbPerDay, logsGbPerDay: gbPerDay }),
+    [infraItems, metricsGbPerDay, gbPerDay]
+  );
+
+  const monitoredDatadogHosts = datadogHostsAuto ? estimatedDatadogHosts : datadogManualHosts;
+
+  const pricingContext: TcoPricingContext = useMemo(
+    () => ({
+      elastic: elasticPricing,
+      datadog: {
+        ...DEFAULT_TCO_PRICING_CONTEXT.datadog,
+        infraHosts: monitoredDatadogHosts,
+        apmHosts: monitoredDatadogHosts,
+      },
+    }),
+    [elasticPricing, monitoredDatadogHosts]
+  );
+
   // Metrics calculations
   const metricsCosts = useMemo(() => {
     const result: Record<string, number> = {};
@@ -242,14 +278,14 @@ export default function Home() {
           primaryMetricType,
           includeEgress,
           usePrivateLink,
-          elasticPricing
+          pricingContext
         );
       });
     } catch (error) {
       console.error("Error calculating metrics costs:", error);
     }
     return result;
-  }, [effectiveMonthlyMetrics, primaryMetricType, includeEgress, usePrivateLink, elasticPricing]);
+  }, [effectiveMonthlyMetrics, primaryMetricType, includeEgress, usePrivateLink, pricingContext]);
 
   // Tracing calculations
   const monthlySpans = useMemo(
@@ -266,14 +302,14 @@ export default function Home() {
           monthlySpans,
           includeEgress,
           usePrivateLink,
-          elasticPricing
+          pricingContext
         );
       });
     } catch (error) {
       console.error("Error calculating tracing costs:", error);
     }
     return result;
-  }, [monthlySpans, includeEgress, usePrivateLink, elasticPricing]);
+  }, [monthlySpans, includeEgress, usePrivateLink, pricingContext]);
 
   // Logs calculations
   const monthlyGB = useMemo(
@@ -290,14 +326,14 @@ export default function Home() {
           monthlyGB,
           includeEgress,
           usePrivateLink,
-          elasticPricing
+          pricingContext
         );
       });
     } catch (error) {
       console.error("Error calculating logs costs:", error);
     }
     return result;
-  }, [monthlyGB, includeEgress, usePrivateLink, elasticPricing]);
+  }, [monthlyGB, includeEgress, usePrivateLink, pricingContext]);
 
   // Security calculations
   const monthlyEvents = useMemo(
@@ -322,14 +358,14 @@ export default function Home() {
           monthlyEvents,
           includeEgress,
           usePrivateLink,
-          elasticPricing
+          pricingContext
         );
       });
     } catch (error) {
       console.error("Error calculating security costs:", error);
     }
     return result;
-  }, [monthlyEvents, includeEgress, usePrivateLink, elasticPricing]);
+  }, [monthlyEvents, includeEgress, usePrivateLink, pricingContext]);
 
   // Operational costs — computed for every platform across all tabs
   const allPlatformIds = useMemo(() => [
@@ -586,13 +622,13 @@ export default function Home() {
                   />
                 )}
 
-                {/* Elastic Serverless pricing */}
+                {/* Elastic ingest + retention (Serverless + ECH) */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Elastic Serverless Pricing
+                    Elastic ingest + retention
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Elastic bills ingest and retention separately. Adjust retention to match your Streams policy or competitor comparison window.
+                    Elastic bills ingest and retention separately. Applies to Serverless and ECH variable pricing in this calculator. Adjust retention to match your Streams policy or competitor comparison window.
                   </p>
                   <div className="space-y-4">
                     <div>
@@ -640,6 +676,52 @@ export default function Home() {
                       </a>{" "}
                       — ingest ($0.50/GB for 0–1,500 GB through $0.0925/GB at 150,000+ GB) and retention ($0.04/GB-month for 0–10,000 GB through $0.0188/GB-month).
                     </p>
+                  </div>
+                </div>
+
+                {/* Datadog host licensing */}
+                <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                    Datadog host licensing
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Infrastructure Pro ($15/host/mo) on Metrics and APM Pro ($31/host/mo) on Tracing. Custom metrics include 100 series per infra host before overages.
+                  </p>
+                  <div className="space-y-4">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={datadogHostsAuto}
+                        onChange={(e) => setDatadogHostsAuto(e.target.checked)}
+                        className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                      />
+                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Auto-estimate hosts from inventory / GB/day
+                      </span>
+                    </label>
+                    {datadogHostsAuto ? (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Estimated{" "}
+                        <span className="font-semibold text-purple-600 dark:text-purple-400">
+                          {estimatedDatadogHosts.toLocaleString()} hosts
+                        </span>{" "}
+                        (linux/windows/k8s-node inventory, or ~0.04 GB/day per host heuristic)
+                      </p>
+                    ) : (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                          Monitored hosts (infra + APM)
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={datadogManualHosts}
+                          onChange={(e) => setDatadogManualHosts(Math.max(1, Number(e.target.value) || 1))}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -996,6 +1078,7 @@ export default function Home() {
                         monthlyGB: metricsMonthlyGB > 0 ? metricsMonthlyGB : undefined,
                         elasticRetentionMonths,
                         elasticUseVolumeTiers,
+                        datadogInfraHosts: monitoredDatadogHosts,
                       };
                     })()
                   : activeTab === "security"
@@ -1008,6 +1091,8 @@ export default function Home() {
                         eventsPerSecond,
                         monthlyEvents,
                         monthlyGB: secMonthlyGB > 0 ? secMonthlyGB : undefined,
+                        elasticRetentionMonths,
+                        elasticUseVolumeTiers,
                       };
                     })()
                   : activeTab === "tracing"
@@ -1021,6 +1106,9 @@ export default function Home() {
                         monthlySpans,
                         monthlyTraces: monthlySpans / 10,
                         monthlyGB: tracingMonthlyGB > 0 ? tracingMonthlyGB : undefined,
+                        elasticRetentionMonths,
+                        elasticUseVolumeTiers,
+                        datadogApmHosts: monitoredDatadogHosts,
                       };
                     })()
                   : activeTab === "logs"

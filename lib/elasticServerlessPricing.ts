@@ -247,6 +247,44 @@ export function calculateElasticServerlessCost(
   };
 }
 
+export interface EchVolumePricingOptions {
+  retentionMonths: number;
+  /** Match Serverless retention tier table from cloud.elastic.co when true. */
+  useRetentionTiers?: boolean;
+  pricePerIngestGB?: number;
+}
+
+/** ECH variable pricing: flat ingest $/GB + Search AI Lake retention (same tiers as Serverless Complete). */
+export function calculateEchVolumeCost(
+  monthlyIngestGB: number,
+  options: EchVolumePricingOptions
+): ElasticServerlessCostBreakdown {
+  const retentionMonths = Math.max(0, options.retentionMonths);
+  const useRetentionTiers = options.useRetentionTiers ?? true;
+  const pricePerIngestGB = options.pricePerIngestGB ?? 0.05;
+  const storedGB = monthlyIngestGB * retentionMonths;
+  const ingestCost = monthlyIngestGB * pricePerIngestGB;
+
+  let retentionCost: number;
+  if (useRetentionTiers) {
+    retentionCost = calculateTieredVolumeCost(storedGB, OBSERVABILITY_COMPLETE_RETENTION_TIERS);
+  } else {
+    retentionCost = storedGB * 0.019;
+  }
+
+  return {
+    monthlyIngestGB,
+    storedGB,
+    ingestCost,
+    retentionCost,
+    volumeCost: ingestCost + retentionCost,
+    ingestRateLabel: `$${pricePerIngestGB.toFixed(3)}/GB ingest (ECH variable)`,
+    retentionRateLabel: useRetentionTiers
+      ? effectiveRate(retentionCost, storedGB) + " retained/mo (Complete tier table)"
+      : `$0.019/GB retained/mo (floor)`,
+  };
+}
+
 /** Convert raw logs GB/day to metered monthly ingest GB (Elastic estimator uses 1.66× enrichment). */
 export function elasticLogsMeteredMonthlyGB(rawGbPerDay: number): number {
   const rates = getElasticServerlessRates("observability-complete");

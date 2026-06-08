@@ -1,10 +1,21 @@
 import {
   calculateElasticServerlessCost,
+  calculateEchVolumeCost,
   DEFAULT_ELASTIC_PRICING_OPTIONS,
   type ElasticServerlessPricingOptions,
 } from "./elasticServerlessPricing";
+import {
+  calculateDatadogMetricsCostBreakdown,
+  DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST,
+  DATADOG_INFRA_HOST_PRO_USD_PER_MONTH,
+} from "./datadogPricing";
+import {
+  DEFAULT_TCO_PRICING_CONTEXT,
+  type TcoPricingContext,
+} from "./tcoPricingContext";
 
-export type { ElasticServerlessPricingOptions };
+export type { ElasticServerlessPricingOptions, TcoPricingContext };
+export { DEFAULT_TCO_PRICING_CONTEXT };
 
 export interface Platform {
   id: string;
@@ -17,6 +28,9 @@ export interface Platform {
     pricePerMillionMetrics?: number;
     /** Datadog-style: $/unique custom metric time series / month (hourly avg), not per datapoint */
     pricePerCustomMetricPerMonth?: number;
+    /** Datadog Pro: included custom metric series per infra host / month */
+    customMetricsIncludedPerHost?: number;
+    pricePerInfraHostPerMonth?: number;
     pricePerGB?: number; // For volume-based pricing (non-Elastic or display fallback)
     bytesPerDatapoint?: number; // Conversion factor for metrics to GB (default: 320 bytes)
     freeTier?: number;
@@ -133,8 +147,9 @@ export function calculatePlatformCost(
   metricType?: MetricSourceType,
   includeEgress: boolean = false,
   usePrivateLink: boolean = false,
-  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
+  pricingContext: TcoPricingContext = DEFAULT_TCO_PRICING_CONTEXT
 ): number {
+  const { elastic: elasticPricing } = pricingContext;
   const { pricing } = platform;
   let cost = pricing.basePrice || 0;
   
@@ -154,12 +169,23 @@ export function calculatePlatformCost(
         ...elasticPricing,
         productTier: "observability-complete",
       }).volumeCost;
+    } else if (platform.id === "elastic-ech") {
+      cost += calculateEchVolumeCost(monthlyGB, {
+        retentionMonths: elasticPricing.retentionMonths,
+        useRetentionTiers: elasticPricing.useVolumeTiers,
+        pricePerIngestGB: pricing.pricePerGB,
+      }).volumeCost;
     } else {
       cost += monthlyGB * pricing.pricePerGB;
     }
   } else if (pricing.pricePerCustomMetricPerMonth !== undefined) {
     const uniqueCustomMetrics = monthlyDatapointsToUniqueCustomMetrics(billableMetrics);
-    cost += uniqueCustomMetrics * pricing.pricePerCustomMetricPerMonth;
+    const ddBreakdown = calculateDatadogMetricsCostBreakdown(
+      uniqueCustomMetrics,
+      pricingContext.datadog,
+      pricing.pricePerCustomMetricPerMonth
+    );
+    cost += ddBreakdown.infraHostCost + ddBreakdown.customMetricsCost;
     if (includeEgress && pricing.egressPricePerGB) {
       const bytesPerDatapoint = metricType
         ? getBytesPerDatapoint(metricType)
@@ -229,7 +255,7 @@ export const platforms: Platform[] = [
       egressFreeTier: 100,
       egressPricePerGBWithPrivateLink: 0.001,
     },
-    cardinalityNote: "Elastic Cloud Hosted (ECH) charges based on data volume (GB), not per metric — same model as Elastic Serverless but with a fixed cluster cost and a lower per-GB rate at higher volumes. ECH becomes more cost-effective than Serverless above ~4 GB/month ingest and significantly cheaper at enterprise scale (millions of metrics/sec). High cardinality does not directly increase costs beyond additional data volume. Pricing estimated from Elastic hardware pricing; contact Elastic for a custom quote.",
+    cardinalityNote: "Elastic Cloud Hosted (ECH) charges a fixed cluster minimum plus **ingest ($0.05/GB)** and **retention** on stored GB using the same Observability Complete retention tier table as Serverless (configurable). High cardinality affects cost via data volume only. Contact Elastic for a custom quote.",
   },
   {
     id: "elastic-self-hosted",
@@ -259,17 +285,17 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 0,
-      // List: $5 / 100 custom metrics / month ≈ $0.05 per unique custom metric time series (hourly avg).
-      // Does not include host/infrastructure SKUs or per-host custom metric allotments.
       pricePerCustomMetricPerMonth: 0.05,
+      customMetricsIncludedPerHost: DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST,
+      pricePerInfraHostPerMonth: DATADOG_INFRA_HOST_PRO_USD_PER_MONTH,
       freeTier: 0,
-      unit: "per custom metric time series / month",
+      unit: "infra hosts + billable custom metrics",
       egressPricePerGB: 0.05,
       egressFreeTier: 10,
       egressPricePerGBWithPrivateLink: 0.001,
     },
     cardinalityNote:
-      "Datadog bills **unique custom metric time series** (name + tags), averaged per hour — **not** per datapoint. This calculator converts your datapoint/sec estimate to an hourly-average series count (~datapoints/sec at 1 Hz per series) × $0.05/series/month. Host pricing, APM hosts, log indexing tiers, and committed discounts are not modeled — use a Datadog usage export for a quote.",
+      "Datadog bills **Infrastructure Pro hosts** ($15/host/mo list) plus **custom metric time series** beyond 100 included per host ($0.05/series/mo). This calculator estimates host count from your infrastructure inventory (or GB/day heuristic). APM, log indexing, and committed discounts are modeled on their respective tabs — validate with Datadog Usage.",
   },
   {
     id: "new-relic",
