@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { FULL_STACK_VENDORS, CAPABILITY_LABELS, type CapabilityLevel } from "@/lib/fullStackVendors";
+import { TCO_VALIDATION_FOOTNOTE } from "@/lib/tcoDisclaimer";
 
 interface FullStackComparisonProps {
   metricsCosts: Record<string, number>;
@@ -243,7 +244,7 @@ export default function FullStackComparison({
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              Combined Monthly TCO — All Selected Signals
+              Combined Monthly TCO — All Selected Signals*
             </h3>
             {engineerHourlyRate && Object.keys(operationalCosts).length > 0 && (
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
@@ -376,6 +377,10 @@ export default function FullStackComparison({
           </p>
         </div>
       </div>
+
+      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed px-1">
+        {TCO_VALIDATION_FOOTNOTE}
+      </p>
 
       {/* Grafana competitive note */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

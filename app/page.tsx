@@ -41,6 +41,7 @@ import {
   gbPerDayToMonthly,
   eventsPerSecondToMonthly,
 } from "@/lib/observabilityPricing";
+import { TCO_METHODOLOGY_NOTE, TCO_VALIDATION_FOOTNOTE } from "@/lib/tcoDisclaimer";
 
 const STORAGE_KEY = "observability-compare-state";
 
@@ -428,19 +429,25 @@ export default function Home() {
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Compare true total cost of ownership — infrastructure <em>and</em> human operational costs — across observability platforms
           </p>
+          <p className="text-xs text-amber-700 dark:text-amber-300/90 max-w-2xl mx-auto mt-3 leading-relaxed">
+            {TCO_VALIDATION_FOOTNOTE}
+          </p>
         </div>
 
         {/* Disclaimer Banner */}
         <div className="mb-10 animate-fade-in-up">
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-6 py-4 flex items-start gap-3 shadow-sm">
             <span className="text-amber-500 text-xl mt-0.5 shrink-0">⚠️</span>
-            <p className="text-sm text-amber-900 dark:text-amber-200 leading-relaxed">
-              <strong>Estimation purposes only.</strong> Elastic Serverless uses Observability Complete ingest + retention tiers from the{" "}
-              <a href="https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability" className="underline" target="_blank" rel="noopener noreferrer">
-                Elastic Cloud pricing table
-              </a>{" "}
-              (e.g. $0.50/GB for first 1,500 GB ingest; separate retention GB-month tiers). Other vendors use approximate list pricing. Add-ons (synthetics, LLM, Agent Builder) are not included.
-            </p>
+            <div className="text-sm text-amber-900 dark:text-amber-200 leading-relaxed space-y-2">
+              <p>
+                <strong>Estimation purposes only.</strong> {TCO_METHODOLOGY_NOTE}
+              </p>
+              <p>
+                <a href="https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability" className="underline" target="_blank" rel="noopener noreferrer">
+                  Elastic Cloud pricing table (Observability)
+                </a>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -957,10 +964,13 @@ export default function Home() {
 
           {/* Cost Comparison */}
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
               <span className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full mr-3" />
-              TCO Comparison
+              TCO Comparison*
             </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+              {TCO_VALIDATION_FOOTNOTE}
+            </p>
             <ObservabilityComparison
               type={activeTab}
               platforms={currentPlatforms}
