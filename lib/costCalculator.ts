@@ -295,7 +295,7 @@ export const platforms: Platform[] = [
       egressPricePerGBWithPrivateLink: 0.001,
     },
     cardinalityNote:
-      "Datadog bills **Infrastructure Pro hosts** ($15/host/mo list) plus **custom metric time series** beyond 100 included per host ($0.05/series/mo). This calculator estimates host count from your infrastructure inventory (or GB/day heuristic). APM, log indexing, and committed discounts are modeled on their respective tabs — validate with Datadog Usage.",
+      "Datadog bills **Infrastructure Pro hosts** ($15/host/mo list) plus **custom metric time series** beyond standard agent metrics (~500 series/host) and 100 included custom metrics per host ($0.05/series/mo). Host count is estimated from infrastructure inventory or log GB/day — not from metrics throughput. APM and log indexing are on their respective tabs.",
   },
   {
     id: "new-relic",

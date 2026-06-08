@@ -112,6 +112,8 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
         customMetricsVolumeCharge?: number;
         datadogInfraHostCount?: number;
         datadogInfraHostCost?: number;
+        datadogTotalSeries?: number;
+        datadogHostCoveredSeries?: number;
         datadogIncludedCustomMetrics?: number;
         datadogBillableCustomMetrics?: number;
         elasticBreakdown?: ReturnType<typeof calculateElasticServerlessCost>;
@@ -201,6 +203,8 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
       customMetricsVolumeCharge,
       datadogInfraHostCount: datadogBreakdown?.infraHostCount,
       datadogInfraHostCost,
+      datadogTotalSeries: datadogBreakdown?.totalSeriesEstimate,
+      datadogHostCoveredSeries: datadogBreakdown?.hostCoveredSeries,
       datadogIncludedCustomMetrics: datadogBreakdown?.includedCustomMetrics,
       datadogBillableCustomMetrics: datadogBreakdown?.billableCustomMetrics,
       elasticBreakdown,
@@ -430,10 +434,10 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   </>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Unique custom metrics (est.):</span>
+                  <span className="text-gray-600 dark:text-gray-400">Total series estimate (metrics/sec):</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {(() => {
-                      const n = metricsBreakdown.uniqueCustomMetrics ?? 0;
+                      const n = metricsBreakdown.datadogTotalSeries ?? metricsBreakdown.uniqueCustomMetrics ?? 0;
                       return n >= 1_000_000
                         ? `${(n / 1_000_000).toFixed(2)}M series`
                         : n >= 1_000
@@ -442,18 +446,18 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                     })()}
                   </span>
                 </div>
-                {(metricsBreakdown.datadogIncludedCustomMetrics ?? 0) > 0 && (
+                {(metricsBreakdown.datadogHostCoveredSeries ?? 0) > 0 && (
                   <div className="flex justify-between items-center text-green-600 dark:text-green-400">
-                    <span>Included with hosts:</span>
+                    <span>Covered by agent/host license (est.):</span>
                     <span className="font-semibold">
-                      {(metricsBreakdown.datadogIncludedCustomMetrics ?? 0).toLocaleString()} series/mo
+                      {metricsBreakdown.datadogHostCoveredSeries!.toLocaleString()} series
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Billable custom metric series:</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {(metricsBreakdown.datadogBillableCustomMetrics ?? metricsBreakdown.uniqueCustomMetrics ?? 0).toLocaleString()}
+                    {(metricsBreakdown.datadogBillableCustomMetrics ?? 0).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -475,7 +479,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                  Infra Pro hosts + billable custom metric series beyond 100 included per host. APM and log indexing are on their tabs — validate with Datadog Usage.
+                  Infra Pro hosts + billable custom metrics beyond agent coverage (~500 series/host) and 100 included custom metrics per host. Host count from inventory or logs GB/day only.
                 </p>
               </>
             )}

@@ -9,15 +9,24 @@ const HOST_INTEGRATION_IDS = new Set([
   "ecs-task",
 ]);
 
+/** Linux server log baseline for inferring host count from log GB/day only. */
 const LINUX_GB_PER_DAY_PER_HOST = 0.04;
+
+export interface EstimateMonitoredHostsOptions {
+  /** Raw log ingest GB/day — safe proxy for host count. */
+  logsGbPerDay?: number;
+}
 
 /**
  * Estimate monitored host count for Datadog infra + APM SKUs.
- * Prefers infrastructure inventory; falls back to GB/day heuristics (Linux server baseline).
+ * Uses infrastructure inventory first, then log volume heuristic.
+ *
+ * Does NOT use metrics GB/day — high metrics/sec (e.g. 720K/s) implies telemetry
+ * volume, not 400K+ hosts, and would wildly overstate Datadog host licensing.
  */
 export function estimateMonitoredHosts(
   infraItems: Record<string, number>,
-  options?: { metricsGbPerDay?: number; logsGbPerDay?: number }
+  options?: EstimateMonitoredHostsOptions
 ): number {
   let fromInfra = 0;
   for (const [id, count] of Object.entries(infraItems)) {
@@ -27,14 +36,9 @@ export function estimateMonitoredHosts(
   }
   if (fromInfra > 0) return fromInfra;
 
-  const gbCandidates = [
-    options?.metricsGbPerDay ?? 0,
-    options?.logsGbPerDay ?? 0,
-  ].filter((v) => v > 0);
-
-  if (gbCandidates.length > 0) {
-    const maxGb = Math.max(...gbCandidates);
-    return Math.max(1, Math.round(maxGb / LINUX_GB_PER_DAY_PER_HOST));
+  const logsGbPerDay = options?.logsGbPerDay ?? 0;
+  if (logsGbPerDay > 0) {
+    return Math.max(1, Math.round(logsGbPerDay / LINUX_GB_PER_DAY_PER_HOST));
   }
 
   return 10;

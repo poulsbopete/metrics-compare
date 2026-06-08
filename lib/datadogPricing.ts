@@ -24,24 +24,53 @@ export const DEFAULT_DATADOG_HOST_PRICING: DatadogHostPricingOptions = {
   customMetricsIncludedPerHost: DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST,
 };
 
+/** Typical infrastructure metric series covered by an Infra Pro host license. */
+export const DATADOG_AGENT_SERIES_PER_HOST = 500;
+
 export interface DatadogMetricsCostBreakdown {
   infraHostCount: number;
   infraHostCost: number;
+  totalSeriesEstimate: number;
+  hostCoveredSeries: number;
   uniqueCustomMetrics: number;
   includedCustomMetrics: number;
   billableCustomMetrics: number;
   customMetricsCost: number;
 }
 
+/**
+ * Convert total series/sec estimate to billable custom metric series.
+ * Infra Pro covers ~500 standard agent series per host; 100 custom metrics included per host.
+ */
+export function estimateBillableDatadogCustomMetricSeries(
+  totalSeriesEstimate: number,
+  infraHosts: number,
+  customMetricsIncludedPerHost = DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST
+): {
+  hostCoveredSeries: number;
+  customSeriesBeforeIncluded: number;
+  billableCustomMetrics: number;
+} {
+  const hostCoveredSeries = Math.max(0, infraHosts) * DATADOG_AGENT_SERIES_PER_HOST;
+  const customSeriesBeforeIncluded = Math.max(0, totalSeriesEstimate - hostCoveredSeries);
+  const includedCustomMetrics = Math.max(0, infraHosts) * customMetricsIncludedPerHost;
+  const billableCustomMetrics = Math.max(0, customSeriesBeforeIncluded - includedCustomMetrics);
+  return { hostCoveredSeries, customSeriesBeforeIncluded, billableCustomMetrics };
+}
+
 export function calculateDatadogMetricsCostBreakdown(
-  uniqueCustomMetricSeries: number,
+  totalSeriesEstimate: number,
   hosts: DatadogHostPricingOptions = DEFAULT_DATADOG_HOST_PRICING,
   pricePerCustomMetricPerMonth = 0.05
 ): DatadogMetricsCostBreakdown {
   const infraHostCount = Math.max(0, hosts.infraHosts);
   const includedPerHost = hosts.customMetricsIncludedPerHost ?? DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST;
+  const { hostCoveredSeries, billableCustomMetrics } = estimateBillableDatadogCustomMetricSeries(
+    totalSeriesEstimate,
+    infraHostCount,
+    includedPerHost
+  );
   const includedCustomMetrics = infraHostCount * includedPerHost;
-  const billableCustomMetrics = Math.max(0, uniqueCustomMetricSeries - includedCustomMetrics);
   const infraHostCost =
     infraHostCount * (hosts.pricePerInfraHostPerMonth ?? DATADOG_INFRA_HOST_PRO_USD_PER_MONTH);
   const customMetricsCost = billableCustomMetrics * pricePerCustomMetricPerMonth;
@@ -49,7 +78,9 @@ export function calculateDatadogMetricsCostBreakdown(
   return {
     infraHostCount,
     infraHostCost,
-    uniqueCustomMetrics: uniqueCustomMetricSeries,
+    totalSeriesEstimate,
+    hostCoveredSeries,
+    uniqueCustomMetrics: Math.max(0, totalSeriesEstimate - hostCoveredSeries),
     includedCustomMetrics,
     billableCustomMetrics,
     customMetricsCost,

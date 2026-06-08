@@ -243,14 +243,9 @@ export default function Home() {
     return metricsInputMode === "infrastructure" ? infraMonthlyMetrics : monthlyMetrics;
   }, [metricsInputMode, infraMonthlyMetrics, monthlyMetrics]);
 
-  const metricsGbPerDay = useMemo(() => {
-    const bpd = BYTES_PER_DATAPOINT[primaryMetricType];
-    return (effectiveMonthlyMetrics * bpd) / (1024 ** 3) / 30;
-  }, [effectiveMonthlyMetrics, primaryMetricType]);
-
   const estimatedDatadogHosts = useMemo(
-    () => estimateMonitoredHosts(infraItems, { metricsGbPerDay, logsGbPerDay: gbPerDay }),
-    [infraItems, metricsGbPerDay, gbPerDay]
+    () => estimateMonitoredHosts(infraItems, { logsGbPerDay: gbPerDay }),
+    [infraItems, gbPerDay]
   );
 
   const monitoredDatadogHosts = datadogHostsAuto ? estimatedDatadogHosts : datadogManualHosts;
@@ -685,7 +680,7 @@ export default function Home() {
                     Datadog host licensing
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Infrastructure Pro ($15/host/mo) on Metrics and APM Pro ($31/host/mo) on Tracing. Custom metrics include 100 series per infra host before overages.
+                    Infrastructure Pro ($15/host/mo) on Metrics and APM Pro ($31/host/mo) on Tracing. Host count comes from infrastructure inventory or log GB/day (10 GB/day ≈ 250 hosts) — not from metrics/sec volume.
                   </p>
                   <div className="space-y-4">
                     <label className="flex items-center cursor-pointer">
@@ -705,7 +700,7 @@ export default function Home() {
                         <span className="font-semibold text-purple-600 dark:text-purple-400">
                           {estimatedDatadogHosts.toLocaleString()} hosts
                         </span>{" "}
-                        (linux/windows/k8s-node inventory, or ~0.04 GB/day per host heuristic)
+                        (linux/windows/k8s-node inventory, or log GB/day ÷ 0.04 GB/host/day)
                       </p>
                     ) : (
                       <div>
