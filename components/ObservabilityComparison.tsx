@@ -44,6 +44,9 @@ interface ObservabilityComparisonProps {
     // Security
     eventsPerSecond?: number;
     monthlyEvents?: number;
+    gbPerDay?: number;
+    elasticRetentionMonths?: number;
+    elasticUseVolumeTiers?: boolean;
     // Shared
     monthlyGB?: number;
     /** Filled per-row in PlatformRow for breakdown reconciliation */

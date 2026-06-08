@@ -10,7 +10,11 @@ import {
   calculateElasticServerlessCost,
   type ElasticServerlessPricingOptions,
 } from "@/lib/elasticServerlessPricing";
-import { ObservabilityPlatform } from "@/lib/observabilityPricing";
+import {
+  ObservabilityPlatform,
+  calculateLogsCostBreakdown,
+  DATADOG_LOG_INDEX_RATE_PER_M_EVENTS,
+} from "@/lib/observabilityPricing";
 
 interface PlatformDetailsProps {
   platform: Platform | ObservabilityPlatform;
@@ -24,6 +28,8 @@ interface PlatformDetailsProps {
     spansPerSecond?: number;
     monthlySpans?: number;
     monthlyTraces?: number;
+    // Logs
+    gbPerDay?: number;
     // Security
     eventsPerSecond?: number;
     monthlyEvents?: number;
@@ -604,6 +610,93 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
               <div className="flex justify-between items-center font-semibold">
                 <span className="text-blue-900 dark:text-blue-200">Total Monthly Cost:</span>
                 <span className="text-blue-900 dark:text-blue-200 text-lg">
+                  {formatCurrency(calculationContext.cost)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TCO Calculation Breakdown for Logs */}
+      {calculationContext &&
+       calculationContext.monthlyGB !== undefined &&
+       calculationContext.gbPerDay !== undefined &&
+       !isPlatform(platform) &&
+       platform.pricing?.logs && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+          <h4 className="text-xs font-semibold text-green-900 dark:text-green-200 uppercase tracking-wide mb-3">
+            📊 TCO Calculation Breakdown
+          </h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 dark:text-gray-400">Log volume:</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {calculationContext.gbPerDay.toFixed(1)} GB/day · {calculationContext.monthlyGB.toFixed(0)} GB/mo (raw)
+              </span>
+            </div>
+            {(() => {
+              const breakdown = calculateLogsCostBreakdown(platform, calculationContext.monthlyGB!, {
+                retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
+                useVolumeTiers: calculationContext.elasticUseVolumeTiers ?? true,
+              });
+              return (
+                <>
+                  {platform.id === "elastic-logs" && breakdown.meteredMonthlyGB !== undefined && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Metered ingest (est. ~1.66× enriched):</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {breakdown.meteredMonthlyGB.toFixed(0)} GB/mo
+                      </span>
+                    </div>
+                  )}
+                  {platform.id === "datadog-logs" && platform.pricing.logs?.freeTier ? (
+                    <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                      <span>Ingest free tier:</span>
+                      <span className="font-semibold">{platform.pricing.logs.freeTier} GB/mo</span>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {platform.id === "datadog-logs" ? "Log ingest:" : "Ingest charge:"}
+                    </span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(breakdown.ingestCost)}/month
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {platform.id === "datadog-logs"
+                        ? `Standard Index (${platform.pricing.logs?.indexRetentionDays ?? 15}-day):`
+                        : "Retention charge:"}
+                    </span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(breakdown.indexCost)}/month
+                    </span>
+                  </div>
+                  {platform.id === "datadog-logs" && breakdown.indexedEvents > 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      ~{(breakdown.indexedEvents / 1_000_000).toFixed(0)}M indexed events/mo @{" "}
+                      {formatUnitRate(
+                        platform.pricing.logs?.pricePerMillionIndexedEvents ??
+                          DATADOG_LOG_INDEX_RATE_PER_M_EVENTS[15],
+                        "/M events"
+                      )}{" "}
+                      (assumes all ingested logs indexed).
+                    </p>
+                  )}
+                  {platform.id === "elastic-logs" && breakdown.elasticBreakdown && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      {breakdown.elasticBreakdown.ingestRateLabel}; {breakdown.elasticBreakdown.retentionRateLabel}. Source: Observability Complete pricing table.
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+            <div className="pt-2 border-t border-green-200 dark:border-green-700">
+              <div className="flex justify-between items-center font-semibold">
+                <span className="text-green-900 dark:text-green-200">Total Monthly Cost:</span>
+                <span className="text-green-900 dark:text-green-200 text-lg">
                   {formatCurrency(calculationContext.cost)}
                 </span>
               </div>

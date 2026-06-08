@@ -43,8 +43,12 @@ export interface ObservabilityPricing {
   logs?: {
     basePrice?: number;
     pricePerGB?: number;
-    freeTier?: number; // In GB
+    freeTier?: number; // In GB (ingest)
     unit: string;
+    /** Datadog: $/M indexed log events/month (Standard Index tier). */
+    pricePerMillionIndexedEvents?: number;
+    indexRetentionDays?: 3 | 7 | 15 | 30;
+    bytesPerLogEvent?: number;
     // Egress pricing (for SaaS platforms)
     egressPricePerGB?: number;
     egressFreeTier?: number;
@@ -94,6 +98,17 @@ export const BYTES_PER_SPAN = 500; // Average span size in bytes
 // Average bytes per security event
 // Based on typical SIEM event sizes (logs, alerts, detections)
 export const BYTES_PER_SECURITY_EVENT = 1000; // Average security event size in bytes
+
+/** Average uncompressed log line size — used to estimate Datadog indexed log events from GB. */
+export const BYTES_PER_LOG_EVENT = 500;
+
+/** Datadog Standard Index list rates ($/M indexed log events / month, annual contract). */
+export const DATADOG_LOG_INDEX_RATE_PER_M_EVENTS: Record<3 | 7 | 15 | 30, number> = {
+  3: 1.06,
+  7: 1.27,
+  15: 1.70,
+  30: 2.50,
+};
 
 // Tracing/APM platforms pricing (as of 2025)
 export const tracingPlatforms: ObservabilityPlatform[] = [
@@ -337,16 +352,20 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     pricing: {
       logs: {
         basePrice: 0,
-        pricePerGB: 0.10, // $0.10/GB ingested
-        freeTier: 5, // 5 GB free/month
-        unit: "per GB/month",
-        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
-        egressFreeTier: 10, // 10 GB free egress/month
-        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
+        pricePerGB: 0.10, // $0.10/GB ingested (all logs)
+        freeTier: 5, // 5 GB ingest free/month
+        pricePerMillionIndexedEvents: DATADOG_LOG_INDEX_RATE_PER_M_EVENTS[15],
+        indexRetentionDays: 15,
+        bytesPerLogEvent: BYTES_PER_LOG_EVENT,
+        unit: "ingest + indexed events",
+        egressPricePerGB: 0.05,
+        egressFreeTier: 10,
+        egressPricePerGBWithPrivateLink: 0.001,
       },
     },
     notes: {
-      logs: "Charges per GB ingested. 5 GB free tier. Indexing and retention costs additional.",
+      logs:
+        "Datadog splits log billing: $0.10/GB ingest (5 GB/mo free) plus Standard Index at $1.70/M log events for 15-day retention (annual list rate). This calculator assumes all ingested logs are indexed — matching Elastic’s searchable retention. Forward-only or Flex Logs SKUs differ.",
     },
   },
   {
@@ -641,6 +660,62 @@ export function calculateTracingCost(
   return Math.max(0, cost);
 }
 
+export interface LogsCostBreakdown {
+  monthlyRawGB: number;
+  ingestCost: number;
+  indexCost: number;
+  indexedEvents: number;
+  meteredMonthlyGB?: number;
+  elasticBreakdown?: ReturnType<typeof calculateElasticServerlessCost>;
+}
+
+export function calculateLogsCostBreakdown(
+  platform: ObservabilityPlatform,
+  monthlyGB: number,
+  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
+): LogsCostBreakdown {
+  const pricing = platform.pricing.logs;
+  if (!pricing) {
+    return { monthlyRawGB: monthlyGB, ingestCost: 0, indexCost: 0, indexedEvents: 0 };
+  }
+
+  const ingestBillableGB = Math.max(0, monthlyGB - (pricing.freeTier || 0));
+  let ingestCost = 0;
+  let indexCost = 0;
+  let indexedEvents = 0;
+  let meteredMonthlyGB: number | undefined;
+  let elasticBreakdown: ReturnType<typeof calculateElasticServerlessCost> | undefined;
+
+  if (platform.id === "datadog-logs" && pricing.pricePerGB) {
+    ingestCost = ingestBillableGB * pricing.pricePerGB;
+    const bytesPerLog = pricing.bytesPerLogEvent ?? BYTES_PER_LOG_EVENT;
+    indexedEvents = Math.round((monthlyGB * 1024 ** 3) / bytesPerLog);
+    const indexRate =
+      pricing.pricePerMillionIndexedEvents ??
+      DATADOG_LOG_INDEX_RATE_PER_M_EVENTS[pricing.indexRetentionDays ?? 15];
+    indexCost = (indexedEvents / 1_000_000) * indexRate;
+  } else if (platform.id === "elastic-logs" && pricing.pricePerGB) {
+    meteredMonthlyGB = elasticLogsMeteredMonthlyGB(monthlyGB / 30);
+    elasticBreakdown = calculateElasticServerlessCost(meteredMonthlyGB, {
+      ...elasticPricing,
+      productTier: "observability-complete",
+    });
+    ingestCost = elasticBreakdown.ingestCost;
+    indexCost = elasticBreakdown.retentionCost;
+  } else if (pricing.pricePerGB) {
+    ingestCost = ingestBillableGB * pricing.pricePerGB;
+  }
+
+  return {
+    monthlyRawGB: monthlyGB,
+    ingestCost,
+    indexCost,
+    indexedEvents,
+    meteredMonthlyGB,
+    elasticBreakdown,
+  };
+}
+
 export function calculateLogsCost(
   platform: ObservabilityPlatform,
   monthlyGB: number,
@@ -652,20 +727,8 @@ export function calculateLogsCost(
   if (!pricing) return 0;
 
   let cost = pricing.basePrice || 0;
-  const billableGB = Math.max(0, monthlyGB - (pricing.freeTier || 0));
-
-  if (pricing.pricePerGB) {
-    if (platform.id === "elastic-logs") {
-      // monthlyGB is raw GB/month from gb/day × 30; Elastic meters enriched volume (~1.66×)
-      const meteredMonthlyGB = elasticLogsMeteredMonthlyGB(billableGB / 30);
-      cost += calculateElasticServerlessCost(meteredMonthlyGB, {
-        ...elasticPricing,
-        productTier: "observability-complete",
-      }).volumeCost;
-    } else {
-      cost += billableGB * pricing.pricePerGB;
-    }
-  }
+  const breakdown = calculateLogsCostBreakdown(platform, monthlyGB, elasticPricing);
+  cost += breakdown.ingestCost + breakdown.indexCost;
 
   if (includeEgress && monthlyGB > 0) {
     cost += calculateObservabilityEgressCost(platform, monthlyGB, "logs", usePrivateLink);

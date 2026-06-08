@@ -31,7 +31,7 @@ export default function LogsConfig({
       />
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          💡 <strong>GB per day</strong> represents the uncompressed log volume your applications generate daily. Most platforms compress logs, so actual storage may be lower.
+          💡 <strong>GB per day</strong> is raw uncompressed log volume. Elastic meters enriched size (~1.66×). Datadog bills ingest ($0.10/GB, 5 GB/mo free) plus Standard Index retention ($1.70/M events at 15 days) when logs are searchable.
         </p>
         <div className="border-t border-blue-200 dark:border-blue-700 pt-3">
           <p className="text-sm text-blue-800 dark:text-blue-200">

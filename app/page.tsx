@@ -1013,6 +1013,13 @@ export default function Home() {
                         monthlyGB: tracingMonthlyGB > 0 ? tracingMonthlyGB : undefined,
                       };
                     })()
+                  : activeTab === "logs"
+                  ? {
+                      monthlyGB,
+                      gbPerDay,
+                      elasticRetentionMonths,
+                      elasticUseVolumeTiers,
+                    }
                   : undefined
               }
             />
