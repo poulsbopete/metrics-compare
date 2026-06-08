@@ -166,7 +166,7 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     },
     notes: {
       tracing:
-        "Elastic Observability Serverless Complete: separate ingest ($0.09/GB floor) and retention ($0.019/GB stored/month floor) charges on metered GB. APM spans billed as ingested data volume. Volume tiers apply to both dimensions. Source: elastic.co/pricing/serverless-observability (Nov 1, 2025).",
+        "Elastic Observability Serverless Complete: tiered ingest and retention per the cloud.elastic.co Observability pricing table (Complete). APM spans billed as ingested GB. Egress: 50 GB free, then $0.05/GB.",
     },
   },
   {
@@ -382,7 +382,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     },
     notes: {
       logs:
-        "Elastic Observability Serverless Complete: ingest ($0.09/GB floor) + retention ($0.019/GB stored/month floor). Billed GB is post-pipeline enriched size (~1.66× raw log volume in Elastic's estimator). Volume tiers apply. Source: elastic.co/pricing/serverless-observability (Nov 1, 2025).",
+        "Elastic Observability Serverless Complete: tiered ingest + retention per cloud.elastic.co pricing table. Billed GB is post-pipeline enriched size (~1.66× raw log volume). Egress: 50 GB free, then $0.05/GB.",
     },
   },
   {

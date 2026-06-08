@@ -116,7 +116,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
       platform.id === "elastic-serverless" && monthlyGB > 0
         ? calculateElasticServerlessCost(monthlyGB, {
             retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
-            useVolumeTiers: calculationContext.elasticUseVolumeTiers ?? false,
+            useVolumeTiers: calculationContext.elasticUseVolumeTiers ?? true,
             productTier: "observability-complete",
           })
         : undefined;
@@ -308,7 +308,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                      {metricsBreakdown.elasticBreakdown.ingestRateLabel}; {metricsBreakdown.elasticBreakdown.retentionRateLabel}. Source: Observability Complete list pricing.
+                      {metricsBreakdown.elasticBreakdown.ingestRateLabel}; {metricsBreakdown.elasticBreakdown.retentionRateLabel}. Source: Observability Complete pricing table (cloud.elastic.co).
                     </p>
                   </>
                 ) : (

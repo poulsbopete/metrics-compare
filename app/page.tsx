@@ -125,7 +125,7 @@ export default function Home() {
 
   // Elastic Serverless pricing (ingest + retention)
   const [elasticRetentionMonths, setElasticRetentionMonths] = useState(1);
-  const [elasticUseVolumeTiers, setElasticUseVolumeTiers] = useState(false);
+  const [elasticUseVolumeTiers, setElasticUseVolumeTiers] = useState(true);
 
   // Operational cost state
   const [includeOperationalCost, setIncludeOperationalCost] = useState(true);
@@ -153,9 +153,7 @@ export default function Home() {
       if (savedState.elasticRetentionMonths !== undefined) {
         setElasticRetentionMonths(savedState.elasticRetentionMonths);
       }
-      if (savedState.elasticUseVolumeTiers !== undefined) {
-        setElasticUseVolumeTiers(savedState.elasticUseVolumeTiers);
-      }
+      setElasticUseVolumeTiers(savedState.elasticUseVolumeTiers ?? true);
       if (savedState.metricsInputMode) setMetricsInputMode(savedState.metricsInputMode);
       if (savedState.infraItems) setInfraItems(savedState.infraItems);
     }
@@ -437,11 +435,11 @@ export default function Home() {
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-6 py-4 flex items-start gap-3 shadow-sm">
             <span className="text-amber-500 text-xl mt-0.5 shrink-0">⚠️</span>
             <p className="text-sm text-amber-900 dark:text-amber-200 leading-relaxed">
-              <strong>Estimation purposes only.</strong> Elastic Serverless costs use official Observability Complete ingest + retention rates from{" "}
-              <a href="https://www.elastic.co/pricing/serverless-observability" className="underline" target="_blank" rel="noopener noreferrer">
-                elastic.co/pricing/serverless-observability
+              <strong>Estimation purposes only.</strong> Elastic Serverless uses Observability Complete ingest + retention tiers from the{" "}
+              <a href="https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability" className="underline" target="_blank" rel="noopener noreferrer">
+                Elastic Cloud pricing table
               </a>{" "}
-              (Nov 2025): $0.09/GB ingest + $0.019/GB retained/month at published floor rates. Other vendors use approximate list pricing. Actual costs vary by contract, region, support tier, and enrichment overhead.
+              (e.g. $0.50/GB for first 1,500 GB ingest; separate retention GB-month tiers). Other vendors use approximate list pricing. Add-ons (synthetics, LLM, Agent Builder) are not included.
             </p>
           </div>
         </div>
@@ -615,25 +613,25 @@ export default function Home() {
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={elasticUseVolumeTiers}
-                        onChange={(e) => setElasticUseVolumeTiers(e.target.checked)}
+                        checked={!elasticUseVolumeTiers}
+                        onChange={(e) => setElasticUseVolumeTiers(!e.target.checked)}
                         className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       />
                       <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Use Elastic Cloud pricing-table volume tiers (optional)
+                        Use floor rates only ($0.09/GB ingest + $0.019/GB retained/month)
                       </span>
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Default: published Observability Complete floor rates — $0.09/GB ingest + $0.019/GB retained/month. Enable tiers to match{" "}
+                      Default: Observability Complete tier table from{" "}
                       <a
                         href="https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability"
                         className="underline"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        cloud.elastic.co pricing table
+                        cloud.elastic.co
                       </a>{" "}
-                      (e.g. $0.50/GB for first 1,500 GB ingest, down to $0.0925/GB).
+                      — ingest ($0.50/GB for 0–1,500 GB through $0.0925/GB at 150,000+ GB) and retention ($0.04/GB-month for 0–10,000 GB through $0.0188/GB-month).
                     </p>
                   </div>
                 </div>

@@ -212,7 +212,7 @@ export const platforms: Platform[] = [
       egressPricePerGBWithPrivateLink: 0.001,
     },
     cardinalityNote:
-      "Elastic Observability Serverless Complete bills ingest ($0.09/GB) and retention ($0.019/GB stored/month) separately — not per metric. This calculator uses published floor rates by default (Nov 2025 packaging). High cardinality only affects cost via total GB. Metrics use Complete tier pricing (no metrics-only SKU). Source: elastic.co/pricing/serverless-observability. Adjust retention months in Configuration.",
+      "Elastic Observability Serverless Complete bills ingest and retention separately (GB + GB-month), not per metric. Default pricing uses the Observability Complete tier table on cloud.elastic.co (ingest from $0.50/GB for 0–1,500 GB; retention from $0.04/GB-month for 0–10,000 GB stored). High cardinality affects cost via total GB. Adjust retention months in Configuration.",
   },
   {
     id: "elastic-ech",

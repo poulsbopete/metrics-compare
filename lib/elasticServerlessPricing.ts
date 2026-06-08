@@ -1,15 +1,22 @@
 /**
  * Elastic Observability / Security Serverless pricing
  *
- * Volume tiers sourced from the Elastic Cloud pricing table (AWS us-east-1, Jun 2026):
- * https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability
+ * Observability Complete ingest + retention tiers match the Elastic Cloud pricing table
+ * (AWS us-east-1): cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability
  *
- * Published “as low as” floors (elastic.co/pricing/serverless-observability, Nov 2025):
- * Complete ingest $0.09/GB, retention $0.019/GB-month.
+ * Not modeled in this TCO tool: Agent Builder executions, synthetics, LLM add-ons, workflows.
+ * Serverless Data Out (egress): 50 GB free/month, then $0.05/GB — see costCalculator egress fields.
  *
  * Billing model (ingest + retention are separate line items):
  * https://www.elastic.co/docs/deploy-manage/cloud-organization/billing/elastic-observability-billing-dimensions
  */
+
+export const ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL =
+  "https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability";
+
+/** Serverless Data Out — 0–50 GB free, then $0.05/GB (Observability pricing table add-ons). */
+export const ELASTIC_SERVERLESS_DATA_OUT_FREE_GB = 50;
+export const ELASTIC_SERVERLESS_DATA_OUT_PRICE_PER_GB = 0.05;
 
 export type ElasticServerlessProductTier =
   | "observability-complete"
@@ -36,20 +43,20 @@ export interface ElasticServerlessRates {
 export interface ElasticServerlessPricingOptions {
   retentionMonths: number;
   productTier?: ElasticServerlessProductTier;
-  /** When false, uses published floor rates only. When true, uses cloud.elastic.co tier table. */
+  /** When true (default), uses Observability Complete tier table from cloud.elastic.co. */
   useVolumeTiers?: boolean;
 }
 
 export const DEFAULT_ELASTIC_PRICING_OPTIONS: ElasticServerlessPricingOptions = {
   retentionMonths: 1,
   productTier: "observability-complete",
-  useVolumeTiers: false,
+  useVolumeTiers: true,
 };
 
 export const ELASTIC_DAYS_PER_MONTH = 365 / 12;
 
-/** Shared retention tiers — Observability Complete & Security Complete (AWS us-east-1). */
-const SERVERLESS_RETENTION_TIERS: VolumeTier[] = [
+/** Observability Complete - Data Retention (AWS us-east-1). */
+export const OBSERVABILITY_COMPLETE_RETENTION_TIERS: VolumeTier[] = [
   { min: 0, max: 10_000, pricePerGB: 0.04 },
   { min: 10_000, max: 20_000, pricePerGB: 0.032 },
   { min: 20_000, max: 50_000, pricePerGB: 0.03 },
@@ -60,8 +67,8 @@ const SERVERLESS_RETENTION_TIERS: VolumeTier[] = [
   { min: 2_500_000, pricePerGB: 0.0188 },
 ];
 
-/** Observability Complete ingest — first tier $0.50/GB for 0–1500 GB (not $0.60). */
-const OBSERVABILITY_COMPLETE_INGEST_TIERS: VolumeTier[] = [
+/** Observability Complete - Data Ingestion (AWS us-east-1). */
+export const OBSERVABILITY_COMPLETE_INGEST_TIERS: VolumeTier[] = [
   { min: 0, max: 1_500, pricePerGB: 0.5 },
   { min: 1_500, max: 3_000, pricePerGB: 0.325 },
   { min: 3_000, max: 6_000, pricePerGB: 0.225 },
@@ -135,7 +142,7 @@ export const ELASTIC_SERVERLESS_RATES: Record<
     0.09,
     0.019,
     OBSERVABILITY_COMPLETE_INGEST_TIERS,
-    SERVERLESS_RETENTION_TIERS,
+    OBSERVABILITY_COMPLETE_RETENTION_TIERS,
     { logsMeteringMultiplier: 1.66 }
   ),
   "observability-logs-essentials": buildRates(
@@ -152,7 +159,7 @@ export const ELASTIC_SERVERLESS_RATES: Record<
     0.11,
     0.019,
     SECURITY_ANALYTICS_COMPLETE_INGEST_TIERS,
-    SERVERLESS_RETENTION_TIERS
+    OBSERVABILITY_COMPLETE_RETENTION_TIERS
   ),
 };
 
@@ -207,7 +214,7 @@ export function calculateElasticServerlessCost(
   options: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
 ): ElasticServerlessCostBreakdown {
   const productTier = options.productTier ?? "observability-complete";
-  const useVolumeTiers = options.useVolumeTiers ?? false;
+  const useVolumeTiers = options.useVolumeTiers ?? true;
   const retentionMonths = Math.max(0, options.retentionMonths);
   const rates = getElasticServerlessRates(productTier);
   const storedGB = monthlyIngestGB * retentionMonths;
