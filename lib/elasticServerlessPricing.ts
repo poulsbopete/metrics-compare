@@ -1,15 +1,14 @@
 /**
  * Elastic Observability / Security Serverless pricing
  *
- * Official list rates (volume-tier floors, effective Nov 1, 2025):
- * https://www.elastic.co/pricing/serverless-observability
+ * Volume tiers sourced from the Elastic Cloud pricing table (AWS us-east-1, Jun 2026):
+ * https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability
+ *
+ * Published “as low as” floors (elastic.co/pricing/serverless-observability, Nov 2025):
+ * Complete ingest $0.09/GB, retention $0.019/GB-month.
  *
  * Billing model (ingest + retention are separate line items):
  * https://www.elastic.co/docs/deploy-manage/cloud-organization/billing/elastic-observability-billing-dimensions
- *
- * Volume tier breakpoints (first two ingest tiers from Nov 2025 packaging blog;
- * intermediate tiers estimated to reach published floors by ~5 TB/month):
- * https://www.elastic.co/blog/elastic-cloud-serverless-pricing-packaging
  */
 
 export type ElasticServerlessProductTier =
@@ -37,40 +36,74 @@ export interface ElasticServerlessRates {
 export interface ElasticServerlessPricingOptions {
   retentionMonths: number;
   productTier?: ElasticServerlessProductTier;
-  /** When false, uses published floor rates only (high-volume best case). */
+  /** When false, uses published floor rates only. When true, uses cloud.elastic.co tier table. */
   useVolumeTiers?: boolean;
 }
 
 export const DEFAULT_ELASTIC_PRICING_OPTIONS: ElasticServerlessPricingOptions = {
   retentionMonths: 1,
   productTier: "observability-complete",
-  /** Published list pricing uses floor rates; tier staircase is optional estimator-only. */
   useVolumeTiers: false,
 };
 
 export const ELASTIC_DAYS_PER_MONTH = 365 / 12;
 
-/** Shared ingest tier shape; retention tiers scale by retentionFloor / ingestFloor. */
-const OBSERVABILITY_COMPLETE_INGEST_TIERS: VolumeTier[] = [
-  { min: 0, max: 50, pricePerGB: 0.6 },
-  { min: 50, max: 100, pricePerGB: 0.33 },
-  { min: 100, max: 1024, pricePerGB: 0.18 },
-  { min: 1024, max: 5120, pricePerGB: 0.12 },
-  { min: 5120, pricePerGB: 0.09 },
+/** Shared retention tiers — Observability Complete & Security Complete (AWS us-east-1). */
+const SERVERLESS_RETENTION_TIERS: VolumeTier[] = [
+  { min: 0, max: 10_000, pricePerGB: 0.04 },
+  { min: 10_000, max: 20_000, pricePerGB: 0.032 },
+  { min: 20_000, max: 50_000, pricePerGB: 0.03 },
+  { min: 50_000, max: 100_000, pricePerGB: 0.028 },
+  { min: 100_000, max: 250_000, pricePerGB: 0.026 },
+  { min: 250_000, max: 1_000_000, pricePerGB: 0.022 },
+  { min: 1_000_000, max: 2_500_000, pricePerGB: 0.02 },
+  { min: 2_500_000, pricePerGB: 0.0188 },
 ];
 
-function scaleRetentionTiers(
-  ingestTiers: VolumeTier[],
-  ingestFloor: number,
-  retentionFloor: number
-): VolumeTier[] {
-  const scale = retentionFloor / ingestFloor;
-  return ingestTiers.map((tier) => ({
-    min: tier.min,
-    max: tier.max,
-    pricePerGB: tier.pricePerGB * scale,
-  }));
-}
+/** Observability Complete ingest — first tier $0.50/GB for 0–1500 GB (not $0.60). */
+const OBSERVABILITY_COMPLETE_INGEST_TIERS: VolumeTier[] = [
+  { min: 0, max: 1_500, pricePerGB: 0.5 },
+  { min: 1_500, max: 3_000, pricePerGB: 0.325 },
+  { min: 3_000, max: 6_000, pricePerGB: 0.225 },
+  { min: 6_000, max: 15_000, pricePerGB: 0.15 },
+  { min: 15_000, max: 30_000, pricePerGB: 0.105 },
+  { min: 30_000, max: 60_000, pricePerGB: 0.1 },
+  { min: 60_000, max: 150_000, pricePerGB: 0.095 },
+  { min: 150_000, pricePerGB: 0.0925 },
+];
+
+const OBSERVABILITY_LOGS_ESSENTIALS_INGEST_TIERS: VolumeTier[] = [
+  { min: 0, max: 1_500, pricePerGB: 0.35 },
+  { min: 1_500, max: 3_000, pricePerGB: 0.2275 },
+  { min: 3_000, max: 6_000, pricePerGB: 0.1575 },
+  { min: 6_000, max: 15_000, pricePerGB: 0.105 },
+  { min: 15_000, max: 30_000, pricePerGB: 0.0735 },
+  { min: 30_000, max: 60_000, pricePerGB: 0.07 },
+  { min: 60_000, max: 150_000, pricePerGB: 0.0665 },
+  { min: 150_000, pricePerGB: 0.0648 },
+];
+
+const OBSERVABILITY_LOGS_ESSENTIALS_RETENTION_TIERS: VolumeTier[] = [
+  { min: 0, max: 10_000, pricePerGB: 0.036 },
+  { min: 10_000, max: 20_000, pricePerGB: 0.0288 },
+  { min: 20_000, max: 50_000, pricePerGB: 0.027 },
+  { min: 50_000, max: 100_000, pricePerGB: 0.0252 },
+  { min: 100_000, max: 250_000, pricePerGB: 0.0234 },
+  { min: 250_000, max: 1_000_000, pricePerGB: 0.0198 },
+  { min: 1_000_000, max: 2_500_000, pricePerGB: 0.018 },
+  { min: 2_500_000, pricePerGB: 0.0169 },
+];
+
+const SECURITY_ANALYTICS_COMPLETE_INGEST_TIERS: VolumeTier[] = [
+  { min: 0, max: 1_500, pricePerGB: 0.6 },
+  { min: 1_500, max: 3_000, pricePerGB: 0.39 },
+  { min: 3_000, max: 6_000, pricePerGB: 0.27 },
+  { min: 6_000, max: 15_000, pricePerGB: 0.18 },
+  { min: 15_000, max: 30_000, pricePerGB: 0.126 },
+  { min: 30_000, max: 60_000, pricePerGB: 0.12 },
+  { min: 60_000, max: 150_000, pricePerGB: 0.114 },
+  { min: 150_000, pricePerGB: 0.111 },
+];
 
 function buildRates(
   productTier: ElasticServerlessProductTier,
@@ -78,6 +111,7 @@ function buildRates(
   ingestFloorPerGB: number,
   retentionFloorPerGB: number,
   ingestTiers: VolumeTier[],
+  retentionTiers: VolumeTier[],
   extras?: Pick<ElasticServerlessRates, "logsMeteringMultiplier">
 ): ElasticServerlessRates {
   return {
@@ -86,7 +120,7 @@ function buildRates(
     ingestFloorPerGB,
     retentionFloorPerGB,
     ingestTiers,
-    retentionTiers: scaleRetentionTiers(ingestTiers, ingestFloorPerGB, retentionFloorPerGB),
+    retentionTiers,
     ...extras,
   };
 }
@@ -101,6 +135,7 @@ export const ELASTIC_SERVERLESS_RATES: Record<
     0.09,
     0.019,
     OBSERVABILITY_COMPLETE_INGEST_TIERS,
+    SERVERLESS_RETENTION_TIERS,
     { logsMeteringMultiplier: 1.66 }
   ),
   "observability-logs-essentials": buildRates(
@@ -108,20 +143,16 @@ export const ELASTIC_SERVERLESS_RATES: Record<
     "Observability Logs Essentials",
     0.07,
     0.017,
-    OBSERVABILITY_COMPLETE_INGEST_TIERS.map((tier) => ({
-      ...tier,
-      pricePerGB: (tier.pricePerGB / 0.09) * 0.07,
-    }))
+    OBSERVABILITY_LOGS_ESSENTIALS_INGEST_TIERS,
+    OBSERVABILITY_LOGS_ESSENTIALS_RETENTION_TIERS
   ),
   "security-analytics-complete": buildRates(
     "security-analytics-complete",
     "Security Analytics Complete",
     0.11,
     0.019,
-    OBSERVABILITY_COMPLETE_INGEST_TIERS.map((tier) => ({
-      ...tier,
-      pricePerGB: (tier.pricePerGB / 0.09) * 0.11,
-    }))
+    SECURITY_ANALYTICS_COMPLETE_INGEST_TIERS,
+    SERVERLESS_RETENTION_TIERS
   ),
 };
 
@@ -135,7 +166,7 @@ export interface ElasticServerlessCostBreakdown {
   retentionRateLabel: string;
 }
 
-/** Tiered GB pricing — matches Elastic Cloud pricing estimator (`tz` in console). */
+/** Tiered GB pricing — matches Elastic Cloud pricing table tier widths. */
 export function calculateTieredVolumeCost(gb: number, tiers: VolumeTier[]): number {
   if (gb <= 0) return 0;
 

@@ -620,11 +620,20 @@ export default function Home() {
                         className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       />
                       <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Use Elastic Cloud pricing-estimator volume tiers (optional)
+                        Use Elastic Cloud pricing-table volume tiers (optional)
                       </span>
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Default: published Observability Complete floor rates — $0.09/GB ingest + $0.019/GB retained/month (Nov 2025). Enable tiers only to approximate the staircase model in Elastic&apos;s console estimator; not list pricing on elastic.co.
+                      Default: published Observability Complete floor rates — $0.09/GB ingest + $0.019/GB retained/month. Enable tiers to match{" "}
+                      <a
+                        href="https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability"
+                        className="underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        cloud.elastic.co pricing table
+                      </a>{" "}
+                      (e.g. $0.50/GB for first 1,500 GB ingest, down to $0.0925/GB).
                     </p>
                   </div>
                 </div>
