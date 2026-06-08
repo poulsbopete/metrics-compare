@@ -116,7 +116,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
       platform.id === "elastic-serverless" && monthlyGB > 0
         ? calculateElasticServerlessCost(monthlyGB, {
             retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
-            useVolumeTiers: calculationContext.elasticUseVolumeTiers ?? true,
+            useVolumeTiers: calculationContext.elasticUseVolumeTiers ?? false,
             productTier: "observability-complete",
           })
         : undefined;

@@ -125,7 +125,7 @@ export default function Home() {
 
   // Elastic Serverless pricing (ingest + retention)
   const [elasticRetentionMonths, setElasticRetentionMonths] = useState(1);
-  const [elasticUseVolumeTiers, setElasticUseVolumeTiers] = useState(true);
+  const [elasticUseVolumeTiers, setElasticUseVolumeTiers] = useState(false);
 
   // Operational cost state
   const [includeOperationalCost, setIncludeOperationalCost] = useState(true);
@@ -441,7 +441,7 @@ export default function Home() {
               <a href="https://www.elastic.co/pricing/serverless-observability" className="underline" target="_blank" rel="noopener noreferrer">
                 elastic.co/pricing/serverless-observability
               </a>{" "}
-              (Nov 2025), including volume tiers. Other vendors use approximate list pricing. Actual costs vary by contract, region, support tier, and enrichment overhead.
+              (Nov 2025): $0.09/GB ingest + $0.019/GB retained/month at published floor rates. Other vendors use approximate list pricing. Actual costs vary by contract, region, support tier, and enrichment overhead.
             </p>
           </div>
         </div>
@@ -620,11 +620,11 @@ export default function Home() {
                         className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       />
                       <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Apply Elastic volume tiers (0–50 GB @ $0.60/GB ingest, down to $0.09/GB)
+                        Use Elastic Cloud pricing-estimator volume tiers (optional)
                       </span>
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Floor rates at high volume: $0.09/GB ingest + $0.019/GB retained/month (Complete tier). Uncheck tiers to model best-case high-volume pricing only.
+                      Default: published Observability Complete floor rates — $0.09/GB ingest + $0.019/GB retained/month (Nov 2025). Enable tiers only to approximate the staircase model in Elastic&apos;s console estimator; not list pricing on elastic.co.
                     </p>
                   </div>
                 </div>

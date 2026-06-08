@@ -44,7 +44,8 @@ export interface ElasticServerlessPricingOptions {
 export const DEFAULT_ELASTIC_PRICING_OPTIONS: ElasticServerlessPricingOptions = {
   retentionMonths: 1,
   productTier: "observability-complete",
-  useVolumeTiers: true,
+  /** Published list pricing uses floor rates; tier staircase is optional estimator-only. */
+  useVolumeTiers: false,
 };
 
 export const ELASTIC_DAYS_PER_MONTH = 365 / 12;
@@ -175,7 +176,7 @@ export function calculateElasticServerlessCost(
   options: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
 ): ElasticServerlessCostBreakdown {
   const productTier = options.productTier ?? "observability-complete";
-  const useVolumeTiers = options.useVolumeTiers ?? true;
+  const useVolumeTiers = options.useVolumeTiers ?? false;
   const retentionMonths = Math.max(0, options.retentionMonths);
   const rates = getElasticServerlessRates(productTier);
   const storedGB = monthlyIngestGB * retentionMonths;

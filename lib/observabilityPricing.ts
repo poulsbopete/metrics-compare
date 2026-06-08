@@ -705,7 +705,7 @@ export const securityPlatforms: ObservabilityPlatform[] = [
     },
     notes: {
       security:
-        "Elastic Security Serverless — Security Analytics Complete: ingest ($0.11/GB floor) + retention ($0.019/GB stored/month floor), volume tiered. Source: elastic.co/pricing/serverless-security (Nov 2025 packaging).",
+        "Elastic Security Serverless — Security Analytics Complete: ingest ($0.11/GB) + retention ($0.019/GB stored/month) at published floor rates (Nov 2025). Source: elastic.co/pricing/serverless-security.",
     },
   },
   {
