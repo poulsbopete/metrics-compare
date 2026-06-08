@@ -15,6 +15,8 @@ export interface Platform {
     basePrice?: number;
     pricePerMetric?: number;
     pricePerMillionMetrics?: number;
+    /** Datadog-style: $/unique custom metric time series / month (hourly avg), not per datapoint */
+    pricePerCustomMetricPerMonth?: number;
     pricePerGB?: number; // For volume-based pricing (non-Elastic or display fallback)
     bytesPerDatapoint?: number; // Conversion factor for metrics to GB (default: 320 bytes)
     freeTier?: number;
@@ -83,6 +85,11 @@ export function metricsPerSecondToMonthly(metricsPerSecond: number): number {
   return metricsPerSecond * secondsPerMonth;
 }
 
+/** Unique custom metric series from monthly datapoint volume (assumes ~1 pt/sec per series). */
+export function monthlyDatapointsToUniqueCustomMetrics(monthlyDatapoints: number): number {
+  return monthlyDatapoints / (30 * 24 * 60 * 60);
+}
+
 // Convert metrics (datapoints) to GB based on bytes per datapoint
 export function metricsToGB(metrics: number, bytesPerDatapoint: number = 320): number {
   const bytes = metrics * bytesPerDatapoint;
@@ -149,6 +156,15 @@ export function calculatePlatformCost(
       }).volumeCost;
     } else {
       cost += monthlyGB * pricing.pricePerGB;
+    }
+  } else if (pricing.pricePerCustomMetricPerMonth !== undefined) {
+    const uniqueCustomMetrics = monthlyDatapointsToUniqueCustomMetrics(billableMetrics);
+    cost += uniqueCustomMetrics * pricing.pricePerCustomMetricPerMonth;
+    if (includeEgress && pricing.egressPricePerGB) {
+      const bytesPerDatapoint = metricType
+        ? getBytesPerDatapoint(metricType)
+        : (pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
+      monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
     }
   } else if (pricing.pricePerMillionMetrics) {
     cost += (billableMetrics / 1_000_000) * pricing.pricePerMillionMetrics;
@@ -243,17 +259,17 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 0,
-      // Simplified blended rate for **ingested datapoints/month** (this tool’s “monthly metrics”).
-      // Datadog’s real bill uses **unique custom metric time series** (hourly average), hosts, plan tier, and commits — often **higher** than this proxy at high cardinality. Calibrate against an actual DD invoice.
-      pricePerMillionMetrics: 1.25,
+      // List: $5 / 100 custom metrics / month ≈ $0.05 per unique custom metric time series (hourly avg).
+      // Does not include host/infrastructure SKUs or per-host custom metric allotments.
+      pricePerCustomMetricPerMonth: 0.05,
       freeTier: 0,
-      unit: "per million metrics/month (simplified proxy)",
-      egressPricePerGB: 0.05, // $0.05/GB egress after free tier
-      egressFreeTier: 10, // 10 GB free egress/month
-      egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
+      unit: "per custom metric time series / month",
+      egressPricePerGB: 0.05,
+      egressFreeTier: 10,
+      egressPricePerGBWithPrivateLink: 0.001,
     },
     cardinalityNote:
-      "Datadog bills **unique custom metric time series** (name + tag combinations), averaged per hour — not raw datapoint volume the same way Elastic prices GB. This calculator maps your **monthly datapoint estimate** to an approximate $/M **blended** rate for comparison only; high-cardinality tag explosions on real DD bills often push cost **well above** this line. Each unique series is separately billable after host allotments. Use a customer’s Datadog usage statement for a real TCO.",
+      "Datadog bills **unique custom metric time series** (name + tags), averaged per hour — **not** per datapoint. This calculator converts your datapoint/sec estimate to an hourly-average series count (~datapoints/sec at 1 Hz per series) × $0.05/series/month. Host pricing, APM hosts, log indexing tiers, and committed discounts are not modeled — use a Datadog usage export for a quote.",
   },
   {
     id: "new-relic",

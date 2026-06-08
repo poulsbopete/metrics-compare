@@ -4,6 +4,7 @@ import {
   ELASTIC_PRICE_PER_GB,
   MetricSourceType,
   Platform,
+  monthlyDatapointsToUniqueCustomMetrics,
 } from "@/lib/costCalculator";
 import {
   calculateElasticServerlessCost,
@@ -91,6 +92,8 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
         billableMetrics: number;
         metricsVolumeCharge: number;
         infraSubtotalFromMetrics: number;
+        uniqueCustomMetrics?: number;
+        customMetricsVolumeCharge?: number;
         elasticBreakdown?: ReturnType<typeof calculateElasticServerlessCost>;
       }
     | null = null;
@@ -123,10 +126,17 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
       calculationContext.monthlyMetrics - (platform.pricing.freeTier || 0)
     );
     const ppm = platform.pricing.pricePerMillionMetrics ?? 0;
+    const pcm = platform.pricing.pricePerCustomMetricPerMonth ?? 0;
+    const uniqueCustomMetrics =
+      pcm > 0 ? monthlyDatapointsToUniqueCustomMetrics(billableMetrics) : 0;
+    const customMetricsVolumeCharge =
+      pcm > 0 ? uniqueCustomMetrics * pcm : 0;
     const metricsVolumeCharge =
       ppm > 0 ? (billableMetrics / 1_000_000) * ppm : 0;
     const infraSubtotalFromMetrics =
-      ppm > 0
+      pcm > 0
+        ? calculationContext.infraCost ?? customMetricsVolumeCharge
+        : ppm > 0
         ? calculationContext.infraCost ?? metricsVolumeCharge
         : 0;
     const infraSubtotalFromGB = hasPerGB
@@ -143,6 +153,8 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
       billableMetrics,
       metricsVolumeCharge,
       infraSubtotalFromMetrics,
+      uniqueCustomMetrics,
+      customMetricsVolumeCharge,
       elasticBreakdown,
     };
   }
@@ -335,7 +347,50 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
               </>
             )}
 
-            {/* Per-million-metrics pricing (Datadog, New Relic, Grafana, etc.) */}
+            {/* Per-custom-metric-series pricing (Datadog) */}
+            {platform.pricing.pricePerCustomMetricPerMonth !== undefined &&
+             platform.pricing.pricePerCustomMetricPerMonth > 0 &&
+             metricsBreakdown && (
+              <>
+                <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Unique custom metrics (est.):</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {(() => {
+                      const n = metricsBreakdown.uniqueCustomMetrics ?? 0;
+                      return n >= 1_000_000
+                        ? `${(n / 1_000_000).toFixed(2)}M series`
+                        : n >= 1_000
+                        ? `${(n / 1_000).toFixed(1)}K series`
+                        : `${Math.round(n).toLocaleString()} series`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">List rate:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatUnitRate(platform.pricing.pricePerCustomMetricPerMonth, "/series/mo")}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Estimated custom metrics charge:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(metricsBreakdown.customMetricsVolumeCharge ?? 0)}/month
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Infrastructure subtotal:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(metricsBreakdown.infraSubtotalFromMetrics)}/month
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  Derived from your metrics/sec estimate (including tag cardinality). Does not include host/infra SKUs, APM hosts, or committed discounts — validate with Datadog Usage.
+                </p>
+              </>
+            )}
+
+            {/* Per-million-metrics pricing (New Relic, Grafana, etc.) */}
             {platform.pricing.pricePerMillionMetrics !== undefined &&
              platform.pricing.pricePerMillionMetrics > 0 &&
              metricsBreakdown && (
@@ -388,11 +443,6 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                     {formatCurrency(metricsBreakdown.infraSubtotalFromMetrics)}/month
                   </span>
                 </div>
-                {platform.id === "datadog" && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                    Datadog’s published model is per **custom metric time series**, not this tool’s datapoint/month tally — real spend is often higher. Treat this row as a directional comparison; validate with Usage / invoices.
-                  </p>
-                )}
                 {platform.id === "observe-inc" && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                     Observe charges $0.008/DPM (Data Points per Minute). $0.185/M metrics = $0.008 × (1M ÷ 43,200 datapoints/DPM)
@@ -405,7 +455,8 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
             {platform.pricing.basePrice !== undefined &&
              platform.pricing.basePrice > 0 &&
              !platform.pricing.pricePerGB &&
-             !platform.pricing.pricePerMillionMetrics && (
+             !platform.pricing.pricePerMillionMetrics &&
+             !platform.pricing.pricePerCustomMetricPerMonth && (
               <>
                 <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
                 <div className="flex justify-between items-center">
