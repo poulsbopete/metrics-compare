@@ -5,6 +5,10 @@ import {
   MetricSourceType,
   Platform,
 } from "@/lib/costCalculator";
+import {
+  calculateElasticServerlessCost,
+  type ElasticServerlessPricingOptions,
+} from "@/lib/elasticServerlessPricing";
 import { ObservabilityPlatform } from "@/lib/observabilityPricing";
 
 interface PlatformDetailsProps {
@@ -28,6 +32,8 @@ interface PlatformDetailsProps {
     /** SaaS infra subtotal (excludes operational FTE $) — matches table “infra” when shown */
     infraCost?: number;
     operationalCost?: number;
+    elasticRetentionMonths?: number;
+    elasticUseVolumeTiers?: boolean;
   };
 }
 
@@ -85,6 +91,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
         billableMetrics: number;
         metricsVolumeCharge: number;
         infraSubtotalFromMetrics: number;
+        elasticBreakdown?: ReturnType<typeof calculateElasticServerlessCost>;
       }
     | null = null;
 
@@ -102,6 +109,15 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
     const baseCluster = platform.pricing.basePrice ?? 0;
     const volumeChargeGB = hasPerGB ? monthlyGB * effectivePricePerGB : 0;
     const computedInfraGB = hasPerGB ? baseCluster + volumeChargeGB : 0;
+    const elasticBreakdown =
+      platform.id === "elastic-serverless" && monthlyGB > 0
+        ? calculateElasticServerlessCost(monthlyGB, {
+            retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
+            useVolumeTiers: calculationContext.elasticUseVolumeTiers ?? true,
+            productTier: "observability-complete",
+          })
+        : undefined;
+    const infraSubtotalFromElastic = elasticBreakdown?.volumeCost;
     const billableMetrics = Math.max(
       0,
       calculationContext.monthlyMetrics - (platform.pricing.freeTier || 0)
@@ -114,7 +130,8 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
         ? calculationContext.infraCost ?? metricsVolumeCharge
         : 0;
     const infraSubtotalFromGB = hasPerGB
-      ? calculationContext.infraCost ?? computedInfraGB
+      ? calculationContext.infraCost ??
+        (infraSubtotalFromElastic ?? computedInfraGB)
       : 0;
 
     metricsBreakdown = {
@@ -126,6 +143,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
       billableMetrics,
       metricsVolumeCharge,
       infraSubtotalFromMetrics,
+      elasticBreakdown,
     };
   }
 
@@ -248,25 +266,55 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   </div>
                 )}
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Monthly GB (calculated):</span>
+                  <span className="text-gray-600 dark:text-gray-400">Monthly ingest GB:</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {metricsBreakdown.monthlyGB >= 1000
                       ? `${(metricsBreakdown.monthlyGB / 1000).toFixed(2)} TB`
                       : `${metricsBreakdown.monthlyGB.toFixed(2)} GB`}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Price per GB (effective):</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {formatUnitRate(metricsBreakdown.effectivePricePerGB, "/GB")}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Ingest / volume charge:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {formatCurrency(metricsBreakdown.volumeChargeGB)}/month
-                  </span>
-                </div>
+                {metricsBreakdown.elasticBreakdown ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Stored GB ({calculationContext.elasticRetentionMonths ?? 1} mo retention):
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {metricsBreakdown.elasticBreakdown.storedGB.toFixed(2)} GB
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Ingest charge:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(metricsBreakdown.elasticBreakdown.ingestCost)}/month
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Retention charge:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(metricsBreakdown.elasticBreakdown.retentionCost)}/month
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      {metricsBreakdown.elasticBreakdown.ingestRateLabel}; {metricsBreakdown.elasticBreakdown.retentionRateLabel}. Source: Observability Complete list pricing.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Price per GB (effective):</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatUnitRate(metricsBreakdown.effectivePricePerGB, "/GB")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Ingest / volume charge:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(metricsBreakdown.volumeChargeGB)}/month
+                      </span>
+                    </div>
+                  </>
+                )}
                 {metricsBreakdown.baseCluster > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Base cluster (minimum):</span>

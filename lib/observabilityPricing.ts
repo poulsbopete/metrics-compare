@@ -1,5 +1,14 @@
 // Comprehensive observability pricing data for Metrics, Tracing/APM, and Logs
 
+import {
+  calculateElasticServerlessCost,
+  DEFAULT_ELASTIC_PRICING_OPTIONS,
+  elasticLogsMeteredMonthlyGB,
+  type ElasticServerlessPricingOptions,
+} from "./elasticServerlessPricing";
+
+export type { ElasticServerlessPricingOptions };
+
 export type ObservabilityType = "metrics" | "tracing" | "logs" | "security";
 
 export interface ObservabilityPricing {
@@ -146,20 +155,18 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     pricing: {
       tracing: {
         basePrice: 0,
-        // Elastic Serverless charges per GB ingested + per GB retained — same model as Logs/Metrics.
-        // Complete tier (November 2025 pricing): $0.09/GB ingest + $0.019/GB retention = $0.109/GB total.
-        // APM data (spans, transactions, metrics) is billed as standard ingest GB.
-        pricePerGB: 0.109,
+        pricePerGB: 0.109, // Floor reference — actual cost uses ingest + retention tiers
         bytesPerSpan: 500,
         freeTier: 0,
-        unit: "per GB/month",
+        unit: "ingest + retention (GB)",
         egressPricePerGB: 0.05,
         egressFreeTier: 50,
         egressPricePerGBWithPrivateLink: 0.001,
       },
     },
     notes: {
-      tracing: "Elastic Serverless APM (Complete tier, November 2025 pricing): $0.09/GB ingested + $0.019/GB retained per month = $0.109/GB total. APM spans, transactions, and service metrics are all billed as ingested GB — the same model as Elastic Serverless Logs and Metrics. High cardinality does not directly increase costs; only total data volume matters. Pricing shown is the top-volume 'as low as' rate; smaller deployments may be at higher per-GB tiers. Source: elastic.co/pricing/serverless-observability (effective November 1, 2025).",
+      tracing:
+        "Elastic Observability Serverless Complete: separate ingest ($0.09/GB floor) and retention ($0.019/GB stored/month floor) charges on metered GB. APM spans billed as ingested data volume. Volume tiers apply to both dimensions. Source: elastic.co/pricing/serverless-observability (Nov 1, 2025).",
     },
   },
   {
@@ -365,16 +372,17 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     pricing: {
       logs: {
         basePrice: 0,
-        pricePerGB: 0.109, // $0.09/GB ingested + $0.019/GB retained per month (Complete tier)
+        pricePerGB: 0.109, // Floor reference — metered ingest uses 1.66× enrichment factor
         freeTier: 0,
-        unit: "per GB/month",
-        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
-        egressFreeTier: 50, // 50 GB free egress/month
-        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
+        unit: "ingest + retention (GB)",
+        egressPricePerGB: 0.05,
+        egressFreeTier: 50,
+        egressPricePerGBWithPrivateLink: 0.001,
       },
     },
     notes: {
-      logs: "Elastic Serverless Complete: $0.09/GB ingested + $0.019/GB retained per month. Includes logs analysis, dashboards, integrations, alerts, and AI-powered insights. Source: https://www.elastic.co/pricing/serverless-observability",
+      logs:
+        "Elastic Observability Serverless Complete: ingest ($0.09/GB floor) + retention ($0.019/GB stored/month floor). Billed GB is post-pipeline enriched size (~1.66× raw log volume in Elastic's estimator). Volume tiers apply. Source: elastic.co/pricing/serverless-observability (Nov 1, 2025).",
     },
   },
   {
@@ -586,7 +594,8 @@ export function calculateTracingCost(
   platform: ObservabilityPlatform,
   monthlySpans: number,
   includeEgress: boolean = false,
-  usePrivateLink: boolean = false
+  usePrivateLink: boolean = false,
+  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
 ): number {
   const pricing = platform.pricing.tracing;
   if (!pricing) return 0;
@@ -595,18 +604,23 @@ export function calculateTracingCost(
   const billableSpans = Math.max(0, monthlySpans - (pricing.freeTier || 0));
   let monthlyGB = 0;
 
-  // Trace-based pricing (for Elastic APM)
   if (pricing.pricePerMillionTraces) {
-    const spansPerTrace = pricing.spansPerTrace || 10; // Default: 10 spans per trace
+    const spansPerTrace = pricing.spansPerTrace || 10;
     const monthlyTraces = billableSpans / spansPerTrace;
     cost += (monthlyTraces / 1_000_000) * pricing.pricePerMillionTraces;
-    // Estimate GB for egress calculation (if needed)
     const bytesPerSpan = pricing.bytesPerSpan || BYTES_PER_SPAN;
     monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
   } else if (pricing.pricePerGB) {
     const bytesPerSpan = pricing.bytesPerSpan || BYTES_PER_SPAN;
     monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
-    cost += monthlyGB * pricing.pricePerGB;
+    if (platform.id === "elastic-tracing") {
+      cost += calculateElasticServerlessCost(monthlyGB, {
+        ...elasticPricing,
+        productTier: "observability-complete",
+      }).volumeCost;
+    } else {
+      cost += monthlyGB * pricing.pricePerGB;
+    }
   } else if (pricing.pricePerMillionSpans) {
     cost += (billableSpans / 1_000_000) * pricing.pricePerMillionSpans;
     // Estimate GB for egress calculation (if needed)
@@ -631,7 +645,8 @@ export function calculateLogsCost(
   platform: ObservabilityPlatform,
   monthlyGB: number,
   includeEgress: boolean = false,
-  usePrivateLink: boolean = false
+  usePrivateLink: boolean = false,
+  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
 ): number {
   const pricing = platform.pricing.logs;
   if (!pricing) return 0;
@@ -640,10 +655,18 @@ export function calculateLogsCost(
   const billableGB = Math.max(0, monthlyGB - (pricing.freeTier || 0));
 
   if (pricing.pricePerGB) {
-    cost += billableGB * pricing.pricePerGB;
+    if (platform.id === "elastic-logs") {
+      // monthlyGB is raw GB/month from gb/day × 30; Elastic meters enriched volume (~1.66×)
+      const meteredMonthlyGB = elasticLogsMeteredMonthlyGB(billableGB / 30);
+      cost += calculateElasticServerlessCost(meteredMonthlyGB, {
+        ...elasticPricing,
+        productTier: "observability-complete",
+      }).volumeCost;
+    } else {
+      cost += billableGB * pricing.pricePerGB;
+    }
   }
 
-  // Add egress costs if enabled
   if (includeEgress && monthlyGB > 0) {
     cost += calculateObservabilityEgressCost(platform, monthlyGB, "logs", usePrivateLink);
   }
@@ -671,17 +694,18 @@ export const securityPlatforms: ObservabilityPlatform[] = [
     pricing: {
       security: {
         basePrice: 0,
-        pricePerGB: 0.129, // $0.11/GB ingested + $0.019/GB retained per month (Security Analytics Complete tier)
+        pricePerGB: 0.129, // Floor reference: $0.11 ingest + $0.019 retention × 1 mo
         bytesPerEvent: BYTES_PER_SECURITY_EVENT,
         freeTier: 0,
-        unit: "per GB/month",
-        egressPricePerGB: 0.05, // $0.05/GB egress after free tier
-        egressFreeTier: 50, // 50 GB free egress/month
-        egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
+        unit: "ingest + retention (GB)",
+        egressPricePerGB: 0.05,
+        egressFreeTier: 50,
+        egressPricePerGBWithPrivateLink: 0.001,
       },
     },
     notes: {
-      security: "Elastic Security Serverless - Security Analytics Complete (Recommended): $0.11/GB ingested + $0.019/GB retained per month (TOP VOLUME TIER pricing). All-inclusive pricing includes: SIEM, threat detection, security analytics, AI-powered insights, entity analytics/UEBA, threat intelligence management, bidirectional response framework, extended security content, and Elastic AI Assistant. No additional add-ons or per-feature charges required for core security analytics. Unified observability platform (metrics, logs, traces, security) in one solution. Optional add-ons available: Endpoint Protection ($0.49/endpoint/month) and Cloud Protection ($0.65/asset/month). Source: https://www.elastic.co/pricing/serverless-security. Note: Pricing comparison is based on raw ingest volume; actual value includes comprehensive security features, unified platform capabilities, and advanced analytics that may require additional modules or add-ons with other vendors.",
+      security:
+        "Elastic Security Serverless — Security Analytics Complete: ingest ($0.11/GB floor) + retention ($0.019/GB stored/month floor), volume tiered. Source: elastic.co/pricing/serverless-security (Nov 2025 packaging).",
     },
   },
   {
@@ -892,7 +916,8 @@ export function calculateSecurityCost(
   platform: ObservabilityPlatform,
   monthlyEvents: number,
   includeEgress: boolean = false,
-  usePrivateLink: boolean = false
+  usePrivateLink: boolean = false,
+  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
 ): number {
   const pricing = platform.pricing.security;
   if (!pricing) return 0;
@@ -904,7 +929,14 @@ export function calculateSecurityCost(
   if (pricing.pricePerGB) {
     const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
     monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
-    cost += monthlyGB * pricing.pricePerGB;
+    if (platform.id === "elastic-security") {
+      cost += calculateElasticServerlessCost(monthlyGB, {
+        ...elasticPricing,
+        productTier: "security-analytics-complete",
+      }).volumeCost;
+    } else {
+      cost += monthlyGB * pricing.pricePerGB;
+    }
   } else if (pricing.pricePerMillionEvents) {
     cost += (billableEvents / 1_000_000) * pricing.pricePerMillionEvents;
     // Estimate GB for egress calculation (if needed)

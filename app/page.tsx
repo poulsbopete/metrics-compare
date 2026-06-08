@@ -19,6 +19,7 @@ import {
   BYTES_PER_DATAPOINT,
   type MetricConfig,
   type MetricSourceType,
+  type ElasticServerlessPricingOptions,
 } from "@/lib/costCalculator";
 import {
   integrations,
@@ -61,6 +62,8 @@ interface SavedState {
   // Egress
   includeEgress?: boolean;
   usePrivateLink?: boolean;
+  elasticRetentionMonths?: number;
+  elasticUseVolumeTiers?: boolean;
 }
 
 function loadState(): SavedState | null {
@@ -120,6 +123,10 @@ export default function Home() {
   const [includeEgress, setIncludeEgress] = useState(false);
   const [usePrivateLink, setUsePrivateLink] = useState(false);
 
+  // Elastic Serverless pricing (ingest + retention)
+  const [elasticRetentionMonths, setElasticRetentionMonths] = useState(1);
+  const [elasticUseVolumeTiers, setElasticUseVolumeTiers] = useState(true);
+
   // Operational cost state
   const [includeOperationalCost, setIncludeOperationalCost] = useState(true);
   const [engineerHourlyRate, setEngineerHourlyRate] = useState(DEFAULT_ENGINEER_HOURLY_RATE);
@@ -143,6 +150,12 @@ export default function Home() {
       if (savedState.eventsPerSecond) setEventsPerSecond(savedState.eventsPerSecond);
       if (savedState.includeEgress !== undefined) setIncludeEgress(savedState.includeEgress);
       if (savedState.usePrivateLink !== undefined) setUsePrivateLink(savedState.usePrivateLink);
+      if (savedState.elasticRetentionMonths !== undefined) {
+        setElasticRetentionMonths(savedState.elasticRetentionMonths);
+      }
+      if (savedState.elasticUseVolumeTiers !== undefined) {
+        setElasticUseVolumeTiers(savedState.elasticUseVolumeTiers);
+      }
       if (savedState.metricsInputMode) setMetricsInputMode(savedState.metricsInputMode);
       if (savedState.infraItems) setInfraItems(savedState.infraItems);
     }
@@ -164,9 +177,19 @@ export default function Home() {
         eventsPerSecond,
         includeEgress,
         usePrivateLink,
+        elasticRetentionMonths,
+        elasticUseVolumeTiers,
       });
     }
-  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, isHydrated]);
+  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, isHydrated]);
+
+  const elasticPricing: ElasticServerlessPricingOptions = useMemo(
+    () => ({
+      retentionMonths: elasticRetentionMonths,
+      useVolumeTiers: elasticUseVolumeTiers,
+    }),
+    [elasticRetentionMonths, elasticUseVolumeTiers]
+  );
 
   const metricConfig: MetricConfig = useMemo(
     () => ({
@@ -219,14 +242,15 @@ export default function Home() {
           effectiveMonthlyMetrics,
           primaryMetricType,
           includeEgress,
-          usePrivateLink
+          usePrivateLink,
+          elasticPricing
         );
       });
     } catch (error) {
       console.error("Error calculating metrics costs:", error);
     }
     return result;
-  }, [effectiveMonthlyMetrics, primaryMetricType, includeEgress, usePrivateLink]);
+  }, [effectiveMonthlyMetrics, primaryMetricType, includeEgress, usePrivateLink, elasticPricing]);
 
   // Tracing calculations
   const monthlySpans = useMemo(
@@ -242,14 +266,15 @@ export default function Home() {
           platform,
           monthlySpans,
           includeEgress,
-          usePrivateLink
+          usePrivateLink,
+          elasticPricing
         );
       });
     } catch (error) {
       console.error("Error calculating tracing costs:", error);
     }
     return result;
-  }, [monthlySpans, includeEgress, usePrivateLink]);
+  }, [monthlySpans, includeEgress, usePrivateLink, elasticPricing]);
 
   // Logs calculations
   const monthlyGB = useMemo(
@@ -265,14 +290,15 @@ export default function Home() {
           platform,
           monthlyGB,
           includeEgress,
-          usePrivateLink
+          usePrivateLink,
+          elasticPricing
         );
       });
     } catch (error) {
       console.error("Error calculating logs costs:", error);
     }
     return result;
-  }, [monthlyGB, includeEgress, usePrivateLink]);
+  }, [monthlyGB, includeEgress, usePrivateLink, elasticPricing]);
 
   // Security calculations
   const monthlyEvents = useMemo(
@@ -296,14 +322,15 @@ export default function Home() {
           platform,
           monthlyEvents,
           includeEgress,
-          usePrivateLink
+          usePrivateLink,
+          elasticPricing
         );
       });
     } catch (error) {
       console.error("Error calculating security costs:", error);
     }
     return result;
-  }, [monthlyEvents, includeEgress, usePrivateLink]);
+  }, [monthlyEvents, includeEgress, usePrivateLink, elasticPricing]);
 
   // Operational costs — computed for every platform across all tabs
   const allPlatformIds = useMemo(() => [
@@ -410,7 +437,11 @@ export default function Home() {
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-6 py-4 flex items-start gap-3 shadow-sm">
             <span className="text-amber-500 text-xl mt-0.5 shrink-0">⚠️</span>
             <p className="text-sm text-amber-900 dark:text-amber-200 leading-relaxed">
-              <strong>Estimation purposes only.</strong> All pricing is approximate and based on publicly available list pricing as of early 2026. Actual costs vary based on negotiated contracts, committed-use discounts, data compression ratios, retention policies, and deployment configuration. Self-hosted cost estimates reflect typical infrastructure sizing and do not include staffing, licensing, or operational overhead unless noted. Contact vendors directly for accurate quotes.
+              <strong>Estimation purposes only.</strong> Elastic Serverless costs use official Observability Complete ingest + retention rates from{" "}
+              <a href="https://www.elastic.co/pricing/serverless-observability" className="underline" target="_blank" rel="noopener noreferrer">
+                elastic.co/pricing/serverless-observability
+              </a>{" "}
+              (Nov 2025), including volume tiers. Other vendors use approximate list pricing. Actual costs vary by contract, region, support tier, and enrichment overhead.
             </p>
           </div>
         </div>
@@ -549,6 +580,54 @@ export default function Home() {
                     onEventsPerSecondChange={setEventsPerSecond}
                   />
                 )}
+
+                {/* Elastic Serverless pricing */}
+                <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                    Elastic Serverless Pricing
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Elastic bills ingest and retention separately. Adjust retention to match your Streams policy or competitor comparison window.
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                        Retention: <span className="text-blue-600 dark:text-blue-400">{elasticRetentionMonths} month{elasticRetentionMonths === 1 ? "" : "s"}</span>
+                        {elasticRetentionMonths === 13 && (
+                          <span className="ml-2 font-normal normal-case text-gray-400">(~Grafana/Observe comparison window)</span>
+                        )}
+                      </label>
+                      <input
+                        type="range"
+                        min={1}
+                        max={15}
+                        step={1}
+                        value={elasticRetentionMonths}
+                        onChange={(e) => setElasticRetentionMonths(Number(e.target.value))}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                      />
+                      <div className="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>1 mo</span>
+                        <span>13 mo</span>
+                        <span>15 mo</span>
+                      </div>
+                    </div>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={elasticUseVolumeTiers}
+                        onChange={(e) => setElasticUseVolumeTiers(e.target.checked)}
+                        className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                      />
+                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Apply Elastic volume tiers (0–50 GB @ $0.60/GB ingest, down to $0.09/GB)
+                      </span>
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Floor rates at high volume: $0.09/GB ingest + $0.019/GB retained/month (Complete tier). Uncheck tiers to model best-case high-volume pricing only.
+                    </p>
+                  </div>
+                </div>
 
                 {/* Operational Cost Options */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -898,6 +977,8 @@ export default function Home() {
                         primaryMetricType,
                         bytesPerDatapoint: bpd,
                         monthlyGB: metricsMonthlyGB > 0 ? metricsMonthlyGB : undefined,
+                        elasticRetentionMonths,
+                        elasticUseVolumeTiers,
                       };
                     })()
                   : activeTab === "security"

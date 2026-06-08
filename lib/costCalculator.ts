@@ -1,3 +1,11 @@
+import {
+  calculateElasticServerlessCost,
+  DEFAULT_ELASTIC_PRICING_OPTIONS,
+  type ElasticServerlessPricingOptions,
+} from "./elasticServerlessPricing";
+
+export type { ElasticServerlessPricingOptions };
+
 export interface Platform {
   id: string;
   name: string;
@@ -7,7 +15,7 @@ export interface Platform {
     basePrice?: number;
     pricePerMetric?: number;
     pricePerMillionMetrics?: number;
-    pricePerGB?: number; // For volume-based pricing (e.g., Elastic)
+    pricePerGB?: number; // For volume-based pricing (non-Elastic or display fallback)
     bytesPerDatapoint?: number; // Conversion factor for metrics to GB (default: 320 bytes)
     freeTier?: number;
     unit: string;
@@ -40,15 +48,12 @@ export const BYTES_PER_DATAPOINT: Record<MetricSourceType, number> = {
   Mixed: 320, // Weighted average for mixed sources
 };
 
-// Elastic pricing per GB for metrics
-// Base pricing: $0.109/GB ($0.09 ingest + $0.019 retention) for all metric types
-// This is Elastic's TOP VOLUME TIER pricing (best price for high-volume customers)
-// Note: No official Elastic metrics-only pricing exists; using Complete tier pricing as reference
+/** Effective $/GB for 1-month retention at volume-tier floor (ingest + retention). */
 export const ELASTIC_PRICE_PER_GB: Record<MetricSourceType, number> = {
-  OpenTelemetry: 0.109, // $0.109/GB (top volume tier)
-  Prometheus: 0.109, // $0.109/GB (top volume tier)
-  ElasticAgent: 0.109, // $0.109/GB (top volume tier)
-  Mixed: 0.109, // $0.109/GB (top volume tier)
+  OpenTelemetry: 0.109,
+  Prometheus: 0.109,
+  ElasticAgent: 0.109,
+  Mixed: 0.109,
 };
 
 export interface MetricConfig {
@@ -120,7 +125,8 @@ export function calculatePlatformCost(
   monthlyMetrics: number,
   metricType?: MetricSourceType,
   includeEgress: boolean = false,
-  usePrivateLink: boolean = false
+  usePrivateLink: boolean = false,
+  elasticPricing: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
 ): number {
   const { pricing } = platform;
   let cost = pricing.basePrice || 0;
@@ -131,20 +137,19 @@ export function calculatePlatformCost(
   let monthlyGB = 0;
   
   if (pricing.pricePerGB) {
-    // Volume-based pricing: convert metrics to GB first
-    // Use metric-type-specific conversion if available, otherwise use platform default or metric type default
     const bytesPerDatapoint = metricType 
       ? getBytesPerDatapoint(metricType)
       : (pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
     monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
-    
-    // For Elastic, use metric-type-specific pricing per GB if available
-    let pricePerGB = pricing.pricePerGB;
-    if (platform.id === "elastic-serverless" && metricType && ELASTIC_PRICE_PER_GB[metricType]) {
-      pricePerGB = ELASTIC_PRICE_PER_GB[metricType];
+
+    if (platform.id === "elastic-serverless") {
+      cost += calculateElasticServerlessCost(monthlyGB, {
+        ...elasticPricing,
+        productTier: "observability-complete",
+      }).volumeCost;
+    } else {
+      cost += monthlyGB * pricing.pricePerGB;
     }
-    
-    cost += monthlyGB * pricePerGB;
   } else if (pricing.pricePerMillionMetrics) {
     cost += (billableMetrics / 1_000_000) * pricing.pricePerMillionMetrics;
     // Calculate monthlyGB for egress if needed (only if platform has egress pricing)
@@ -182,15 +187,16 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "DogStatsD", "Wavefront", "Custom"],
     pricing: {
       basePrice: 0,
-      pricePerGB: 0.109, // $0.09/GB ingest + $0.019/GB retention (Complete tier, TOP VOLUME TIER pricing)
-      bytesPerDatapoint: 320, // Default fallback (weighted average). Actual values: OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B
+      pricePerGB: 0.109, // Floor reference: $0.09 ingest + $0.019 retention × 1 mo (see elasticServerlessPricing.ts)
+      bytesPerDatapoint: 320, // Weighted average. Actual: OTel 488B, Prometheus 296B, Elastic Agent 200B
       freeTier: 0,
-      unit: "per GB/month",
-      egressPricePerGB: 0.05, // $0.05/GB egress after free tier
-      egressFreeTier: 50, // 50 GB free egress/month
-      egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
+      unit: "ingest + retention (GB)",
+      egressPricePerGB: 0.05,
+      egressFreeTier: 50,
+      egressPricePerGBWithPrivateLink: 0.001,
     },
-    cardinalityNote: "Elastic Serverless Complete charges based on data ingest volume (GB), not per metric. High cardinality (many unique metric series) doesn't directly increase costs - only total data volume matters. This means adding high-cardinality tags may increase metric count but won't proportionally increase costs if the data volume remains similar, unlike platforms that charge per metric. Pricing shown: $0.109/GB ($0.09 ingest + $0.019 retention) for TOP VOLUME TIER. Cost differences between metric types come from bytes per datapoint (OTel: 488B, Prometheus: 296B, E.Agent/Fleet: 200B). Select your primary metric type for accurate TCO. Note: No official Elastic metrics-only pricing exists; using Complete tier pricing as reference.",
+    cardinalityNote:
+      "Elastic Observability Serverless Complete bills ingest ($0.09/GB floor) and retention ($0.019/GB stored/month floor) separately — not per metric. Volume tiers reduce both rates as usage grows (0–50 GB ingest @ $0.60/GB per Elastic packaging). High cardinality only affects cost via total GB. Metrics use Complete tier pricing (no metrics-only SKU). Source: elastic.co/pricing/serverless-observability (Nov 1, 2025). Adjust retention months in Configuration — 13 months ≈ $0.34/GB ingest equivalent at floor rates.",
   },
   {
     id: "elastic-ech",
