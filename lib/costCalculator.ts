@@ -1,6 +1,9 @@
 import {
   calculateElasticServerlessCost,
+  calculateElasticServerlessMetricsCost,
   calculateEchVolumeCost,
+  calculateEchMetricsCost,
+  ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
   DEFAULT_ELASTIC_PRICING_OPTIONS,
   type ElasticServerlessPricingOptions,
 } from "./elasticServerlessPricing";
@@ -64,12 +67,12 @@ export const BYTES_PER_DATAPOINT: Record<MetricSourceType, number> = {
   Mixed: 320, // Weighted average for mixed sources
 };
 
-/** Effective $/GB for 1-month retention at volume-tier floor (ingest + retention). */
+/** Effective $/GB for 1-month retention at TSDS metrics rate (25% of Complete floor). */
 export const ELASTIC_PRICE_PER_GB: Record<MetricSourceType, number> = {
-  OpenTelemetry: 0.109,
-  Prometheus: 0.109,
-  ElasticAgent: 0.109,
-  Mixed: 0.109,
+  OpenTelemetry: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
+  Prometheus: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
+  ElasticAgent: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
+  Mixed: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
 };
 
 export interface MetricConfig {
@@ -157,25 +160,27 @@ export function calculatePlatformCost(
   const billableMetrics = Math.max(0, monthlyMetrics - (pricing.freeTier || 0));
   
   let monthlyGB = 0;
-  
-  if (pricing.pricePerGB) {
-    const bytesPerDatapoint = metricType 
-      ? getBytesPerDatapoint(metricType)
-      : (pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
+
+  const bytesPerDatapoint = metricType
+    ? getBytesPerDatapoint(metricType)
+    : (pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
+
+  const usesGbMetricsPricing =
+    platform.id === "elastic-serverless" ||
+    platform.id === "elastic-ech" ||
+    !!(pricing.pricePerGB && pricing.pricePerGB > 0);
+
+  if (usesGbMetricsPricing) {
     monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
 
     if (platform.id === "elastic-serverless") {
-      cost += calculateElasticServerlessCost(monthlyGB, {
+      cost += calculateElasticServerlessMetricsCost(monthlyGB, {
         ...elasticPricing,
         productTier: "observability-complete",
       }).volumeCost;
     } else if (platform.id === "elastic-ech") {
-      cost += calculateEchVolumeCost(monthlyGB, {
-        retentionMonths: elasticPricing.retentionMonths,
-        useRetentionTiers: elasticPricing.useVolumeTiers,
-        pricePerIngestGB: pricing.pricePerGB,
-      }).volumeCost;
-    } else {
+      cost += calculateEchMetricsCost(monthlyGB).volumeCost;
+    } else if (pricing.pricePerGB) {
       cost += monthlyGB * pricing.pricePerGB;
     }
   } else if (pricing.pricePerCustomMetricPerMonth !== undefined) {
@@ -229,16 +234,16 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "DogStatsD", "Wavefront", "Custom"],
     pricing: {
       basePrice: 0,
-      pricePerGB: 0.109, // Floor reference: $0.09 ingest + $0.019 retention × 1 mo (see elasticServerlessPricing.ts)
+      pricePerGB: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
       bytesPerDatapoint: 320, // Weighted average. Actual: OTel 488B, Prometheus 296B, Elastic Agent 200B
       freeTier: 0,
-      unit: "ingest + retention (GB)",
+      unit: "TSDS metrics: 25% of Complete ingest + retention (GB)",
       egressPricePerGB: 0.05,
       egressFreeTier: 50,
       egressPricePerGBWithPrivateLink: 0.001,
     },
     cardinalityNote:
-      "Elastic Observability Serverless Complete bills ingest and retention separately (GB + GB-month), not per metric. Default pricing uses the Observability Complete tier table on cloud.elastic.co (ingest from $0.50/GB for 0–1,500 GB; retention from $0.04/GB-month for 0–10,000 GB stored). High cardinality affects cost via total GB. Adjust retention months in Configuration.",
+      "Metrics in **TSDS index mode** on Observability Serverless are billed at **25% of Observability Complete** ingest and retention rates (effective July 1, 2025) — same GB units, no per-metric or custom-metric penalties. High cardinality affects cost via total GB only. Default pricing uses the Complete tier table × 25%. Adjust retention months in Configuration.",
   },
   {
     id: "elastic-ech",
@@ -247,15 +252,16 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "ElasticAgent", "Custom"],
     pricing: {
       basePrice: 200, // Minimum 2-node hot cluster (compute/RAM-hours)
-      pricePerGB: 0.05, // Variable cost per GB ingested; beats Serverless above ~4 GB/month
+      pricePerGB: 0, // TSDS metrics: no additional ingest/retention charge at this time
       bytesPerDatapoint: 320,
       freeTier: 0,
-      unit: "per GB/month + base cluster",
+      unit: "cluster minimum (TSDS metrics included)",
       egressPricePerGB: 0.09,
       egressFreeTier: 100,
       egressPricePerGBWithPrivateLink: 0.001,
     },
-    cardinalityNote: "Elastic Cloud Hosted (ECH) charges a fixed cluster minimum plus **ingest ($0.05/GB)** and **retention** on stored GB using the same Observability Complete retention tier table as Serverless (configurable). High cardinality affects cost via data volume only. Contact Elastic for a custom quote.",
+    cardinalityNote:
+      "Metrics in **TSDS index mode** on Elastic Cloud Hosted have **no additional ingest or retention charge** at this time — model the cluster minimum only on this tab. Logs and traces use variable pricing on their tabs. No custom-metric penalties; cardinality affects cost via data volume when variable pricing applies.",
   },
   {
     id: "elastic-self-hosted",
@@ -276,7 +282,7 @@ export const platforms: Platform[] = [
       other: 50, // Kibana node + monitoring + backups (Kibana is heavier than Grafana)
       notes: "2-node Elasticsearch cluster with TSDB index mode (8.7+). TSDB reduces storage 2–5× for time-series metrics; lighter nodes possible vs. general-purpose ES. Still costs more than VictoriaMetrics due to JVM heap overhead and Kibana. Open source, no licensing cost.",
     },
-    cardinalityNote: "Fixed infrastructure cost — cardinality doesn't directly impact monthly costs. Elasticsearch TSDB mode (8.7+) provides 2–5× compression for time-series metrics, making storage costs comparable to Prometheus. However, JVM heap requirements and a dedicated Kibana node mean Elastic self-hosted carries more overhead than purpose-built tools like VictoriaMetrics (no JVM, single binary). High cardinality may still require storage or compute scaling over time, but at a much lower rate than per-metric SaaS platforms.",
+    cardinalityNote: "Fixed infrastructure cost — **TSDS metrics have no additional licensing charge** on self-managed at this time. Elasticsearch columnar/TSDS storage (8.7+) provides 2–5× compression for time-series metrics. High cardinality may require storage or compute scaling over time, but without per-metric or custom-metric penalties unlike Datadog.",
   },
   {
     id: "datadog",

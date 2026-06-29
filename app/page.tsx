@@ -617,13 +617,13 @@ export default function Home() {
                   />
                 )}
 
-                {/* Elastic ingest + retention (Serverless + ECH) */}
+                {/* Elastic metrics + retention (Serverless TSDS; logs/traces use full Complete rates on their tabs) */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Elastic ingest + retention
+                    Elastic metrics pricing (TSDS)
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Elastic bills ingest and retention separately. Applies to Serverless and ECH variable pricing in this calculator. Adjust retention to match your Streams policy or competitor comparison window.
+                    <strong>Metrics tab:</strong> Serverless TSDS metrics are <strong>25% of Observability Complete</strong> ingest and retention (effective July 1, 2025). ECH/self-managed TSDS metrics have no additional ingest/retention charge — cluster minimum only here. Retention months below applies to Serverless metrics volume.
                   </p>
                   <div className="space-y-4">
                     <div>
@@ -656,7 +656,7 @@ export default function Home() {
                         className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       />
                       <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Use floor rates only ($0.09/GB ingest + $0.019/GB retained/month)
+                        Use floor rates only (25% of $0.09/GB ingest + $0.019/GB retained/mo for metrics)
                       </span>
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -669,7 +669,7 @@ export default function Home() {
                       >
                         cloud.elastic.co
                       </a>{" "}
-                      — ingest ($0.50/GB for 0–1,500 GB through $0.0925/GB at 150,000+ GB) and retention ($0.04/GB-month for 0–10,000 GB through $0.0188/GB-month).
+                      — Complete tier table × <strong>25% for TSDS metrics</strong> on Serverless (ingest $0.50/GB → $0.125/GB at first tier; retention $0.04/GB-mo → $0.01/GB-mo). Logs/traces tabs use full Complete rates.
                     </p>
                   </div>
                 </div>

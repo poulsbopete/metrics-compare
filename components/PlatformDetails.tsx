@@ -8,7 +8,9 @@ import {
 } from "@/lib/costCalculator";
 import {
   calculateElasticServerlessCost,
+  calculateElasticServerlessMetricsCost,
   calculateEchVolumeCost,
+  calculateEchMetricsCost,
   type ElasticServerlessPricingOptions,
 } from "@/lib/elasticServerlessPricing";
 import {
@@ -131,13 +133,16 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
       platform,
       calculationContext.primaryMetricType
     );
-    const hasPerGB = !!(platform.pricing.pricePerGB && platform.pricing.pricePerGB > 0);
+    const hasPerGB =
+      platform.id === "elastic-serverless" ||
+      platform.id === "elastic-ech" ||
+      !!(platform.pricing.pricePerGB && platform.pricing.pricePerGB > 0);
     const baseCluster = platform.pricing.basePrice ?? 0;
     const volumeChargeGB = hasPerGB ? monthlyGB * effectivePricePerGB : 0;
     const computedInfraGB = hasPerGB ? baseCluster + volumeChargeGB : 0;
     const elasticBreakdown =
       platform.id === "elastic-serverless" && monthlyGB > 0
-        ? calculateElasticServerlessCost(monthlyGB, {
+        ? calculateElasticServerlessMetricsCost(monthlyGB, {
             retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
             useVolumeTiers: calculationContext.elasticUseVolumeTiers ?? true,
             productTier: "observability-complete",
@@ -145,11 +150,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
         : undefined;
     const echBreakdown =
       platform.id === "elastic-ech" && monthlyGB > 0
-        ? calculateEchVolumeCost(monthlyGB, {
-            retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
-            useRetentionTiers: calculationContext.elasticUseVolumeTiers ?? true,
-            pricePerIngestGB: platform.pricing.pricePerGB,
-          })
+        ? calculateEchMetricsCost(monthlyGB)
         : undefined;
     const infraSubtotalFromElastic = elasticBreakdown?.volumeCost;
     const infraSubtotalFromEch = echBreakdown
@@ -317,7 +318,10 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
             </div>
 
             {/* Per-GB pricing (Elastic Serverless, ECH) */}
-            {platform.pricing.pricePerGB && platform.pricing.pricePerGB > 0 && metricsBreakdown && (
+            {metricsBreakdown &&
+             (platform.id === "elastic-serverless" ||
+              platform.id === "elastic-ech" ||
+              (platform.pricing.pricePerGB && platform.pricing.pricePerGB > 0)) && (
               <>
                 <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
                 {calculationContext.bytesPerDatapoint && (
@@ -338,38 +342,46 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                       : `${metricsBreakdown.monthlyGB.toFixed(2)} GB`}
                   </span>
                 </div>
-                {metricsBreakdown.elasticBreakdown || metricsBreakdown.echBreakdown ? (
+                {metricsBreakdown.elasticBreakdown ? (
                   <>
-                    {(() => {
-                      const vb = metricsBreakdown.elasticBreakdown ?? metricsBreakdown.echBreakdown!;
-                      return (
-                        <>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 dark:text-gray-400">
                         Stored GB ({calculationContext.elasticRetentionMonths ?? 1} mo retention):
                       </span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {vb.storedGB.toFixed(2)} GB
+                        {metricsBreakdown.elasticBreakdown.storedGB.toFixed(2)} GB
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 dark:text-gray-400">Ingest charge:</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {formatCurrency(vb.ingestCost)}/month
+                        {formatCurrency(metricsBreakdown.elasticBreakdown.ingestCost)}/month
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 dark:text-gray-400">Retention charge:</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {formatCurrency(vb.retentionCost)}/month
+                        {formatCurrency(metricsBreakdown.elasticBreakdown.retentionCost)}/month
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                      {vb.ingestRateLabel}; {vb.retentionRateLabel}. Source: Observability Complete pricing table (cloud.elastic.co).
+                      {metricsBreakdown.elasticBreakdown.ingestRateLabel};{" "}
+                      {metricsBreakdown.elasticBreakdown.retentionRateLabel}. TSDS metrics on Serverless: 25% of
+                      Observability Complete tier table (effective July 1, 2025).
                     </p>
-                        </>
-                      );
-                    })()}
+                  </>
+                ) : metricsBreakdown.echBreakdown ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">TSDS metrics ingest + retention:</span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">
+                        Included (no additional charge)
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      Metrics in TSDS index mode on ECH are included at no additional ingest/retention cost at this
+                      time. This tab models the cluster minimum only.
+                    </p>
                   </>
                 ) : (
                   <>

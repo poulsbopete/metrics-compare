@@ -55,6 +55,17 @@ export const DEFAULT_ELASTIC_PRICING_OPTIONS: ElasticServerlessPricingOptions = 
 
 export const ELASTIC_DAYS_PER_MONTH = 365 / 12;
 
+/**
+ * TSDS index mode metrics on Observability Serverless (effective July 1, 2025):
+ * 25% of standard Observability Complete per-GB ingest and retention rates.
+ * Same billing units (GB ingested + GB-month stored) — no customer setup change.
+ */
+export const ELASTIC_TSDS_METRICS_RATE_MULTIPLIER = 0.25;
+
+/** Effective floor for 1-month retention at 25% of Complete floors ($0.09 + $0.019). */
+export const ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH =
+  (0.09 + 0.019) * ELASTIC_TSDS_METRICS_RATE_MULTIPLIER;
+
 /** Observability Complete - Data Retention (AWS us-east-1). */
 export const OBSERVABILITY_COMPLETE_RETENTION_TIERS: VolumeTier[] = [
   { min: 0, max: 10_000, pricePerGB: 0.04 },
@@ -244,6 +255,46 @@ export function calculateElasticServerlessCost(
     volumeCost: ingestCost + retentionCost,
     ingestRateLabel: effectiveRate(ingestCost, monthlyIngestGB) + " ingest (tiered avg)",
     retentionRateLabel: effectiveRate(retentionCost, storedGB) + " retained/mo (tiered avg)",
+  };
+}
+
+/** Observability Serverless metrics (TSDS): 25% of Complete ingest + retention tier costs. */
+export function calculateElasticServerlessMetricsCost(
+  monthlyIngestGB: number,
+  options: ElasticServerlessPricingOptions = DEFAULT_ELASTIC_PRICING_OPTIONS
+): ElasticServerlessCostBreakdown {
+  const base = calculateElasticServerlessCost(monthlyIngestGB, options);
+  const m = ELASTIC_TSDS_METRICS_RATE_MULTIPLIER;
+  const ingestCost = base.ingestCost * m;
+  const retentionCost = base.retentionCost * m;
+  return {
+    monthlyIngestGB: base.monthlyIngestGB,
+    storedGB: base.storedGB,
+    ingestCost,
+    retentionCost,
+    volumeCost: ingestCost + retentionCost,
+    ingestRateLabel:
+      effectiveRate(ingestCost, monthlyIngestGB) +
+      " ingest (TSDS 25% of Complete tier table)",
+    retentionRateLabel:
+      effectiveRate(retentionCost, base.storedGB) +
+      " retained/mo (TSDS 25% of Complete tiers)",
+  };
+}
+
+/**
+ * ECH + self-managed: TSDS metrics ingest/retention — no additional charge at this time.
+ * Metrics tab models cluster minimum only; logs/traces use variable pricing on their tabs.
+ */
+export function calculateEchMetricsCost(monthlyIngestGB: number): ElasticServerlessCostBreakdown {
+  return {
+    monthlyIngestGB,
+    storedGB: 0,
+    ingestCost: 0,
+    retentionCost: 0,
+    volumeCost: 0,
+    ingestRateLabel: "Included (TSDS metrics — no additional charge on ECH/self-managed)",
+    retentionRateLabel: "Included (TSDS metrics — no additional charge on ECH/self-managed)",
   };
 }
 

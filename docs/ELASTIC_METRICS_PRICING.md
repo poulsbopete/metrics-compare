@@ -4,16 +4,24 @@
 
 Elastic Serverless Metrics uses a **volume-based pricing model** (per GB ingested and retained), not a per-metric pricing model. This fundamental difference means that high cardinality (many unique metric series) doesn't directly increase costs proportionally, unlike platforms that charge per metric.
 
-## Pricing Structure
+## Pricing Structure (TSDS metrics — effective July 1, 2025)
 
-### Base Pricing
+Metrics stored in **TSDS index mode** on Elastic Observability Serverless are billed at **25% of Observability Complete** per-GB rates for **both ingest and retention**. Billing units are unchanged (GB ingested + GB-month stored); no per-metric or custom-metric penalties.
 
-**$0.109/GB per month** (Top Volume Tier)
-- **Ingest**: $0.09/GB ingested
-- **Retention**: $0.019/GB retained per month
-- **Tier**: Complete tier, top volume tier pricing (best price for high-volume customers)
+On **Elastic Cloud Hosted** and **self-managed**, TSDS metrics ingest/retention have **no additional charge** at this time (cluster/infrastructure costs only).
 
-> **Note**: There is no official Elastic metrics-only pricing. The pricing shown uses the Elastic Serverless Complete tier pricing as a reference point.
+### Serverless TSDS metrics (25% of Complete)
+
+**~$0.027/GB per month** at Complete floor tiers with 1-month retention (25% × $0.109/GB reference)
+- **Ingest**: 25% × Complete ingest tier (e.g. $0.50/GB → **$0.125/GB** at first tier)
+- **Retention**: 25% × Complete retention tier (e.g. $0.04/GB-mo → **$0.01/GB-mo** at first tier)
+- **Tier table**: Same Observability Complete volume tiers as logs/traces, multiplied by 0.25 for metrics
+
+> **Note**: Logs and traces on Serverless still use full Observability Complete rates in this calculator. Prior reference pricing at $0.109/GB applied before the July 2025 TSDS metrics update.
+
+### Legacy reference (pre–July 2025, full Complete rate)
+
+**$0.109/GB per month** (Complete floor, 1-month retention — superseded for metrics by TSDS 25% pricing)
 
 ### How Pricing Works
 
