@@ -623,7 +623,7 @@ export default function Home() {
                     Elastic metrics pricing (TSDS)
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    <strong>Metrics tab:</strong> Serverless TSDS metrics are <strong>25% of Observability Complete</strong> ingest and retention (effective July 1, 2025). ECH/self-managed TSDS metrics have no additional ingest/retention charge — cluster minimum only here. Retention months below applies to Serverless metrics volume.
+                    <strong>Metrics tab:</strong> Serverless TSDS metrics are <strong>25% of Observability Complete</strong> ingest and retention. ECH/self-managed TSDS metrics have no additional ingest/retention charge — cluster minimum only here. Retention months below applies to Serverless metrics volume.
                   </p>
                   <div className="space-y-4">
                     <div>

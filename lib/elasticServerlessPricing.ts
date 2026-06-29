@@ -56,7 +56,7 @@ export const DEFAULT_ELASTIC_PRICING_OPTIONS: ElasticServerlessPricingOptions = 
 export const ELASTIC_DAYS_PER_MONTH = 365 / 12;
 
 /**
- * TSDS index mode metrics on Observability Serverless (effective July 1, 2025):
+ * TSDS index mode metrics on Observability Serverless:
  * 25% of standard Observability Complete per-GB ingest and retention rates.
  * Same billing units (GB ingested + GB-month stored) — no customer setup change.
  */

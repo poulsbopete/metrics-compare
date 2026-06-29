@@ -367,7 +367,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                     <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                       {metricsBreakdown.elasticBreakdown.ingestRateLabel};{" "}
                       {metricsBreakdown.elasticBreakdown.retentionRateLabel}. TSDS metrics on Serverless: 25% of
-                      Observability Complete tier table (effective July 1, 2025).
+                      Observability Complete tier table × 25% for TSDS metrics.
                     </p>
                   </>
                 ) : metricsBreakdown.echBreakdown ? (

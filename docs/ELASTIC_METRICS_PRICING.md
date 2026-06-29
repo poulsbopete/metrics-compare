@@ -4,7 +4,7 @@
 
 Elastic Serverless Metrics uses a **volume-based pricing model** (per GB ingested and retained), not a per-metric pricing model. This fundamental difference means that high cardinality (many unique metric series) doesn't directly increase costs proportionally, unlike platforms that charge per metric.
 
-## Pricing Structure (TSDS metrics — effective July 1, 2025)
+## Pricing Structure (TSDS metrics)
 
 Metrics stored in **TSDS index mode** on Elastic Observability Serverless are billed at **25% of Observability Complete** per-GB rates for **both ingest and retention**. Billing units are unchanged (GB ingested + GB-month stored); no per-metric or custom-metric penalties.
 
@@ -17,9 +17,9 @@ On **Elastic Cloud Hosted** and **self-managed**, TSDS metrics ingest/retention 
 - **Retention**: 25% × Complete retention tier (e.g. $0.04/GB-mo → **$0.01/GB-mo** at first tier)
 - **Tier table**: Same Observability Complete volume tiers as logs/traces, multiplied by 0.25 for metrics
 
-> **Note**: Logs and traces on Serverless still use full Observability Complete rates in this calculator. Prior reference pricing at $0.109/GB applied before the July 2025 TSDS metrics update.
+> **Note**: Logs and traces on Serverless still use full Observability Complete rates in this calculator. Prior reference pricing at $0.109/GB applied before the TSDS metrics rate update.
 
-### Legacy reference (pre–July 2025, full Complete rate)
+### Legacy reference (full Complete rate, pre-TSDS discount)
 
 **$0.109/GB per month** (Complete floor, 1-month retention — superseded for metrics by TSDS 25% pricing)
 
@@ -28,7 +28,7 @@ On **Elastic Cloud Hosted** and **self-managed**, TSDS metrics ingest/retention 
 Elastic charges based on **data volume (GB)**, not the number of metrics. This means:
 
 1. **Metrics are converted to GB** based on bytes per datapoint
-2. **Total cost = Monthly GB × $0.109/GB**
+2. **Total cost = (Complete tier ingest + retention) × 25%** for Serverless TSDS metrics
 3. **Cardinality impact is indirect** - high cardinality only increases costs if it increases total data volume
 
 ## Metric Type Impact on Pricing

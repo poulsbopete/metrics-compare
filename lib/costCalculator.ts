@@ -243,7 +243,7 @@ export const platforms: Platform[] = [
       egressPricePerGBWithPrivateLink: 0.001,
     },
     cardinalityNote:
-      "Metrics in **TSDS index mode** on Observability Serverless are billed at **25% of Observability Complete** ingest and retention rates (effective July 1, 2025) — same GB units, no per-metric or custom-metric penalties. High cardinality affects cost via total GB only. Default pricing uses the Complete tier table × 25%. Adjust retention months in Configuration.",
+      "Metrics in **TSDS index mode** on Observability Serverless are billed at **25% of Observability Complete** ingest and retention rates — same GB units, no per-metric or custom-metric penalties. High cardinality affects cost via total GB only. Default pricing uses the Complete tier table × 25%. Adjust retention months in Configuration.",
   },
   {
     id: "elastic-ech",
