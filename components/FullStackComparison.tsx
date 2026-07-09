@@ -255,7 +255,14 @@ export default function FullStackComparison({
           <span className="text-xs text-gray-400">Annual ÷ 12</span>
         </div>
         <div className="p-6 space-y-3">
-          {vendorTotals.map(({ vendor, total, signalCosts }) => {
+          {vendorTotals.some((v) => !v.hasAll) && (
+            <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+              <strong>Not apples-to-apples:</strong> Some vendors below omit logs and/or security from this total (shown as —).
+              Their bar total can look artificially low vs Elastic, which prices all four signals here. Add comparable Dynatrace
+              log/SIEM lines or turn off those signals for a fair partial comparison.
+            </div>
+          )}
+          {vendorTotals.map(({ vendor, total, signalCosts, hasAll }) => {
             const savingsPct =
               datadogTotal > 0 && vendor.id !== "datadog"
                 ? ((datadogTotal - total) / datadogTotal) * 100
@@ -273,6 +280,16 @@ export default function FullStackComparison({
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${vendor.badgeColor}`}>
                       {vendor.badge}
                     </span>
+                    {!hasAll && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 shrink-0 font-medium">
+                        partial stack
+                      </span>
+                    )}
+                    {activeSignals.logs && !vendor.logsPlatformId && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
+                        no logs
+                      </span>
+                    )}
                     {/* missing security indicator */}
                     {activeSignals.security && !vendor.securityPlatformId && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
@@ -287,8 +304,13 @@ export default function FullStackComparison({
                       </span>
                     )}
                     <div className="text-right">
-                      <div className="text-base font-bold text-gray-900 dark:text-white tabular-nums">
+                      <div className={`text-base font-bold tabular-nums ${hasAll ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-300"}`}>
                         {formatCurrency(total)}<span className="text-xs text-gray-400">/mo</span>
+                        {!hasAll && (
+                          <span className="block text-[10px] font-normal text-amber-600 dark:text-amber-400">
+                            metrics + tracing only
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-gray-400 tabular-nums">{formatCurrency(total * 12)}/yr</div>
                     </div>
