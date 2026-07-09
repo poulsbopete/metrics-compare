@@ -61,9 +61,13 @@ export interface ObservabilityPricing {
     pricePerMillionIndexedEvents?: number;
     indexRetentionDays?: 3 | 7 | 15 | 30;
     bytesPerLogEvent?: number;
-    /** Dynatrace Grail: $/GiB-day for Retain with Included Queries */
+    /** Dynatrace Grail PPQ: $/GiB-day retained in lakehouse */
     pricePerGiBDayRetention?: number;
     logRetentionDays?: number;
+    /** Dynatrace Grail PPQ: $/GiB scanned (DQL queries) */
+    pricePerGiBScanned?: number;
+    /** Fraction of monthly ingest volume assumed scanned per month (default 1×) */
+    logQueryScanFractionOfMonthlyGB?: number;
     // Egress pricing (for SaaS platforms)
     egressPricePerGB?: number;
     egressFreeTier?: number;
@@ -393,16 +397,18 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     pricing: {
       logs: {
         basePrice: 0,
-        pricePerGB: 0.2, // Grail ingest & process — $0.20/GiB (DPS rate card)
-        pricePerGiBDayRetention: 0.02, // Retain with Included Queries
-        logRetentionDays: 14, // Configurable 10–35 days on bundled plan
+        pricePerGB: 0.2, // Grail ingest & process — $0.20/GiB (DPS draw-down)
+        pricePerGiBDayRetention: 0.0007, // Pay-per-Query retention in Grail
+        logRetentionDays: 30,
+        pricePerGiBScanned: 0.0035, // DQL query scan
+        logQueryScanFractionOfMonthlyGB: 1, // Assume 1× monthly ingest scanned/mo (tune per account)
         freeTier: 0,
-        unit: "Grail ingest + retention (GiB)",
+        unit: "Grail ingest + retention + query (GiB)",
       },
     },
     notes: {
       logs:
-        "Dynatrace Grail (Log Management & Analytics) on the DPS platform: $0.20/GiB ingest plus $0.02/GiB-day retained under Retain with Included Queries (list rates from dynatrace.com/pricing). Grail is Dynatrace’s unified lakehouse; pipelines and search are Elasticsearch-compatible and many deployments run on Elasticsearch/OpenSearch-class indexing under the hood — confirm in your tenant. Long retention or ad-hoc query-heavy workloads may use Pay-per-Query ($0.0007/GiB-day + scan charges) instead.",
+        "Dynatrace Grail on DPS (prepaid platform commitment): $0.20/GiB ingest, $0.0007/GiB-day retention, $0.0035/GiB scanned for DQL queries (Pay-per-Query list rates). Alternate Retain with Included Queries bundles retention+queries at $0.02/GiB-day (10–35 days). Grail pipelines are Elasticsearch-compatible; many tenants index via Elasticsearch/OpenSearch-class storage.",
     },
   },
   {
@@ -722,6 +728,9 @@ export interface LogsCostBreakdown {
   ingestCost: number;
   indexCost: number;
   indexedEvents: number;
+  /** Dynatrace Grail DQL query scan charges */
+  queryCost?: number;
+  queryScanGB?: number;
   meteredMonthlyGB?: number;
   elasticBreakdown?: ReturnType<typeof calculateElasticServerlessCost>;
 }
@@ -742,6 +751,8 @@ export function calculateLogsCostBreakdown(
   let ingestCost = 0;
   let indexCost = 0;
   let indexedEvents = 0;
+  let queryCost: number | undefined;
+  let queryScanGB: number | undefined;
   let meteredMonthlyGB: number | undefined;
   let elasticBreakdown: ReturnType<typeof calculateElasticServerlessCost> | undefined;
 
@@ -755,10 +766,13 @@ export function calculateLogsCostBreakdown(
     indexCost = (indexedEvents / 1_000_000) * indexRate;
   } else if (platform.id === "dynatrace-logs" && pricing.pricePerGB) {
     ingestCost = ingestBillableGB * pricing.pricePerGB;
-    const retentionDays = pricing.logRetentionDays ?? 14;
-    const retentionRate = pricing.pricePerGiBDayRetention ?? 0.02;
-    // Steady-state Grail retention: monthly ingest volume × retention window × $/GiB-day
+    const retentionDays = pricing.logRetentionDays ?? 30;
+    const retentionRate = pricing.pricePerGiBDayRetention ?? 0.0007;
+    // Steady-state: monthly GiB ingested × retention window × $/GiB-day (PPQ model)
     indexCost = monthlyGB * retentionDays * retentionRate;
+    const scanFraction = pricing.logQueryScanFractionOfMonthlyGB ?? 1;
+    queryScanGB = monthlyGB * scanFraction;
+    queryCost = queryScanGB * (pricing.pricePerGiBScanned ?? 0.0035);
   } else if (platform.id === "elastic-logs" && pricing.pricePerGB) {
     meteredMonthlyGB = elasticLogsMeteredMonthlyGB(monthlyGB / 30);
     elasticBreakdown = calculateElasticServerlessCost(meteredMonthlyGB, {
@@ -784,6 +798,8 @@ export function calculateLogsCostBreakdown(
     ingestCost,
     indexCost,
     indexedEvents,
+    queryCost,
+    queryScanGB,
     meteredMonthlyGB,
     elasticBreakdown,
   };
@@ -801,7 +817,7 @@ export function calculateLogsCost(
 
   let cost = pricing.basePrice || 0;
   const breakdown = calculateLogsCostBreakdown(platform, monthlyGB, pricingContext);
-  cost += breakdown.ingestCost + breakdown.indexCost;
+  cost += breakdown.ingestCost + breakdown.indexCost + (breakdown.queryCost ?? 0);
 
   if (includeEgress && monthlyGB > 0) {
     cost += calculateObservabilityEgressCost(platform, monthlyGB, "logs", usePrivateLink);

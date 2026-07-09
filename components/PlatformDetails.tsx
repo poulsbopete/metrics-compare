@@ -825,12 +825,24 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                     <span className="text-gray-600 dark:text-gray-400">
                       {platform.id === "datadog-logs"
                         ? `Standard Index (${platform.pricing.logs?.indexRetentionDays ?? 15}-day):`
+                        : platform.id === "dynatrace-logs"
+                        ? `Grail retention (${platform.pricing.logs?.logRetentionDays ?? 30}-day):`
                         : "Retention charge:"}
                     </span>
                     <span className="font-semibold text-gray-900 dark:text-white">
                       {formatCurrency(breakdown.indexCost)}/month
                     </span>
                   </div>
+                  {platform.id === "dynatrace-logs" && (breakdown.queryCost ?? 0) > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        DQL query scan (est.):
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(breakdown.queryCost!)}/month
+                      </span>
+                    </div>
+                  )}
                   {platform.id === "datadog-logs" && breakdown.indexedEvents > 0 && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                       ~{(breakdown.indexedEvents / 1_000_000).toFixed(0)}M indexed events/mo @{" "}
@@ -854,8 +866,12 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   )}
                   {platform.id === "dynatrace-logs" && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                      Grail Retain with Included Queries: $0.20/GiB ingest + $0.02/GiB-day ×{" "}
-                      {platform.pricing.logs?.logRetentionDays ?? 14} days retained (list rates). Elasticsearch-compatible indexing in many deployments.
+                      Grail Pay-per-Query (DPS): $0.20/GiB ingest + $0.0007/GiB-day ×{" "}
+                      {platform.pricing.logs?.logRetentionDays ?? 30} days + $0.0035/GiB scanned
+                      {breakdown.queryScanGB != null
+                        ? ` (~${breakdown.queryScanGB.toFixed(0)} GiB scanned/mo assumed)`
+                        : ""}
+                      . Elasticsearch-compatible indexing in many deployments.
                     </p>
                   )}
                 </>
