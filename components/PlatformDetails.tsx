@@ -852,6 +852,12 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                       {breakdown.elasticBreakdown.ingestRateLabel}; {breakdown.elasticBreakdown.retentionRateLabel}. ECH raw GB ingest + Complete retention tiers.
                     </p>
                   )}
+                  {platform.id === "dynatrace-logs" && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      Grail Retain with Included Queries: $0.20/GiB ingest + $0.02/GiB-day ×{" "}
+                      {platform.pricing.logs?.logRetentionDays ?? 14} days retained (list rates). Elasticsearch-compatible indexing in many deployments.
+                    </p>
+                  )}
                 </>
               );
             })()}
