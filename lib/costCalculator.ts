@@ -7,6 +7,7 @@ import {
   DEFAULT_ELASTIC_PRICING_OPTIONS,
   type ElasticServerlessPricingOptions,
 } from "./elasticServerlessPricing";
+import { calculateElasticVolumeCostWithStreams } from "./elasticStreamsTco";
 import {
   calculateDatadogMetricsCostBreakdown,
   DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST,
@@ -152,7 +153,7 @@ export function calculatePlatformCost(
   usePrivateLink: boolean = false,
   pricingContext: TcoPricingContext = DEFAULT_TCO_PRICING_CONTEXT
 ): number {
-  const { elastic: elasticPricing } = pricingContext;
+  const { elastic: elasticPricing, streams: streamsPolicy } = pricingContext;
   const { pricing } = platform;
   let cost = pricing.basePrice || 0;
   
@@ -174,12 +175,21 @@ export function calculatePlatformCost(
     monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
 
     if (platform.id === "elastic-serverless") {
-      cost += calculateElasticServerlessMetricsCost(monthlyGB, {
-        ...elasticPricing,
-        productTier: "observability-complete",
-      }).volumeCost;
+      cost += calculateElasticVolumeCostWithStreams(
+        monthlyGB,
+        { ...elasticPricing, productTier: "observability-complete" },
+        streamsPolicy,
+        "metrics",
+        { platformKind: "serverless", metricsTsd: true, productTier: "observability-complete" }
+      ).volumeCost;
     } else if (platform.id === "elastic-ech") {
-      cost += calculateEchMetricsCost(monthlyGB).volumeCost;
+      cost += calculateElasticVolumeCostWithStreams(
+        monthlyGB,
+        elasticPricing,
+        streamsPolicy,
+        "metrics",
+        { platformKind: "ech", metricsTsd: true, pricePerIngestGB: pricing.pricePerGB ?? 0 }
+      ).volumeCost;
     } else if (pricing.pricePerGB) {
       cost += monthlyGB * pricing.pricePerGB;
     }

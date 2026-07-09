@@ -9,6 +9,7 @@ import ObservabilityTabs, { type ObservabilityTab } from "@/components/Observabi
 import TracingConfig from "@/components/TracingConfig";
 import LogsConfig from "@/components/LogsConfig";
 import SecurityConfig from "@/components/SecurityConfig";
+import ElasticStreamsTcoControls from "@/components/ElasticStreamsTcoControls";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import FullStackComparison from "@/components/FullStackComparison";
 import {
@@ -22,6 +23,10 @@ import {
   DEFAULT_TCO_PRICING_CONTEXT,
   type TcoPricingContext,
 } from "@/lib/costCalculator";
+import {
+  DEFAULT_ELASTIC_STREAMS_TCO,
+  type ElasticStreamsTcoPolicy,
+} from "@/lib/elasticStreamsTco";
 import { estimateMonitoredHosts } from "@/lib/hostEstimation";
 import {
   integrations,
@@ -67,6 +72,7 @@ interface SavedState {
   usePrivateLink?: boolean;
   elasticRetentionMonths?: number;
   elasticUseVolumeTiers?: boolean;
+  elasticStreamsTco?: ElasticStreamsTcoPolicy;
   datadogHostsAuto?: boolean;
   datadogManualHosts?: number;
 }
@@ -131,6 +137,9 @@ export default function Home() {
   // Elastic Serverless pricing (ingest + retention)
   const [elasticRetentionMonths, setElasticRetentionMonths] = useState(1);
   const [elasticUseVolumeTiers, setElasticUseVolumeTiers] = useState(true);
+  const [elasticStreamsTco, setElasticStreamsTco] = useState<ElasticStreamsTcoPolicy>(
+    DEFAULT_ELASTIC_STREAMS_TCO
+  );
 
   // Datadog host licensing (Infra Pro + APM Pro)
   const [datadogHostsAuto, setDatadogHostsAuto] = useState(true);
@@ -163,6 +172,9 @@ export default function Home() {
         setElasticRetentionMonths(savedState.elasticRetentionMonths);
       }
       setElasticUseVolumeTiers(savedState.elasticUseVolumeTiers ?? true);
+      if (savedState.elasticStreamsTco) {
+        setElasticStreamsTco(savedState.elasticStreamsTco);
+      }
       if (savedState.datadogHostsAuto !== undefined) setDatadogHostsAuto(savedState.datadogHostsAuto);
       if (savedState.datadogManualHosts !== undefined) setDatadogManualHosts(savedState.datadogManualHosts);
       if (savedState.metricsInputMode) setMetricsInputMode(savedState.metricsInputMode);
@@ -188,11 +200,12 @@ export default function Home() {
         usePrivateLink,
         elasticRetentionMonths,
         elasticUseVolumeTiers,
+        elasticStreamsTco,
         datadogHostsAuto,
         datadogManualHosts,
       });
     }
-  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, datadogHostsAuto, datadogManualHosts, isHydrated]);
+  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, elasticStreamsTco, datadogHostsAuto, datadogManualHosts, isHydrated]);
 
   const elasticPricing = useMemo(
     () => ({
@@ -262,8 +275,9 @@ export default function Home() {
         ...DEFAULT_TCO_PRICING_CONTEXT.dynatrace,
         appSecHosts: monitoredDatadogHosts,
       },
+      streams: elasticStreamsTco,
     }),
-    [elasticPricing, monitoredDatadogHosts]
+    [elasticPricing, monitoredDatadogHosts, elasticStreamsTco]
   );
 
   // Metrics calculations
@@ -678,6 +692,31 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Elastic Streams TCO — metrics, tracing, logs */}
+                {(activeTab === "metrics" || activeTab === "tracing" || activeTab === "logs") && (
+                  <ElasticStreamsTcoControls
+                    activeSignal={
+                      activeTab === "metrics"
+                        ? "metrics"
+                        : activeTab === "tracing"
+                        ? "tracing"
+                        : "logs"
+                    }
+                    policy={elasticStreamsTco}
+                    onPolicyChange={setElasticStreamsTco}
+                    elasticPricing={elasticPricing}
+                    monthlyGB={
+                      activeTab === "logs"
+                        ? monthlyGB
+                        : activeTab === "tracing"
+                        ? (monthlySpans * 500) / (1024 * 1024 * 1024)
+                        : undefined
+                    }
+                    monthlyMetrics={activeTab === "metrics" ? effectiveMonthlyMetrics : undefined}
+                    gbPerDay={activeTab === "logs" ? gbPerDay : undefined}
+                  />
+                )}
+
                 {/* Datadog host licensing */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
@@ -1077,6 +1116,7 @@ export default function Home() {
                         monthlyGB: metricsMonthlyGB > 0 ? metricsMonthlyGB : undefined,
                         elasticRetentionMonths,
                         elasticUseVolumeTiers,
+                        elasticStreamsTco,
                         datadogInfraHosts: monitoredDatadogHosts,
                       };
                     })()
@@ -1093,6 +1133,7 @@ export default function Home() {
                         monitoredHosts: monitoredDatadogHosts,
                         elasticRetentionMonths,
                         elasticUseVolumeTiers,
+                        elasticStreamsTco,
                       };
                     })()
                   : activeTab === "tracing"
@@ -1108,6 +1149,7 @@ export default function Home() {
                         monthlyGB: tracingMonthlyGB > 0 ? tracingMonthlyGB : undefined,
                         elasticRetentionMonths,
                         elasticUseVolumeTiers,
+                        elasticStreamsTco,
                         datadogApmHosts: monitoredDatadogHosts,
                       };
                     })()
@@ -1117,6 +1159,7 @@ export default function Home() {
                       gbPerDay,
                       elasticRetentionMonths,
                       elasticUseVolumeTiers,
+                      elasticStreamsTco,
                     }
                   : undefined
               }

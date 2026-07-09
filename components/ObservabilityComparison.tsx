@@ -47,6 +47,7 @@ interface ObservabilityComparisonProps {
     gbPerDay?: number;
     elasticRetentionMonths?: number;
     elasticUseVolumeTiers?: boolean;
+    elasticStreamsTco?: import("@/lib/elasticStreamsTco").ElasticStreamsTcoPolicy;
     // Shared
     monthlyGB?: number;
     monitoredHosts?: number;

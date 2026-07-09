@@ -8,6 +8,10 @@ import {
   type ElasticServerlessPricingOptions,
 } from "./elasticServerlessPricing";
 import {
+  calculateElasticVolumeCostWithStreams,
+  type StreamsVolumeAdjustment,
+} from "./elasticStreamsTco";
+import {
   calculateDatadogApmHostCost,
   DATADOG_APM_HOST_PRO_USD_PER_MONTH,
 } from "./datadogPricing";
@@ -667,7 +671,7 @@ export function calculateTracingCost(
   const pricing = platform.pricing.tracing;
   if (!pricing) return 0;
 
-  const { elastic: elasticPricing, datadog: datadogHosts } = pricingContext;
+  const { elastic: elasticPricing, datadog: datadogHosts, streams: streamsPolicy } = pricingContext;
   let cost = pricing.basePrice || 0;
   const billableSpans = Math.max(0, monthlySpans - (pricing.freeTier || 0));
   let monthlyGB = 0;
@@ -695,16 +699,23 @@ export function calculateTracingCost(
     const bytesPerSpan = pricing.bytesPerSpan || BYTES_PER_SPAN;
     monthlyGB = (billableSpans * bytesPerSpan) / (1024 * 1024 * 1024);
     if (platform.id === "elastic-tracing") {
-      cost += calculateElasticServerlessCost(monthlyGB, {
-        ...elasticPricing,
-        productTier: "observability-complete",
-      }).volumeCost;
+      const streamsResult = calculateElasticVolumeCostWithStreams(
+        monthlyGB,
+        { ...elasticPricing, productTier: "observability-complete" },
+        streamsPolicy,
+        "tracing",
+        { platformKind: "serverless", productTier: "observability-complete" }
+      );
+      cost += streamsResult.volumeCost;
     } else if (platform.id === "elastic-ech-tracing") {
-      cost += calculateEchVolumeCost(monthlyGB, {
-        retentionMonths: elasticPricing.retentionMonths,
-        useRetentionTiers: elasticPricing.useVolumeTiers,
-        pricePerIngestGB: pricing.pricePerGB,
-      }).volumeCost;
+      const streamsResult = calculateElasticVolumeCostWithStreams(
+        monthlyGB,
+        elasticPricing,
+        streamsPolicy,
+        "tracing",
+        { platformKind: "ech", pricePerIngestGB: pricing.pricePerGB }
+      );
+      cost += streamsResult.volumeCost;
     } else {
       cost += monthlyGB * pricing.pricePerGB;
     }
@@ -738,6 +749,9 @@ export interface LogsCostBreakdown {
   queryScanGB?: number;
   meteredMonthlyGB?: number;
   elasticBreakdown?: ReturnType<typeof calculateElasticServerlessCost>;
+  streamsAdjustment?: StreamsVolumeAdjustment;
+  streamsSavingsPercent?: number;
+  baselineVolumeCost?: number;
 }
 
 export function calculateLogsCostBreakdown(
@@ -747,6 +761,8 @@ export function calculateLogsCostBreakdown(
 ): LogsCostBreakdown {
   const elasticPricing: ElasticServerlessPricingOptions =
     "elastic" in pricingContext ? pricingContext.elastic : pricingContext;
+  const streamsPolicy =
+    "elastic" in pricingContext ? pricingContext.streams : DEFAULT_TCO_PRICING_CONTEXT.streams;
   const pricing = platform.pricing.logs;
   if (!pricing) {
     return { monthlyRawGB: monthlyGB, ingestCost: 0, indexCost: 0, indexedEvents: 0 };
@@ -780,20 +796,53 @@ export function calculateLogsCostBreakdown(
     queryCost = queryScanGB * (pricing.pricePerGiBScanned ?? 0.0035);
   } else if (platform.id === "elastic-logs" && pricing.pricePerGB) {
     meteredMonthlyGB = elasticLogsMeteredMonthlyGB(monthlyGB / 30);
-    elasticBreakdown = calculateElasticServerlessCost(meteredMonthlyGB, {
-      ...elasticPricing,
-      productTier: "observability-complete",
-    });
-    ingestCost = elasticBreakdown.ingestCost;
-    indexCost = elasticBreakdown.retentionCost;
+    const streamsResult = calculateElasticVolumeCostWithStreams(
+      meteredMonthlyGB,
+      { ...elasticPricing, productTier: "observability-complete" },
+      streamsPolicy,
+      "logs",
+      { platformKind: "serverless", productTier: "observability-complete" }
+    );
+    elasticBreakdown = streamsResult.breakdown;
+    ingestCost = streamsResult.breakdown.ingestCost;
+    indexCost = streamsResult.breakdown.retentionCost;
+    return {
+      monthlyRawGB: monthlyGB,
+      ingestCost,
+      indexCost,
+      indexedEvents,
+      queryCost,
+      queryScanGB,
+      meteredMonthlyGB,
+      elasticBreakdown,
+      streamsAdjustment: streamsResult.adjustment,
+      streamsSavingsPercent: streamsResult.savingsPercent,
+      baselineVolumeCost: streamsResult.baselineVolumeCost,
+    };
   } else if (platform.id === "elastic-ech-logs" && pricing.pricePerGB) {
-    elasticBreakdown = calculateEchVolumeCost(monthlyGB, {
-      retentionMonths: elasticPricing.retentionMonths,
-      useRetentionTiers: elasticPricing.useVolumeTiers,
-      pricePerIngestGB: pricing.pricePerGB,
-    });
-    ingestCost = elasticBreakdown.ingestCost;
-    indexCost = elasticBreakdown.retentionCost;
+    const streamsResult = calculateElasticVolumeCostWithStreams(
+      monthlyGB,
+      elasticPricing,
+      streamsPolicy,
+      "logs",
+      { platformKind: "ech", pricePerIngestGB: pricing.pricePerGB }
+    );
+    elasticBreakdown = streamsResult.breakdown;
+    ingestCost = streamsResult.breakdown.ingestCost;
+    indexCost = streamsResult.breakdown.retentionCost;
+    return {
+      monthlyRawGB: monthlyGB,
+      ingestCost,
+      indexCost,
+      indexedEvents,
+      queryCost,
+      queryScanGB,
+      meteredMonthlyGB,
+      elasticBreakdown,
+      streamsAdjustment: streamsResult.adjustment,
+      streamsSavingsPercent: streamsResult.savingsPercent,
+      baselineVolumeCost: streamsResult.baselineVolumeCost,
+    };
   } else if (pricing.pricePerGB) {
     ingestCost = ingestBillableGB * pricing.pricePerGB;
   }

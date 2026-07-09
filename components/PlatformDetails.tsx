@@ -27,6 +27,7 @@ import {
   DATADOG_LOG_INDEX_RATE_PER_M_EVENTS,
 } from "@/lib/observabilityPricing";
 import { DEFAULT_TCO_PRICING_CONTEXT } from "@/lib/tcoPricingContext";
+import type { ElasticStreamsTcoPolicy } from "@/lib/elasticStreamsTco";
 import { DYNATRACE_APPSEC_USD_PER_MEMORY_GIB_HOUR } from "@/lib/dynatracePricing";
 
 interface PlatformDetailsProps {
@@ -56,6 +57,7 @@ interface PlatformDetailsProps {
     operationalCost?: number;
     elasticRetentionMonths?: number;
     elasticUseVolumeTiers?: boolean;
+    elasticStreamsTco?: ElasticStreamsTcoPolicy;
     datadogInfraHosts?: number;
     datadogApmHosts?: number;
   };
@@ -798,17 +800,41 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
               </span>
             </div>
             {(() => {
-              const breakdown = calculateLogsCostBreakdown(platform, calculationContext.monthlyGB!, {
-                retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
-                useVolumeTiers: calculationContext.elasticUseVolumeTiers ?? true,
-              });
+              const pricingCtx = {
+                elastic: {
+                  retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
+                  useVolumeTiers: calculationContext.elasticUseVolumeTiers ?? true,
+                },
+                datadog: DEFAULT_TCO_PRICING_CONTEXT.datadog,
+                dynatrace: DEFAULT_TCO_PRICING_CONTEXT.dynatrace,
+                streams:
+                  calculationContext.elasticStreamsTco ?? DEFAULT_TCO_PRICING_CONTEXT.streams,
+              };
+              const breakdown = calculateLogsCostBreakdown(
+                platform,
+                calculationContext.monthlyGB!,
+                pricingCtx
+              );
               return (
                 <>
                   {platform.id === "elastic-logs" && breakdown.meteredMonthlyGB !== undefined && (
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 dark:text-gray-400">Metered ingest (est. ~1.66× enriched):</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {breakdown.meteredMonthlyGB.toFixed(0)} GB/mo
+                        {breakdown.streamsAdjustment?.applied
+                          ? `${breakdown.streamsAdjustment.billableMonthlyIngestGB.toFixed(0)} GB/mo (after Streams)`
+                          : `${breakdown.meteredMonthlyGB.toFixed(0)} GB/mo`}
+                      </span>
+                    </div>
+                  )}
+                  {breakdown.streamsAdjustment?.applied && (
+                    <div className="flex justify-between items-center text-violet-700 dark:text-violet-300">
+                      <span>Streams TCO policy:</span>
+                      <span className="font-semibold">
+                        {breakdown.streamsAdjustment.retentionDays}d retention
+                        {breakdown.streamsSavingsPercent
+                          ? ` · ~${Math.round(breakdown.streamsSavingsPercent)}% volume savings`
+                          : ""}
                       </span>
                     </div>
                   )}
