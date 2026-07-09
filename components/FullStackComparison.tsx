@@ -53,8 +53,126 @@ function CapabilityBadge({ level, label }: { level: CapabilityLevel; label: stri
   );
 }
 
-// Vendors shown by default — Datadog + both Elastic options
+// Vendors shown by default — Datadog + both Elastic options (full four-signal coverage)
 const DEFAULT_ACTIVE_VENDORS = new Set(["datadog", "elastic-serverless", "elastic-ech"]);
+
+type VendorTotalEntry = {
+  vendor: (typeof FULL_STACK_VENDORS)[number];
+  total: number;
+  signalCosts: Partial<Record<SignalKey, number | null>>;
+  hasAll: boolean;
+};
+
+function VendorTCORow({
+  entry,
+  maxTotal,
+  datadogTotal,
+  activeSignals,
+  ranked,
+}: {
+  entry: VendorTotalEntry;
+  maxTotal: number;
+  datadogTotal: number;
+  activeSignals: Record<SignalKey, boolean>;
+  ranked: boolean;
+}) {
+  const { vendor, total, signalCosts } = entry;
+  const savingsPct =
+    ranked && datadogTotal > 0 && vendor.id !== "datadog"
+      ? ((datadogTotal - total) / datadogTotal) * 100
+      : null;
+  const barWidth = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
+
+  return (
+    <div
+      className={`rounded-xl p-3 transition-all ${
+        vendor.isElastic
+          ? "bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-200 dark:ring-blue-700"
+          : ranked
+          ? "bg-gray-50 dark:bg-gray-900/30"
+          : "bg-gray-50/60 dark:bg-gray-900/20 opacity-80"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <div className={`w-3 h-3 rounded-full shrink-0 ${vendor.color}`} />
+          <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+            {vendor.name}
+          </span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${vendor.badgeColor}`}>
+            {vendor.badge}
+          </span>
+          {!ranked && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 shrink-0 font-medium">
+              not ranked
+            </span>
+          )}
+          {activeSignals.logs && !vendor.logsPlatformId && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
+              no logs
+            </span>
+          )}
+          {activeSignals.security && !vendor.securityPlatformId && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
+              no security
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {savingsPct !== null && (
+            <span
+              className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                savingsPct > 0
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+              }`}
+            >
+              {savingsPct > 0
+                ? `${savingsPct.toFixed(0)}% less than DD`
+                : `${Math.abs(savingsPct).toFixed(0)}% more than DD`}
+            </span>
+          )}
+          <div className="text-right">
+            <div
+              className={`text-base font-bold tabular-nums ${
+                ranked ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"
+              }`}
+            >
+              {formatCurrency(total)}
+              <span className="text-xs text-gray-400">/mo</span>
+            </div>
+            <div className="text-xs text-gray-400 tabular-nums">{formatCurrency(total * 12)}/yr</div>
+          </div>
+        </div>
+      </div>
+      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+        <div
+          className={`h-2 rounded-full transition-all duration-700 ${
+            vendor.isElastic
+              ? "bg-gradient-to-r from-blue-500 to-indigo-500"
+              : ranked
+              ? "bg-gray-400 dark:bg-gray-500"
+              : "bg-gray-300 dark:bg-gray-600"
+          }`}
+          style={{ width: `${barWidth}%` }}
+        />
+      </div>
+      <div className="flex gap-3 mt-2 flex-wrap">
+        {SIGNAL_CONFIG.filter((s) => activeSignals[s.key]).map(({ key, label, icon }) => {
+          const c = signalCosts[key];
+          return (
+            <div key={key} className="text-xs text-gray-500 dark:text-gray-400">
+              {icon} {label}:{" "}
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {c !== null && c !== undefined ? formatCurrency(c) : "—"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function FullStackComparison({
   metricsCosts,
@@ -131,27 +249,36 @@ export default function FullStackComparison({
       }
 
       return { vendor, total, signalCosts, hasAll };
-    }).sort((a, b) => a.total - b.total);
-  }, [visibleVendors, activeSignals, metricsCosts, tracingCosts, logsCosts, securityCosts]);
+    });
+  }, [visibleVendors, activeSignals, metricsCosts, tracingCosts, logsCosts, securityCosts, operationalCosts]);
 
-  const datadogEntry = vendorTotals.find((v) => v.vendor.id === "datadog");
+  const comparableTotals = useMemo(
+    () => [...vendorTotals.filter((v) => v.hasAll)].sort((a, b) => a.total - b.total),
+    [vendorTotals]
+  );
+  const partialTotals = useMemo(
+    () => vendorTotals.filter((v) => !v.hasAll),
+    [vendorTotals]
+  );
+
+  const datadogEntry = comparableTotals.find((v) => v.vendor.id === "datadog");
   const datadogTotal = datadogEntry?.total ?? 0;
 
-  const elasticServerless = vendorTotals.find((v) => v.vendor.id === "elastic-serverless");
-  const elasticECH = vendorTotals.find((v) => v.vendor.id === "elastic-ech");
+  const elasticServerless = comparableTotals.find((v) => v.vendor.id === "elastic-serverless");
+  const elasticECH = comparableTotals.find((v) => v.vendor.id === "elastic-ech");
 
   const elasticVsDatadogSavings = datadogTotal > 0 && elasticServerless
     ? ((datadogTotal - elasticServerless.total) / datadogTotal) * 100
     : 0;
 
-  const maxTotal = vendorTotals[vendorTotals.length - 1]?.total ?? 1;
+  const maxComparableTotal = comparableTotals[comparableTotals.length - 1]?.total ?? 1;
 
   return (
     <div className="space-y-8">
       {/* Vendor picker */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5">
         <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-          Compare vendors — Datadog shown by default, add others to compare
+          Compare vendors — Datadog + Elastic (full stack). Dynatrace: use Metrics / Tracing tabs.
         </div>
         <div className="flex flex-wrap gap-2">
           {FULL_STACK_VENDORS.map((vendor) => {
@@ -244,8 +371,11 @@ export default function FullStackComparison({
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              Combined Monthly TCO — All Selected Signals*
+              Combined Monthly TCO — Comparable Full Stack*
             </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              Only vendors with pricing for every selected signal appear in this ranking.
+            </p>
             {engineerHourlyRate && Object.keys(operationalCosts).length > 0 && (
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
                 Includes infrastructure + operational costs at ${engineerHourlyRate}/hr engineer rate
@@ -255,91 +385,35 @@ export default function FullStackComparison({
           <span className="text-xs text-gray-400">Annual ÷ 12</span>
         </div>
         <div className="p-6 space-y-3">
-          {vendorTotals.some((v) => !v.hasAll) && (
-            <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
-              <strong>Not apples-to-apples:</strong> Some vendors below omit logs and/or security from this total (shown as —).
-              Their bar total can look artificially low vs Elastic, which prices all four signals here. Add comparable Dynatrace
-              log/SIEM lines or turn off those signals for a fair partial comparison.
+          {comparableTotals.map((entry) => (
+            <VendorTCORow
+              key={entry.vendor.id}
+              entry={entry}
+              maxTotal={maxComparableTotal}
+              datadogTotal={datadogTotal}
+              activeSignals={activeSignals}
+              ranked
+            />
+          ))}
+          {partialTotals.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-dashed border-gray-200 dark:border-gray-700 space-y-3">
+              <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+                <strong>Excluded from ranking:</strong> These vendors are missing logs and/or security pricing in this
+                tool, so their totals are not comparable to Elastic or Datadog on a full-stack slide. Use the{" "}
+                <strong>Metrics</strong> or <strong>Tracing</strong> tabs for Dynatrace-style partial comparisons.
+              </div>
+              {partialTotals.map((entry) => (
+                <VendorTCORow
+                  key={entry.vendor.id}
+                  entry={entry}
+                  maxTotal={maxComparableTotal}
+                  datadogTotal={datadogTotal}
+                  activeSignals={activeSignals}
+                  ranked={false}
+                />
+              ))}
             </div>
           )}
-          {vendorTotals.map(({ vendor, total, signalCosts, hasAll }) => {
-            const savingsPct =
-              datadogTotal > 0 && vendor.id !== "datadog"
-                ? ((datadogTotal - total) / datadogTotal) * 100
-                : null;
-            const barWidth = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
-
-            return (
-              <div key={vendor.id} className={`rounded-xl p-3 transition-all ${vendor.isElastic ? "bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-200 dark:ring-blue-700" : "bg-gray-50 dark:bg-gray-900/30"}`}>
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className={`w-3 h-3 rounded-full shrink-0 ${vendor.color}`} />
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                      {vendor.name}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${vendor.badgeColor}`}>
-                      {vendor.badge}
-                    </span>
-                    {!hasAll && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 shrink-0 font-medium">
-                        partial stack
-                      </span>
-                    )}
-                    {activeSignals.logs && !vendor.logsPlatformId && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
-                        no logs
-                      </span>
-                    )}
-                    {/* missing security indicator */}
-                    {activeSignals.security && !vendor.securityPlatformId && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
-                        no security
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    {savingsPct !== null && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${savingsPct > 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>
-                        {savingsPct > 0 ? `${savingsPct.toFixed(0)}% less than DD` : `${Math.abs(savingsPct).toFixed(0)}% more than DD`}
-                      </span>
-                    )}
-                    <div className="text-right">
-                      <div className={`text-base font-bold tabular-nums ${hasAll ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-300"}`}>
-                        {formatCurrency(total)}<span className="text-xs text-gray-400">/mo</span>
-                        {!hasAll && (
-                          <span className="block text-[10px] font-normal text-amber-600 dark:text-amber-400">
-                            metrics + tracing only
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-400 tabular-nums">{formatCurrency(total * 12)}/yr</div>
-                    </div>
-                  </div>
-                </div>
-                {/* Progress bar */}
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-700 ${vendor.isElastic ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-gray-400 dark:bg-gray-500"}`}
-                    style={{ width: `${barWidth}%` }}
-                  />
-                </div>
-                {/* Per-signal breakdown */}
-                <div className="flex gap-3 mt-2 flex-wrap">
-                  {SIGNAL_CONFIG.filter((s) => activeSignals[s.key]).map(({ key, label, icon }) => {
-                    const c = signalCosts[key];
-                    return (
-                      <div key={key} className="text-xs text-gray-500 dark:text-gray-400">
-                        {icon} {label}:{" "}
-                        <span className="font-medium text-gray-700 dark:text-gray-300">
-                          {c !== null && c !== undefined ? formatCurrency(c) : "—"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
         </div>
       </div>
 
