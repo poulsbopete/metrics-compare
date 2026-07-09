@@ -13,7 +13,7 @@ type ObservabilityType = "metrics" | "tracing" | "logs" | "security" | "fullstac
 const DEFAULT_PLATFORM_IDS: Partial<Record<ObservabilityType, Set<string>>> = {
   metrics:  new Set(["elastic-serverless", "elastic-ech", "datadog", "dynatrace"]),
   tracing:  new Set(["elastic-tracing", "elastic-ech-tracing", "datadog-tracing", "dynatrace-tracing"]),
-  logs:     new Set(["elastic-logs", "elastic-ech-logs", "datadog-logs"]),
+  logs:     new Set(["elastic-logs", "elastic-ech-logs", "datadog-logs", "dynatrace-logs"]),
   security: new Set(["elastic-security", "elastic-security-ech", "datadog-security"]),
 };
 

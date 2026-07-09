@@ -90,6 +90,27 @@ export const FULL_STACK_VENDORS: FullStackVendor[] = [
     capabilityNotes: "Watchdog AI is reactive, not investigative. SIEM is a separate add-on product. Separate bills for APM, Logs, Metrics, and Security. Host-based pricing punishes scale.",
   },
   {
+    id: "dynatrace",
+    name: "Dynatrace",
+    color: "bg-cyan-500",
+    badge: "SaaS",
+    badgeColor: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+    metricsPlatformId: "dynatrace",
+    tracingPlatformId: "dynatrace-tracing",
+    logsPlatformId: "dynatrace-logs",
+    securityPlatformId: null,
+    capabilities: {
+      ai_investigation: "yes",
+      native_siem: "limited",
+      unified_platform: "limited",
+      otel_native: "limited",
+      no_sampling: "limited",
+      open_source: "no",
+    },
+    capabilityNotes:
+      "Grail log analytics (Elasticsearch-compatible pipelines; often OpenSearch/Elasticsearch-backed). Davis AI for APM. Application Security is a separate DPS capability — not priced in this tool yet, so full-stack totals exclude Dynatrace when Security is selected.",
+  },
+  {
     id: "splunk",
     name: "Splunk",
     color: "bg-orange-500",
