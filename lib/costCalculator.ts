@@ -340,7 +340,8 @@ export const platforms: Platform[] = [
       freeTier: 0,
       unit: "per million metrics/month",
     },
-    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series is counted and billed separately. Adding high-cardinality tags multiplies your metric count and costs proportionally.",
+    cardinalityNote:
+      "Dynatrace bills custom metrics and host-based Davis data units — high cardinality increases custom metric volume. This calculator uses a simplified $/M datapoint proxy ($0.60/M) for side-by-side comparison with Elastic GB pricing; validate against a Dynatrace quote or environment for customer-facing numbers.",
   },
   {
     id: "prometheus",

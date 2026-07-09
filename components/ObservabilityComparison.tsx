@@ -9,10 +9,10 @@ import PlatformRow from "./PlatformRow";
 
 type ObservabilityType = "metrics" | "tracing" | "logs" | "security" | "fullstack";
 
-// Default platforms shown per tab — Elastic Serverless + ECH + Datadog
+// Default platforms shown per tab — Elastic + Datadog + Dynatrace
 const DEFAULT_PLATFORM_IDS: Partial<Record<ObservabilityType, Set<string>>> = {
-  metrics:  new Set(["elastic-serverless", "elastic-ech", "datadog"]),
-  tracing:  new Set(["elastic-tracing", "elastic-ech-tracing", "datadog-tracing"]),
+  metrics:  new Set(["elastic-serverless", "elastic-ech", "datadog", "dynatrace"]),
+  tracing:  new Set(["elastic-tracing", "elastic-ech-tracing", "datadog-tracing", "dynatrace-tracing"]),
   logs:     new Set(["elastic-logs", "elastic-ech-logs", "datadog-logs"]),
   security: new Set(["elastic-security", "elastic-security-ech", "datadog-security"]),
 };
@@ -161,7 +161,7 @@ export default function ObservabilityComparison({
       {/* Platform picker */}
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2.5">
-          Compare platforms — Elastic &amp; Datadog shown by default
+          Compare platforms — Elastic, Datadog &amp; Dynatrace shown by default
         </div>
         <div className="flex flex-wrap gap-2">
           {pickerPlatforms.map((p) => {
