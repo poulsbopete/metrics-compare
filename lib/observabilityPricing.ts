@@ -266,13 +266,12 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     color: "bg-blue-700",
     pricing: {
       tracing: {
-        basePrice: 300, // Minimum 2-node APM + ES cluster (compute/RAM-hours)
-        // ECH charges per GB ingested at a lower variable rate than Serverless
-        // because the fixed cluster cost amortizes ingest overhead.
+        // Cluster minimum is modeled once on Metrics (elastic-ech) / Full Stack — not per signal
+        basePrice: 0,
         pricePerGB: 0.05,
         bytesPerSpan: 500,
         freeTier: 0,
-        unit: "per GB/month + base cluster",
+        unit: "variable ingest + retention (shared ECH cluster)",
         egressPricePerGB: 0.09,
         egressFreeTier: 100,
         egressPricePerGBWithPrivateLink: 0.001,
@@ -280,7 +279,7 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
     },
     notes: {
       tracing:
-        "Elastic Cloud Hosted APM: fixed cluster minimum + variable ingest ($0.05/GB) + retention using the Observability Complete retention tier table (same as Serverless). Adjust retention months in Configuration.",
+        "ECH APM variable cost only on this tab: $0.05/GB ingest + Observability Complete retention tiers (same table as Serverless). The ~$200/mo cluster minimum is on the Metrics tab (elastic-ech) — one Observability deployment, not a separate cluster per signal. ECH beats Serverless on ingest $/GB at scale; Serverless can win at very low GB in the first Serverless ingest tier ($0.50/GB).",
     },
   },
   {
@@ -549,8 +548,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
     color: "bg-blue-700",
     pricing: {
       logs: {
-        basePrice: 250, // Minimum 2-node hot cluster (compute/RAM-hours)
-        // Variable cost per GB ingested; ECH beats Serverless above ~4TB/month ingest
+        basePrice: 0, // Shared ECH cluster minimum — see elastic-ech metrics / Full Stack
         pricePerGB: 0.05,
         freeTier: 0,
         unit: "per GB/month + base cluster",
@@ -560,7 +558,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
       },
     },
     notes: {
-      logs: "Elastic Cloud Hosted logs: fixed cluster minimum + ingest ($0.05/GB) + retention via Observability Complete retention tiers (configurable months). Serverless logs use 1.66× enrichment metering; ECH uses raw GB ingest here.",
+      logs: "ECH logs: variable ingest ($0.05/GB) + retention tiers only on this tab. Cluster minimum (~$200/mo) is on Metrics (elastic-ech). Serverless logs use 1.66× enrichment metering; ECH uses raw GB ingest here.",
     },
   },
   {

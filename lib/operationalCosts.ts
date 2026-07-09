@@ -23,11 +23,11 @@ export const OPERATIONAL_FTE: Record<string, number> = {
   "elastic-logs":             0.05,
   "elastic-security":         0.05,
 
-  // ── Elastic Cloud Hosted (managed + some cluster oversight) ───────────────
-  "elastic-ech":              0.10,
-  "elastic-ech-tracing":      0.10,
-  "elastic-ech-logs":         0.10,
-  "elastic-security-ech":     0.10,
+  // ── Elastic Cloud Hosted (managed — similar touch to Serverless; not self-hosted 0.3 FTE) ──
+  "elastic-ech":              0.05,
+  "elastic-ech-tracing":      0.05,
+  "elastic-ech-logs":         0.05,
+  "elastic-security-ech":     0.05,
 
   // ── Elastic Self-hosted ───────────────────────────────────────────────────
   "elastic-self-hosted":          0.30,
