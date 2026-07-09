@@ -14,7 +14,7 @@ const DEFAULT_PLATFORM_IDS: Partial<Record<ObservabilityType, Set<string>>> = {
   metrics:  new Set(["elastic-serverless", "elastic-ech", "datadog", "dynatrace"]),
   tracing:  new Set(["elastic-tracing", "elastic-ech-tracing", "datadog-tracing", "dynatrace-tracing"]),
   logs:     new Set(["elastic-logs", "elastic-ech-logs", "datadog-logs", "dynatrace-logs"]),
-  security: new Set(["elastic-security", "elastic-security-ech", "datadog-security"]),
+  security: new Set(["elastic-security", "elastic-security-ech", "datadog-security", "dynatrace-security"]),
 };
 
 // Elastic-branded platform IDs — styled distinctively in the picker
@@ -49,6 +49,7 @@ interface ObservabilityComparisonProps {
     elasticUseVolumeTiers?: boolean;
     // Shared
     monthlyGB?: number;
+    monitoredHosts?: number;
     /** Filled per-row in PlatformRow for breakdown reconciliation */
     cost?: number;
     infraCost?: number;

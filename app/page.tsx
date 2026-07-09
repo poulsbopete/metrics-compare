@@ -258,6 +258,10 @@ export default function Home() {
         infraHosts: monitoredDatadogHosts,
         apmHosts: monitoredDatadogHosts,
       },
+      dynatrace: {
+        ...DEFAULT_TCO_PRICING_CONTEXT.dynatrace,
+        appSecHosts: monitoredDatadogHosts,
+      },
     }),
     [elasticPricing, monitoredDatadogHosts]
   );
@@ -1086,6 +1090,7 @@ export default function Home() {
                         eventsPerSecond,
                         monthlyEvents,
                         monthlyGB: secMonthlyGB > 0 ? secMonthlyGB : undefined,
+                        monitoredHosts: monitoredDatadogHosts,
                         elasticRetentionMonths,
                         elasticUseVolumeTiers,
                       };

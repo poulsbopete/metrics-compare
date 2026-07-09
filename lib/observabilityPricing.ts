@@ -12,6 +12,10 @@ import {
   DATADOG_APM_HOST_PRO_USD_PER_MONTH,
 } from "./datadogPricing";
 import {
+  calculateDynatraceAppSecCostBreakdown,
+  DYNATRACE_APPSEC_USD_PER_MEMORY_GIB_HOUR,
+} from "./dynatracePricing";
+import {
   DEFAULT_TCO_PRICING_CONTEXT,
   type TcoPricingContext,
 } from "./tcoPricingContext";
@@ -82,6 +86,9 @@ export interface ObservabilityPricing {
     bytesPerEvent?: number; // Average bytes per security event
     freeTier?: number;
     unit: string;
+    /** Dynatrace AppSec: $/memory-GiB-hour (RVA, RAP) */
+    pricePerMemoryGiBHour?: number;
+    defaultMemoryGiBPerHost?: number;
     // Egress pricing (for SaaS platforms)
     egressPricePerGB?: number;
     egressFreeTier?: number;
@@ -980,6 +987,24 @@ export const securityPlatforms: ObservabilityPlatform[] = [
     },
   },
   {
+    id: "dynatrace-security",
+    name: "Dynatrace Application Security",
+    color: "bg-cyan-500",
+    pricing: {
+      security: {
+        basePrice: 0,
+        pricePerMemoryGiBHour: DYNATRACE_APPSEC_USD_PER_MEMORY_GIB_HOUR,
+        defaultMemoryGiBPerHost: 8,
+        freeTier: 0,
+        unit: "memory-GiB-hour (DPS AppSec)",
+      },
+    },
+    notes: {
+      security:
+        "Runtime Vulnerability Analytics (RVA) and Runtime Application Protection (RAP) bill at $0.00225/memory-GiB-hour each (~$13/mo per 8 GiB host per capability on list rates). This is runtime application security — not a full SIEM/log analytics platform like Elastic Security. Host count follows your infrastructure inventory (same proxy as Datadog hosts). RAP is off by default; enable in code via pricingContext.dynatrace.runtimeApplicationProtection.",
+    },
+  },
+  {
     id: "microsoft-sentinel",
     name: "Microsoft Sentinel",
     color: "bg-blue-600",
@@ -1063,6 +1088,66 @@ export const securityPlatforms: ObservabilityPlatform[] = [
   },
 ];
 
+export interface SecurityCostBreakdown {
+  monthlyRawGB?: number;
+  volumeCost?: number;
+  dynatraceAppSec?: ReturnType<typeof calculateDynatraceAppSecCostBreakdown>;
+}
+
+export function calculateSecurityCostBreakdown(
+  platform: ObservabilityPlatform,
+  monthlyEvents: number,
+  pricingContext: TcoPricingContext = DEFAULT_TCO_PRICING_CONTEXT
+): SecurityCostBreakdown {
+  const pricing = platform.pricing.security;
+  if (!pricing) return {};
+
+  const { elastic: elasticPricing, dynatrace: dynatraceAppSec } = pricingContext;
+  const billableEvents = Math.max(0, monthlyEvents - (pricing.freeTier || 0));
+  let volumeCost = pricing.basePrice || 0;
+  let monthlyGB = 0;
+
+  if (platform.id === "dynatrace-security") {
+    const breakdown = calculateDynatraceAppSecCostBreakdown({
+      ...dynatraceAppSec,
+      memoryGiBPerHost:
+        dynatraceAppSec.memoryGiBPerHost ??
+        pricing.defaultMemoryGiBPerHost ??
+        8,
+    });
+    return { dynatraceAppSec: breakdown };
+  }
+
+  if (pricing.pricePerGB) {
+    const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
+    monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
+    if (platform.id === "elastic-security") {
+      volumeCost += calculateElasticServerlessCost(monthlyGB, {
+        ...elasticPricing,
+        productTier: "security-analytics-complete",
+      }).volumeCost;
+    } else if (platform.id === "elastic-security-ech") {
+      volumeCost += calculateEchVolumeCost(monthlyGB, {
+        retentionMonths: elasticPricing.retentionMonths,
+        useRetentionTiers: elasticPricing.useVolumeTiers,
+        pricePerIngestGB: pricing.pricePerGB,
+      }).volumeCost;
+    } else {
+      volumeCost += monthlyGB * pricing.pricePerGB;
+    }
+  } else if (pricing.pricePerMillionEvents) {
+    volumeCost += (billableEvents / 1_000_000) * pricing.pricePerMillionEvents;
+    const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
+    monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
+  } else if (pricing.pricePerEvent) {
+    volumeCost += billableEvents * pricing.pricePerEvent;
+    const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
+    monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
+  }
+
+  return { monthlyRawGB: monthlyGB, volumeCost };
+}
+
 // Cost calculation function for security
 export function calculateSecurityCost(
   platform: ObservabilityPlatform,
@@ -1074,42 +1159,14 @@ export function calculateSecurityCost(
   const pricing = platform.pricing.security;
   if (!pricing) return 0;
 
-  const { elastic: elasticPricing } = pricingContext;
+  const breakdown = calculateSecurityCostBreakdown(platform, monthlyEvents, pricingContext);
+  let cost =
+    breakdown.dynatraceAppSec?.totalCost ??
+    breakdown.volumeCost ??
+    pricing.basePrice ??
+    0;
+  let monthlyGB = breakdown.monthlyRawGB ?? 0;
 
-  let cost = pricing.basePrice || 0;
-  const billableEvents = Math.max(0, monthlyEvents - (pricing.freeTier || 0));
-  let monthlyGB = 0;
-
-  if (pricing.pricePerGB) {
-    const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
-    monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
-    if (platform.id === "elastic-security") {
-      cost += calculateElasticServerlessCost(monthlyGB, {
-        ...elasticPricing,
-        productTier: "security-analytics-complete",
-      }).volumeCost;
-    } else if (platform.id === "elastic-security-ech") {
-      cost += calculateEchVolumeCost(monthlyGB, {
-        retentionMonths: elasticPricing.retentionMonths,
-        useRetentionTiers: elasticPricing.useVolumeTiers,
-        pricePerIngestGB: pricing.pricePerGB,
-      }).volumeCost;
-    } else {
-      cost += monthlyGB * pricing.pricePerGB;
-    }
-  } else if (pricing.pricePerMillionEvents) {
-    cost += (billableEvents / 1_000_000) * pricing.pricePerMillionEvents;
-    // Estimate GB for egress calculation (if needed)
-    const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
-    monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
-  } else if (pricing.pricePerEvent) {
-    cost += billableEvents * pricing.pricePerEvent;
-    // Estimate GB for egress calculation (if needed)
-    const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
-    monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
-  }
-
-  // Add egress costs if enabled
   if (includeEgress && monthlyGB > 0) {
     cost += calculateObservabilityEgressCost(platform, monthlyGB, "security", usePrivateLink);
   }

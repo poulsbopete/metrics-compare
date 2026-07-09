@@ -33,6 +33,7 @@ interface PlatformRowProps {
     monthlyEvents?: number;
     // Shared
     monthlyGB?: number;
+    monitoredHosts?: number;
     cost: number;
     infraCost?: number;
     operationalCost?: number;

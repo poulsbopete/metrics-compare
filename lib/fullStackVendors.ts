@@ -98,7 +98,7 @@ export const FULL_STACK_VENDORS: FullStackVendor[] = [
     metricsPlatformId: "dynatrace",
     tracingPlatformId: "dynatrace-tracing",
     logsPlatformId: "dynatrace-logs",
-    securityPlatformId: null,
+    securityPlatformId: "dynatrace-security",
     capabilities: {
       ai_investigation: "yes",
       native_siem: "limited",
@@ -108,7 +108,7 @@ export const FULL_STACK_VENDORS: FullStackVendor[] = [
       open_source: "no",
     },
     capabilityNotes:
-      "Grail log analytics (Elasticsearch-compatible pipelines; often OpenSearch/Elasticsearch-backed). Davis AI for APM. Application Security is a separate DPS capability — not priced in this tool yet, so full-stack totals exclude Dynatrace when Security is selected.",
+      "Grail logs (Elasticsearch-compatible). Davis AI + Application Security (RVA/RAP at $0.00225/memory-GiB-hour). Runtime AppSec is not a full SIEM — Elastic Security includes native SIEM, detection, and log analytics in one stack.",
   },
   {
     id: "splunk",

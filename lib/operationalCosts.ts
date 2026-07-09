@@ -50,6 +50,7 @@ export const OPERATIONAL_FTE: Record<string, number> = {
   "dynatrace":         0.05,
   "dynatrace-tracing": 0.05,
   "dynatrace-logs":    0.05,
+  "dynatrace-security": 0.05,
 
   // ── Splunk SaaS (Observability Cloud) ─────────────────────────────────────
   "splunk-o11y":   0.05,

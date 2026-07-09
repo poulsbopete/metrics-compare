@@ -23,8 +23,11 @@ import {
 import {
   ObservabilityPlatform,
   calculateLogsCostBreakdown,
+  calculateSecurityCostBreakdown,
   DATADOG_LOG_INDEX_RATE_PER_M_EVENTS,
 } from "@/lib/observabilityPricing";
+import { DEFAULT_TCO_PRICING_CONTEXT } from "@/lib/tcoPricingContext";
+import { DYNATRACE_APPSEC_USD_PER_MEMORY_GIB_HOUR } from "@/lib/dynatracePricing";
 
 interface PlatformDetailsProps {
   platform: Platform | ObservabilityPlatform;
@@ -43,6 +46,8 @@ interface PlatformDetailsProps {
     // Security
     eventsPerSecond?: number;
     monthlyEvents?: number;
+    /** Host fleet proxy for Dynatrace AppSec / Datadog host SKUs */
+    monitoredHosts?: number;
     // Shared
     monthlyGB?: number;
     cost: number;
@@ -954,6 +959,68 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                 </div>
               </>
             )}
+            {platform.id === "dynatrace-security" && (() => {
+              const dt = calculateSecurityCostBreakdown(
+                platform,
+                calculationContext.monthlyEvents ?? 0,
+                {
+                  ...DEFAULT_TCO_PRICING_CONTEXT,
+                  dynatrace: {
+                    ...DEFAULT_TCO_PRICING_CONTEXT.dynatrace,
+                    appSecHosts: calculationContext.monitoredHosts ?? 10,
+                  },
+                }
+              ).dynatraceAppSec;
+              if (!dt) return null;
+              return (
+                <>
+                  <div className="pt-1 border-t border-purple-100 dark:border-purple-800/50" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Monitored hosts (AppSec):</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {dt.hosts.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Memory per host (assumed):</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {dt.memoryGiBPerHost} GiB
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Memory-GiB-hours / month:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {dt.monthlyMemoryGiBHours.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Rate:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {formatUnitRate(DYNATRACE_APPSEC_USD_PER_MEMORY_GIB_HOUR, "/memory-GiB-hour")}
+                    </span>
+                  </div>
+                  {dt.rvaCost > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Runtime Vulnerability Analytics:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(dt.rvaCost)}/month
+                      </span>
+                    </div>
+                  )}
+                  {dt.rapCost > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Runtime Application Protection:</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(dt.rapCost)}/month
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    Runtime application security (not SIEM). Host count follows infrastructure inventory. RAP is off by default (~2× if both RVA+RAP enabled).
+                  </p>
+                </>
+              );
+            })()}
             {platform.pricing.security.basePrice && platform.pricing.security.basePrice > 0 && (
               <>
                 <div className="flex justify-between items-center">
