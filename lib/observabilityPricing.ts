@@ -11,6 +11,7 @@ import {
   calculateElasticVolumeCostWithStreams,
   type StreamsVolumeAdjustment,
 } from "./elasticStreamsTco";
+import { calculateEchHotFrozenVolumeCost } from "./elasticEchHotFrozenPricing";
 import {
   calculateDatadogApmHostCost,
   DATADOG_APM_HOST_PRO_USD_PER_MONTH,
@@ -1169,16 +1170,16 @@ export function calculateSecurityCostBreakdown(
     const bytesPerEvent = pricing.bytesPerEvent || BYTES_PER_SECURITY_EVENT;
     monthlyGB = (billableEvents * bytesPerEvent) / (1024 * 1024 * 1024);
     if (platform.id === "elastic-security") {
-      volumeCost += calculateElasticServerlessCost(monthlyGB, {
-        ...elasticPricing,
-        productTier: "security-analytics-complete",
-      }).volumeCost;
+      const streamsResult = calculateElasticVolumeCostWithStreams(
+        monthlyGB,
+        { ...elasticPricing, productTier: "security-analytics-complete" },
+        pricingContext.streams,
+        "logs",
+        { platformKind: "serverless", productTier: "security-analytics-complete" }
+      );
+      volumeCost += streamsResult.volumeCost;
     } else if (platform.id === "elastic-security-ech") {
-      volumeCost += calculateEchVolumeCost(monthlyGB, {
-        retentionMonths: elasticPricing.retentionMonths,
-        useRetentionTiers: elasticPricing.useVolumeTiers,
-        pricePerIngestGB: pricing.pricePerGB,
-      }).volumeCost;
+      volumeCost += calculateEchHotFrozenVolumeCost(monthlyGB).volumeCost;
     } else {
       volumeCost += monthlyGB * pricing.pricePerGB;
     }

@@ -2,13 +2,15 @@
 
 import { useMemo } from "react";
 import {
-  DEFAULT_ELASTIC_STREAMS_TCO,
   EXAMPLE_WIRED_STREAMS,
+  PAYPAL_STREAMS_LOGS_INGEST_FILTER_PCT,
+  PAYPAL_STREAMS_TRACES_TAIL_SAMPLE_PCT,
   calculateElasticVolumeCostWithStreams,
   type ElasticStreamsSignalControls,
   type ElasticStreamsTcoPolicy,
   type ObservabilitySignal,
 } from "@/lib/elasticStreamsTco";
+import { ECH_HOT_FROZEN_ARCHITECTURE } from "@/lib/elasticEchHotFrozenPricing";
 import type { ElasticServerlessPricingOptions } from "@/lib/elasticServerlessPricing";
 import { elasticLogsMeteredMonthlyGB } from "@/lib/elasticServerlessPricing";
 import { metricsToGB, BYTES_PER_DATAPOINT } from "@/lib/costCalculator";
@@ -18,9 +20,7 @@ interface ElasticStreamsTcoControlsProps {
   policy: ElasticStreamsTcoPolicy;
   onPolicyChange: (policy: ElasticStreamsTcoPolicy) => void;
   elasticPricing: ElasticServerlessPricingOptions;
-  /** Raw monthly GB for logs/traces; undefined on metrics tab */
   monthlyGB?: number;
-  /** Monthly metrics datapoints on metrics tab */
   monthlyMetrics?: number;
   gbPerDay?: number;
 }
@@ -43,6 +43,7 @@ function updateSignalControls(
   const key = signal === "tracing" ? "traces" : signal;
   return {
     ...policy,
+    enabled: true,
     [key]: { ...policy[key], ...patch },
   };
 }
@@ -66,7 +67,7 @@ export default function ElasticStreamsTcoControls({
       const result = calculateElasticVolumeCostWithStreams(
         monthlyMetricsGB,
         { ...elasticPricing, productTier: "observability-complete" },
-        policy,
+        { ...policy, enabled: true },
         "metrics",
         { platformKind: "serverless", metricsTsd: true, productTier: "observability-complete" }
       );
@@ -86,7 +87,7 @@ export default function ElasticStreamsTcoControls({
     const result = calculateElasticVolumeCostWithStreams(
       ingestGB,
       { ...elasticPricing, productTier: "observability-complete" },
-      policy,
+      { ...policy, enabled: true },
       activeSignal,
       { platformKind: "serverless", productTier: "observability-complete" }
     );
@@ -103,46 +104,55 @@ export default function ElasticStreamsTcoControls({
 
   return (
     <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+      <div className="rounded-xl border border-blue-100 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-950/25 p-4 mb-4">
+        <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+          Elastic Cloud Hosted (ECH)
+        </h4>
+        <p className="text-xs text-blue-800/90 dark:text-blue-200/90">
+          All <strong>ECH</strong> rows always use{" "}
+          <strong>{ECH_HOT_FROZEN_ARCHITECTURE.summary}</strong> — 1-day data hot (RAM-hour) plus{" "}
+          {ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}-day ILM on blob (writable frozen, queryable in Kibana). Full-fidelity
+          ingest; no Streams sampling on ECH. Same architecture as the{" "}
+          <a
+            href="https://paypal-2026-o11y-platform.vercel.app/"
+            className="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            PayPal observability RFP demo
+          </a>
+          .
+        </p>
+      </div>
+
       <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-            Signal-aware TCO controls · Elastic Streams
+            Elastic Serverless · Streams TCO (always on)
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 max-w-2xl">
-            Elastic Streams adds a <strong>Processing</strong> tab (drop, parse, aggregate) and a{" "}
-            <strong>Retention</strong> tab (searchable snapshots via DSL/ILM) per stream in Kibana — so you
-            bill for value, not noise. When enabled, Elastic platform costs use per-signal retention days
-            and illustrative ingest reductions below instead of the global retention slider alone.
+            All <strong>Serverless</strong> Elastic pricing uses PayPal-style Streams policies by default: drop (~
+            {PAYPAL_STREAMS_LOGS_INGEST_FILTER_PCT}% logs), aggregate (TSDS metrics), downsample, and per-signal
+            retention — plus Observability Complete ingest/retention tiers. Adjust levers below; ECH is not shaped by
+            Streams.
           </p>
         </div>
-        {policy.enabled && illustrativeSavings.percent > 0 && (
+        {illustrativeSavings.percent > 0 && (
           <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/40 px-4 py-3 text-right shrink-0">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-300">
-              Illustrative savings
+              Serverless savings vs unshaped
             </div>
             <div className="text-2xl font-bold text-violet-700 dark:text-violet-200">
               {illustrativeSavings.percent}%
             </div>
             <div className="text-xs text-violet-600 dark:text-violet-400">
-              ~{formatCurrency(illustrativeSavings.monthly)}/mo vs unoptimized backbone
+              ~{formatCurrency(illustrativeSavings.monthly)}/mo on this tab
             </div>
           </div>
         )}
       </div>
 
       <div className="rounded-xl border border-violet-100 dark:border-violet-900/50 bg-violet-50/60 dark:bg-violet-950/20 p-4 mb-4">
-        <label className="flex items-center cursor-pointer mb-4">
-          <input
-            type="checkbox"
-            checked={policy.enabled}
-            onChange={(e) => onPolicyChange({ ...policy, enabled: e.target.checked })}
-            className="w-5 h-5 text-violet-600 bg-gray-100 border-gray-300 rounded focus:ring-violet-500 dark:bg-gray-700 dark:border-gray-600"
-          />
-          <span className="ml-3 text-sm font-medium text-gray-800 dark:text-gray-200">
-            Apply Streams TCO policies to Elastic {signalLabel(activeSignal)} costs
-          </span>
-        </label>
-
         <div className="flex flex-wrap gap-2 mb-4">
           {(
             [
@@ -170,12 +180,11 @@ export default function ElasticStreamsTcoControls({
                 type="button"
                 title={btn.hint}
                 onClick={() => toggleControl(btn.id)}
-                disabled={!policy.enabled}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   active
                     ? "bg-violet-600 text-white shadow-sm"
                     : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
-                } ${!policy.enabled ? "opacity-50 cursor-not-allowed" : "hover:opacity-90"}`}
+                } hover:opacity-90`}
               >
                 {btn.label}
               </button>
@@ -199,20 +208,21 @@ export default function ElasticStreamsTcoControls({
             max={activeSignal === "tracing" ? 30 : 365}
             step={activeSignal === "tracing" ? 1 : activeSignal === "logs" ? 1 : 7}
             value={controls.retentionDays}
-            disabled={!policy.enabled}
             onChange={(e) =>
               onPolicyChange(
                 updateSignalControls(policy, activeSignal, { retentionDays: Number(e.target.value) })
               )
             }
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-violet-600 disabled:opacity-50"
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-violet-600"
           />
-          <div className="flex justify-between text-xs text-gray-400 mt-1">
-            <span>{activeSignal === "tracing" ? "7d" : "7d"}</span>
-            <span>{activeSignal === "tracing" ? "30d" : activeSignal === "logs" ? "90d" : "90d"}</span>
-            <span>{activeSignal === "tracing" ? "" : "365d"}</span>
-          </div>
         </div>
+
+        {activeSignal === "tracing" && controls.drop && (
+          <p className="text-[11px] text-violet-700 dark:text-violet-300 mb-2">
+            Trace ingest uses ~{PAYPAL_STREAMS_TRACES_TAIL_SAMPLE_PCT}% tail sampling plus error retention (PayPal RFP
+            defaults).
+          </p>
+        )}
 
         <a
           href="https://www.elastic.co/docs/solutions/observability/data-streams"
@@ -253,14 +263,8 @@ export default function ElasticStreamsTcoControls({
           </tbody>
         </table>
       </div>
-
-      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 italic">
-        Illustrative reductions: ~30% ingest drop (logs), ~50% trace sampling, ~15% aggregate, ~45% stored
-        volume from TSDS downsample. Confirm with your Streams policies and cloud.elastic.co pricing before
-        customer-facing quotes.
-      </p>
     </div>
   );
 }
 
-export { DEFAULT_ELASTIC_STREAMS_TCO };
+export { DEFAULT_ELASTIC_STREAMS_TCO } from "@/lib/elasticStreamsTco";

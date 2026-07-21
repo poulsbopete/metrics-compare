@@ -9,10 +9,10 @@ import {
 import {
   calculateElasticServerlessCost,
   calculateElasticServerlessMetricsCost,
-  calculateEchVolumeCost,
   calculateEchMetricsCost,
   type ElasticServerlessPricingOptions,
 } from "@/lib/elasticServerlessPricing";
+import { calculateEchHotFrozenVolumeCost, ECH_HOT_FROZEN_ARCHITECTURE } from "@/lib/elasticEchHotFrozenPricing";
 import {
   calculateDatadogMetricsCostBreakdown,
   DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST,
@@ -126,7 +126,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
         datadogIncludedCustomMetrics?: number;
         datadogBillableCustomMetrics?: number;
         elasticBreakdown?: ReturnType<typeof calculateElasticServerlessCost>;
-        echBreakdown?: ReturnType<typeof calculateEchVolumeCost>;
+        echBreakdown?: ReturnType<typeof calculateEchHotFrozenVolumeCost>;
       }
     | null = null;
 
@@ -706,37 +706,52 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                     {(platform.id === "elastic-tracing" || platform.id === "elastic-ech-tracing") &&
                       calculationContext.elasticRetentionMonths !== undefined && (
                       <>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600 dark:text-gray-400">
-                            Stored GB ({calculationContext.elasticRetentionMonths} mo retention):
-                          </span>
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {(calculationContext.monthlyGB * calculationContext.elasticRetentionMonths).toFixed(2)} GB
-                          </span>
-                        </div>
-                        {platform.id === "elastic-ech-tracing" && (() => {
-                          const ech = calculateEchVolumeCost(calculationContext.monthlyGB!, {
-                            retentionMonths: calculationContext.elasticRetentionMonths ?? 1,
-                            useRetentionTiers: calculationContext.elasticUseVolumeTiers ?? true,
-                            pricePerIngestGB: platform.pricing.tracing!.pricePerGB,
-                          });
-                          return (
-                            <>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600 dark:text-gray-400">Ingest charge:</span>
-                                <span className="font-semibold text-gray-900 dark:text-white">
-                                  {formatCurrency(ech.ingestCost)}/month
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-gray-600 dark:text-gray-400">Retention charge:</span>
-                                <span className="font-semibold text-gray-900 dark:text-white">
-                                  {formatCurrency(ech.retentionCost)}/month
-                                </span>
-                              </div>
-                            </>
-                          );
-                        })()}
+                        {platform.id === "elastic-ech-tracing" ? (
+                          (() => {
+                            const ech = calculateEchHotFrozenVolumeCost(calculationContext.monthlyGB!);
+                            return (
+                              <>
+                                <div className="flex justify-between items-center text-blue-800 dark:text-blue-200">
+                                  <span>ECH architecture:</span>
+                                  <span className="font-semibold">{ECH_HOT_FROZEN_ARCHITECTURE.summary}</span>
+                                </div>
+                                {ech.echHotFrozen && (
+                                  <>
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-gray-600 dark:text-gray-400">Hot tier (1d RAM-hour):</span>
+                                      <span className="font-semibold text-gray-900 dark:text-white">
+                                        {formatCurrency(ech.echHotFrozen.hotCapacityCost)}/month
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-gray-600 dark:text-gray-400">ILM blob (writable frozen):</span>
+                                      <span className="font-semibold text-gray-900 dark:text-white">
+                                        {formatCurrency(ech.echHotFrozen.blobStorageCost)}/month
+                                      </span>
+                                    </div>
+                                    {(ech.echHotFrozen.dataTransferCost ?? 0) > 0 && (
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-gray-600 dark:text-gray-400">Data transfer:</span>
+                                        <span className="font-semibold text-gray-900 dark:text-white">
+                                          {formatCurrency(ech.echHotFrozen.dataTransferCost)}/month
+                                        </span>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </>
+                            );
+                          })()
+                        ) : (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Stored GB ({calculationContext.elasticRetentionMonths} mo retention):
+                            </span>
+                            <span className="font-semibold text-gray-900 dark:text-white">
+                              {(calculationContext.monthlyGB * calculationContext.elasticRetentionMonths).toFixed(2)} GB
+                            </span>
+                          </div>
+                        )}
                       </>
                     )}
                     {platform.pricing.tracing.freeTier && platform.pricing.tracing.freeTier > 0 && (
@@ -891,9 +906,39 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                     </p>
                   )}
                   {platform.id === "elastic-ech-logs" && breakdown.elasticBreakdown && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                      {breakdown.elasticBreakdown.ingestRateLabel}; {breakdown.elasticBreakdown.retentionRateLabel}. ECH raw GB ingest + Complete retention tiers.
-                    </p>
+                    <>
+                      <div className="flex justify-between items-center text-blue-800 dark:text-blue-200">
+                        <span>ECH architecture:</span>
+                        <span className="font-semibold">{ECH_HOT_FROZEN_ARCHITECTURE.summary}</span>
+                      </div>
+                      {breakdown.elasticBreakdown.echHotFrozen && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 dark:text-gray-400">Hot tier (1d RAM-hour):</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">
+                              {formatCurrency(breakdown.elasticBreakdown.echHotFrozen.hotCapacityCost)}/month
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600 dark:text-gray-400">ILM blob (writable frozen):</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">
+                              {formatCurrency(breakdown.elasticBreakdown.echHotFrozen.blobStorageCost)}/month
+                            </span>
+                          </div>
+                        </>
+                      )}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                        {breakdown.elasticBreakdown.ingestRateLabel}; {breakdown.elasticBreakdown.retentionRateLabel}.
+                        Full-fidelity ingest (no Streams sampling on ECH). Rates from{" "}
+                        <a href="https://cloud.elastic.co/cloud-pricing-table" className="underline" target="_blank" rel="noopener noreferrer">
+                          cloud.elastic.co
+                        </a>{" "}
+                        — same model as{" "}
+                        <a href="https://paypal-2026-o11y-platform.vercel.app/" className="underline" target="_blank" rel="noopener noreferrer">
+                          PayPal RFP demo
+                        </a>.
+                      </p>
+                    </>
                   )}
                   {platform.id === "dynatrace-logs" && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 italic">

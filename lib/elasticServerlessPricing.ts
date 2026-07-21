@@ -11,6 +11,8 @@
  * https://www.elastic.co/docs/deploy-manage/cloud-organization/billing/elastic-observability-billing-dimensions
  */
 
+import { calculateEchHotFrozenVolumeCost } from "./elasticEchHotFrozenPricing";
+
 export const ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL =
   "https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability";
 
@@ -182,6 +184,16 @@ export interface ElasticServerlessCostBreakdown {
   volumeCost: number;
   ingestRateLabel: string;
   retentionRateLabel: string;
+  /** Present when ECH 1d hot + ILM blob (writable frozen) model is used. */
+  echHotFrozen?: {
+    hotDays: number;
+    ilmBlobDays: number;
+    hotCapacityCost: number;
+    blobStorageCost: number;
+    dataTransferCost: number;
+    indexedGbPerDay: number;
+    rawGbPerDay: number;
+  };
 }
 
 /** Tiered GB pricing — matches Elastic Cloud pricing table tier widths. */
@@ -282,20 +294,9 @@ export function calculateElasticServerlessMetricsCost(
   };
 }
 
-/**
- * ECH + self-managed: TSDS metrics ingest/retention — no additional charge at this time.
- * Metrics tab models cluster minimum only; logs/traces use variable pricing on their tabs.
- */
+/** ECH + self-managed: TSDS metrics use the same 1d hot + ILM blob backbone as logs/traces. */
 export function calculateEchMetricsCost(monthlyIngestGB: number): ElasticServerlessCostBreakdown {
-  return {
-    monthlyIngestGB,
-    storedGB: 0,
-    ingestCost: 0,
-    retentionCost: 0,
-    volumeCost: 0,
-    ingestRateLabel: "Included (TSDS metrics — no additional charge on ECH/self-managed)",
-    retentionRateLabel: "Included (TSDS metrics — no additional charge on ECH/self-managed)",
-  };
+  return calculateEchHotFrozenVolumeCost(monthlyIngestGB);
 }
 
 export interface EchVolumePricingOptions {
@@ -305,35 +306,12 @@ export interface EchVolumePricingOptions {
   pricePerIngestGB?: number;
 }
 
-/** ECH variable pricing: flat ingest $/GB + Search AI Lake retention (same tiers as Serverless Complete). */
+/** @deprecated Use calculateEchHotFrozenVolumeCost — ECH always models 1d hot + ILM blob. */
 export function calculateEchVolumeCost(
   monthlyIngestGB: number,
-  options: EchVolumePricingOptions
+  _options: EchVolumePricingOptions
 ): ElasticServerlessCostBreakdown {
-  const retentionMonths = Math.max(0, options.retentionMonths);
-  const useRetentionTiers = options.useRetentionTiers ?? true;
-  const pricePerIngestGB = options.pricePerIngestGB ?? 0.05;
-  const storedGB = monthlyIngestGB * retentionMonths;
-  const ingestCost = monthlyIngestGB * pricePerIngestGB;
-
-  let retentionCost: number;
-  if (useRetentionTiers) {
-    retentionCost = calculateTieredVolumeCost(storedGB, OBSERVABILITY_COMPLETE_RETENTION_TIERS);
-  } else {
-    retentionCost = storedGB * 0.019;
-  }
-
-  return {
-    monthlyIngestGB,
-    storedGB,
-    ingestCost,
-    retentionCost,
-    volumeCost: ingestCost + retentionCost,
-    ingestRateLabel: `$${pricePerIngestGB.toFixed(3)}/GB ingest (ECH variable)`,
-    retentionRateLabel: useRetentionTiers
-      ? effectiveRate(retentionCost, storedGB) + " retained/mo (Complete tier table)"
-      : `$0.019/GB retained/mo (floor)`,
-  };
+  return calculateEchHotFrozenVolumeCost(monthlyIngestGB);
 }
 
 /** Convert raw logs GB/day to metered monthly ingest GB (Elastic estimator uses 1.66× enrichment). */

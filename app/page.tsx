@@ -638,10 +638,21 @@ export default function Home() {
                 {/* Elastic metrics + retention (Serverless TSDS; logs/traces use full Complete rates on their tabs) */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Elastic metrics pricing (TSDS)
+                    Elastic Serverless retention (Complete tiers)
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    <strong>Metrics tab:</strong> Serverless TSDS metrics are <strong>25% of Observability Complete</strong> ingest and retention. ECH/self-managed TSDS metrics have no additional ingest/retention charge — cluster minimum only here. Retention months below applies to Serverless metrics volume.
+                    <strong>Serverless only:</strong> baseline comparison when Streams shaping is off. Billed Elastic
+                    Serverless costs always include Streams policies below. <strong>ECH</strong> ignores this slider — it
+                    uses fixed 1-day hot + 25-day ILM blob (
+                    <a
+                      href="https://paypal-2026-o11y-platform.vercel.app/"
+                      className="underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      PayPal RFP model
+                    </a>
+                    ).
                   </p>
                   <div className="space-y-4">
                     <div>
@@ -687,7 +698,8 @@ export default function Home() {
                       >
                         cloud.elastic.co
                       </a>{" "}
-                      — Complete tier table × <strong>25% for TSDS metrics</strong> on Serverless (ingest $0.50/GB → $0.125/GB at first tier; retention $0.04/GB-mo → $0.01/GB-mo). Logs/traces tabs use full Complete rates.
+                      — Complete tier table × <strong>25% for TSDS metrics</strong> on Serverless. ECH metrics bill
+                      1d hot + ILM blob on indexed volume (plus $200/mo cluster minimum).
                     </p>
                   </div>
                 </div>

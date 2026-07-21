@@ -1,12 +1,11 @@
 import {
   calculateElasticServerlessCost,
   calculateElasticServerlessMetricsCost,
-  calculateEchVolumeCost,
-  calculateEchMetricsCost,
   type ElasticServerlessCostBreakdown,
   type ElasticServerlessPricingOptions,
   ELASTIC_DAYS_PER_MONTH,
 } from "./elasticServerlessPricing";
+import { calculateEchHotFrozenVolumeCost } from "./elasticEchHotFrozenPricing";
 
 export type ObservabilitySignal = "logs" | "metrics" | "tracing";
 
@@ -24,19 +23,22 @@ export interface ElasticStreamsTcoPolicy {
   traces: ElasticStreamsSignalControls;
 }
 
+/** PayPal RFP Streams defaults — https://paypal-2026-o11y-platform.vercel.app/ */
+export const PAYPAL_STREAMS_LOGS_INGEST_FILTER_PCT = 35;
+export const PAYPAL_STREAMS_INGEST_FILTER_EFFICIENCY = 0.92;
+export const PAYPAL_STREAMS_TRACES_TAIL_SAMPLE_PCT = 15;
+export const PAYPAL_STREAMS_TRACES_KEEP_ERRORS_FRACTION = 0.08;
+export const PAYPAL_STREAMS_TRACES_SAMPLE_WEIGHT = 0.87;
+export const PAYPAL_STREAMS_METRICS_AGGREGATE_MULT = 0.72;
+export const PAYPAL_STREAMS_METRICS_HOT_RESOLUTION_DAYS = 14;
+export const PAYPAL_STREAMS_METRICS_DEFAULT_RETENTION_DAYS = 90;
+
 export const DEFAULT_ELASTIC_STREAMS_TCO: ElasticStreamsTcoPolicy = {
   enabled: true,
-  logs: { drop: true, aggregate: false, downsample: false, retentionDays: 30 },
+  logs: { drop: true, aggregate: true, downsample: false, retentionDays: 30 },
   metrics: { drop: false, aggregate: true, downsample: true, retentionDays: 90 },
   traces: { drop: true, aggregate: false, downsample: false, retentionDays: 10 },
 };
-
-/** Illustrative ingest reduction when drop / sample is enabled (Streams Processing tab). */
-const DROP_INGEST_REDUCTION = 0.3;
-const AGGREGATE_INGEST_REDUCTION = 0.15;
-const TRACE_SAMPLE_INGEST_REDUCTION = 0.5;
-/** Illustrative stored-volume reduction from TSDS downsample + ILM. */
-const DOWNSAMPLE_STORED_REDUCTION = 0.45;
 
 export interface StreamsVolumeAdjustment {
   billableMonthlyIngestGB: number;
@@ -75,19 +77,42 @@ export function retentionDaysToMonths(days: number): number {
   return days / ELASTIC_DAYS_PER_MONTH;
 }
 
+function metricsDownsampleStoredMultiplier(
+  policy: ElasticStreamsTcoPolicy,
+  globalRetentionDays: number
+): number {
+  const controls = policy.metrics;
+  if (!controls.downsample) return 1;
+  const hotDays = PAYPAL_STREAMS_METRICS_HOT_RESOLUTION_DAYS;
+  const totalDays = controls.retentionDays || globalRetentionDays;
+  if (totalDays <= 0) return 1;
+  const hotFraction = Math.min(1, hotDays / totalDays);
+  const agedFraction = 1 - hotFraction;
+  const tierCut = 0.22 * 3;
+  const agedReduction = Math.min(0.75, tierCut);
+  return hotFraction + agedFraction * (1 - agedReduction);
+}
+
 export function applyElasticStreamsVolume(
   signal: ObservabilitySignal,
   monthlyIngestGB: number,
   globalRetentionMonths: number,
-  policy: ElasticStreamsTcoPolicy
+  policy: ElasticStreamsTcoPolicy,
+  opts?: { forceEnabled?: boolean; platformKind?: "serverless" | "ech" }
 ): StreamsVolumeAdjustment {
-  if (!policy.enabled || monthlyIngestGB <= 0) {
+  const globalRetentionDays = Math.round(globalRetentionMonths * ELASTIC_DAYS_PER_MONTH);
+  const applyStreams =
+    opts?.platformKind === "ech"
+      ? false
+      : (opts?.forceEnabled ?? policy.enabled) && monthlyIngestGB > 0;
+
+  if (!applyStreams) {
     return {
       billableMonthlyIngestGB: monthlyIngestGB,
       retentionMonths: globalRetentionMonths,
       storedGBMultiplier: 1,
       ingestReductionPercent: 0,
-      retentionDays: Math.round(globalRetentionMonths * ELASTIC_DAYS_PER_MONTH),
+      retentionDays: globalRetentionDays,
       applied: false,
     };
   }
@@ -95,17 +120,26 @@ export function applyElasticStreamsVolume(
   const controls = signalControls(policy, signal);
   let ingestMultiplier = 1;
 
-  if (controls.drop) {
+  if (controls.drop && signal === "logs") {
     ingestMultiplier *=
-      signal === "tracing" ? 1 - TRACE_SAMPLE_INGEST_REDUCTION : 1 - DROP_INGEST_REDUCTION;
+      1 -
+      (PAYPAL_STREAMS_LOGS_INGEST_FILTER_PCT / 100) * PAYPAL_STREAMS_INGEST_FILTER_EFFICIENCY;
   }
-  if (controls.aggregate && signal !== "tracing") {
-    ingestMultiplier *= 1 - AGGREGATE_INGEST_REDUCTION;
+  if (controls.drop && signal === "tracing") {
+    ingestMultiplier =
+      PAYPAL_STREAMS_TRACES_KEEP_ERRORS_FRACTION +
+      (PAYPAL_STREAMS_TRACES_TAIL_SAMPLE_PCT / 100) * PAYPAL_STREAMS_TRACES_SAMPLE_WEIGHT;
+  }
+  if (controls.aggregate && signal === "metrics") {
+    ingestMultiplier *= PAYPAL_STREAMS_METRICS_AGGREGATE_MULT;
   }
 
-  const retentionMonths = retentionDaysToMonths(controls.retentionDays);
-  const storedGBMultiplier =
-    controls.downsample && signal === "metrics" ? 1 - DOWNSAMPLE_STORED_REDUCTION : 1;
+  const retentionDays = controls.retentionDays;
+  const retentionMonths = retentionDaysToMonths(retentionDays);
+  let storedGBMultiplier = 1;
+  if (signal === "metrics" && controls.downsample) {
+    storedGBMultiplier = metricsDownsampleStoredMultiplier(policy, retentionDays);
+  }
 
   const billableMonthlyIngestGB = monthlyIngestGB * ingestMultiplier;
   const ingestReductionPercent =
@@ -116,7 +150,7 @@ export function applyElasticStreamsVolume(
     retentionMonths,
     storedGBMultiplier,
     ingestReductionPercent,
-    retentionDays: controls.retentionDays,
+    retentionDays,
     applied: true,
   };
 }
@@ -147,18 +181,11 @@ function serverlessBreakdown(
 
 function echBreakdown(
   monthlyIngestGB: number,
-  options: ElasticServerlessPricingOptions,
-  pricePerIngestGB: number,
-  metricsTsd: boolean
+  _options: ElasticServerlessPricingOptions,
+  _pricePerIngestGB: number,
+  _metricsTsd: boolean
 ): ElasticServerlessCostBreakdown {
-  if (metricsTsd) {
-    return calculateEchMetricsCost(monthlyIngestGB);
-  }
-  return calculateEchVolumeCost(monthlyIngestGB, {
-    retentionMonths: options.retentionMonths,
-    useRetentionTiers: options.useVolumeTiers,
-    pricePerIngestGB,
-  });
+  return calculateEchHotFrozenVolumeCost(monthlyIngestGB);
 }
 
 export function calculateElasticVolumeCostWithStreams(
@@ -173,47 +200,66 @@ export function calculateElasticVolumeCostWithStreams(
     productTier?: ElasticServerlessPricingOptions["productTier"];
   }
 ): ElasticStreamsCostResult {
+  const platformKind = opts.platformKind;
+
+  const baselineAdjustment = applyElasticStreamsVolume(
+    signal,
+    monthlyIngestGB,
+    elasticOptions.retentionMonths,
+    streams,
+    { platformKind, forceEnabled: false }
+  );
+
+  const optimizedAdjustment = applyElasticStreamsVolume(
+    signal,
+    monthlyIngestGB,
+    elasticOptions.retentionMonths,
+    streams,
+    { platformKind, forceEnabled: platformKind === "serverless" }
+  );
+
   const baselineBreakdown =
-    opts.platformKind === "serverless"
-      ? serverlessBreakdown(monthlyIngestGB, {
-          ...elasticOptions,
-          productTier: opts.productTier ?? elasticOptions.productTier,
-        }, !!opts.metricsTsd)
+    platformKind === "serverless"
+      ? serverlessBreakdown(
+          baselineAdjustment.billableMonthlyIngestGB,
+          {
+            ...elasticOptions,
+            retentionMonths: baselineAdjustment.retentionMonths,
+            productTier: opts.productTier ?? elasticOptions.productTier,
+          },
+          !!opts.metricsTsd
+        )
       : echBreakdown(
-          monthlyIngestGB,
+          baselineAdjustment.billableMonthlyIngestGB,
           elasticOptions,
           opts.pricePerIngestGB ?? 0.05,
           !!opts.metricsTsd
         );
 
-  const adjustment = applyElasticStreamsVolume(
-    signal,
-    monthlyIngestGB,
-    elasticOptions.retentionMonths,
-    streams
-  );
-
   const optimizedOptions: ElasticServerlessPricingOptions = {
     ...elasticOptions,
-    retentionMonths: adjustment.retentionMonths,
+    retentionMonths: optimizedAdjustment.retentionMonths,
     productTier: opts.productTier ?? elasticOptions.productTier,
   };
 
   let optimizedBreakdown =
-    opts.platformKind === "serverless"
+    platformKind === "serverless"
       ? serverlessBreakdown(
-          adjustment.billableMonthlyIngestGB,
+          optimizedAdjustment.billableMonthlyIngestGB,
           optimizedOptions,
           !!opts.metricsTsd
         )
       : echBreakdown(
-          adjustment.billableMonthlyIngestGB,
+          optimizedAdjustment.billableMonthlyIngestGB,
           optimizedOptions,
           opts.pricePerIngestGB ?? 0.05,
           !!opts.metricsTsd
         );
 
-  optimizedBreakdown = scaleBreakdownRetention(optimizedBreakdown, adjustment.storedGBMultiplier);
+  optimizedBreakdown = scaleBreakdownRetention(
+    optimizedBreakdown,
+    optimizedAdjustment.storedGBMultiplier
+  );
 
   const baselineVolumeCost = baselineBreakdown.volumeCost;
   const volumeCost = optimizedBreakdown.volumeCost;
@@ -225,7 +271,7 @@ export function calculateElasticVolumeCostWithStreams(
   return {
     volumeCost,
     breakdown: optimizedBreakdown,
-    adjustment,
+    adjustment: optimizedAdjustment,
     baselineVolumeCost,
     savingsPercent,
   };
@@ -238,13 +284,27 @@ export function isElasticStreamsPlatformId(platformId: string): boolean {
     platformId === "elastic-logs" ||
     platformId === "elastic-ech-logs" ||
     platformId === "elastic-tracing" ||
-    platformId === "elastic-ech-tracing"
+    platformId === "elastic-ech-tracing" ||
+    platformId === "elastic-security"
   );
 }
 
 export function streamsSignalForPlatform(platformId: string): ObservabilitySignal | undefined {
-  if (platformId.includes("logs")) return "logs";
+  if (platformId.includes("logs") || platformId === "elastic-security") return "logs";
   if (platformId.includes("tracing")) return "tracing";
   if (platformId === "elastic-serverless" || platformId === "elastic-ech") return "metrics";
   return undefined;
+}
+
+export function isElasticEchPlatformId(platformId: string): boolean {
+  return platformId.startsWith("elastic-ech") || platformId === "elastic-ech";
+}
+
+export function isElasticServerlessPricingPlatformId(platformId: string): boolean {
+  return (
+    platformId === "elastic-serverless" ||
+    platformId === "elastic-logs" ||
+    platformId === "elastic-tracing" ||
+    platformId === "elastic-security"
+  );
 }
