@@ -49,7 +49,8 @@ import {
   gbPerDayToMonthly,
   eventsPerSecondToMonthly,
 } from "@/lib/observabilityPricing";
-import { TCO_METHODOLOGY_NOTE, TCO_VALIDATION_FOOTNOTE } from "@/lib/tcoDisclaimer";
+import { TCO_VALIDATION_FOOTNOTE } from "@/lib/tcoDisclaimer";
+import TcoDisclaimerBanner from "@/components/TcoDisclaimerBanner";
 
 const STORAGE_KEY = "observability-compare-state";
 
@@ -512,27 +513,9 @@ export default function Home() {
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Compare true total cost of ownership — infrastructure <em>and</em> human operational costs — across observability platforms
           </p>
-          <p className="text-xs text-amber-700 dark:text-amber-300/90 max-w-2xl mx-auto mt-3 leading-relaxed">
-            {TCO_VALIDATION_FOOTNOTE}
-          </p>
         </div>
 
-        {/* Disclaimer Banner */}
-        <div className="mb-10 animate-fade-in-up">
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-6 py-4 flex items-start gap-3 shadow-sm">
-            <span className="text-amber-500 text-xl mt-0.5 shrink-0">⚠️</span>
-            <div className="text-sm text-amber-900 dark:text-amber-200 leading-relaxed space-y-2">
-              <p>
-                <strong>Estimation purposes only.</strong> {TCO_METHODOLOGY_NOTE}
-              </p>
-              <p>
-                <a href="https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability" className="underline" target="_blank" rel="noopener noreferrer">
-                  Elastic Cloud pricing table (Observability)
-                </a>
-              </p>
-            </div>
-          </div>
-        </div>
+        <TcoDisclaimerBanner />
 
         {/* Tabs */}
         <ObservabilityTabs activeTab={activeTab} onTabChange={setActiveTab}>
