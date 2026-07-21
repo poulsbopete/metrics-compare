@@ -19,8 +19,8 @@ export default function FederatedDataSourcesVisual() {
 
   return (
     <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8 animate-fade-in-up">
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-        <div className="max-w-2xl">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6 min-w-0">
+        <div className="min-w-0 flex-1 max-w-2xl">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center mb-2">
             <span className="w-1 h-8 bg-gradient-to-b from-teal-500 to-cyan-500 rounded-full mr-3" />
             Federated data sources
@@ -32,7 +32,7 @@ export default function FederatedDataSourcesVisual() {
             under your IAM policies.
           </p>
         </div>
-        <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-900">
+        <div className="shrink-0 inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-900">
           {(
             [
               { id: "read" as const, label: "Read" },
@@ -94,90 +94,44 @@ export default function FederatedDataSourcesVisual() {
           </p>
         </div>
 
-        {/* Diagram center */}
-        <div className="relative min-h-[220px] xl:min-h-[280px] rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 420 280"
-            preserveAspectRatio="xMidYMid meet"
-            aria-hidden
-          >
-            <defs>
-              <marker id="arrowRead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                <path d="M0,0 L6,3 L0,6 Z" fill="#0d9488" />
-              </marker>
-              <marker id="arrowWrite" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                <path d="M0,0 L6,3 L0,6 Z" fill="#d97706" />
-              </marker>
-            </defs>
+        {/* Diagram center — hub in middle, arrows above / below */}
+        <div className="relative flex flex-col justify-center gap-4 min-h-[260px] xl:min-h-[300px] rounded-xl bg-slate-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 px-4 py-5">
+          {showRead && (
+            <FlowLane
+              direction="read"
+              label="READ · federated query"
+              markerId="fed-arrow-read"
+            />
+          )}
 
-            {/* Read path S3 → Elastic (upper lane) */}
-            {showRead && (
-              <>
-                <path
-                  d="M 16 125 L 404 125"
-                  fill="none"
-                  stroke="#0d9488"
-                  strokeWidth="2.5"
-                  strokeDasharray="6 4"
-                  markerEnd="url(#arrowRead)"
-                  className="opacity-90"
-                />
-                <circle r="4" fill="#0d9488" className="animate-pulse">
-                  <animateMotion dur="2.5s" repeatCount="indefinite" path="M 16 125 L 404 125" />
-                </circle>
-                <text x="210" y="112" textAnchor="middle" className="fill-teal-700 dark:fill-teal-300" fontSize="10" fontWeight="600">
-                  READ · federated query
-                </text>
-              </>
-            )}
-
-            {/* Write path Elastic → S3 (lower lane, mirrored) */}
-            {showWrite && (
-              <>
-                <path
-                  d="M 404 155 L 16 155"
-                  fill="none"
-                  stroke="#d97706"
-                  strokeWidth="2.5"
-                  strokeDasharray="6 4"
-                  markerEnd="url(#arrowWrite)"
-                  className="opacity-90"
-                />
-                <circle r="4" fill="#d97706" className="animate-pulse">
-                  <animateMotion dur="2.5s" repeatCount="indefinite" path="M 404 155 L 16 155" />
-                </circle>
-                <text x="210" y="172" textAnchor="middle" className="fill-amber-700 dark:fill-amber-300" fontSize="10" fontWeight="600">
-                  WRITE · snapshot / export
-                </text>
-              </>
-            )}
-
-            {/* Hub — centered between read/write lanes */}
-            <rect x="155" y="108" width="110" height="64" rx="10" fill="none" stroke="#6366f1" strokeWidth="2" strokeDasharray="4 3" />
-            <text x="210" y="132" textAnchor="middle" className="fill-indigo-700 dark:fill-indigo-300" fontSize="11" fontWeight="700">
-              Federated
-            </text>
-            <text x="210" y="148" textAnchor="middle" className="fill-gray-600 dark:fill-gray-400" fontSize="9">
-              connector · repository
-            </text>
-            <text x="210" y="162" textAnchor="middle" className="fill-gray-500 dark:fill-gray-500" fontSize="8">
-              IAM role · least privilege
-            </text>
-          </svg>
-
-          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-2 justify-center">
-            {showRead && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200">
-                ES|QL FROM external
-              </span>
-            )}
-            {showWrite && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200">
-                SLM / connector sync
-              </span>
-            )}
+          <div className="mx-auto w-full max-w-[240px] rounded-xl border-2 border-dashed border-indigo-400/90 dark:border-indigo-500/70 bg-white/90 dark:bg-gray-800/90 px-4 py-4 text-center shadow-sm">
+            <div className="text-sm font-bold text-indigo-700 dark:text-indigo-300">Federated</div>
+            <div className="text-[11px] text-gray-600 dark:text-gray-400 mt-1">connector · repository</div>
+            <div className="text-[10px] text-gray-500 dark:text-gray-500 mt-0.5">IAM role · least privilege</div>
           </div>
+
+          {showWrite && (
+            <FlowLane
+              direction="write"
+              label="WRITE · snapshot / export"
+              markerId="fed-arrow-write"
+            />
+          )}
+
+          {(showRead || showWrite) && (
+            <div className="flex flex-wrap gap-2 justify-center pt-1">
+              {showRead && (
+                <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200">
+                  ES|QL FROM external
+                </span>
+              )}
+              {showWrite && (
+                <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200">
+                  SLM / connector sync
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Elastic */}
@@ -287,5 +241,65 @@ export default function FederatedDataSourcesVisual() {
         , and Elastic connector docs for your deployment type.
       </p>
     </section>
+  );
+}
+
+function FlowLane({
+  direction,
+  label,
+  markerId,
+}: {
+  direction: "read" | "write";
+  label: string;
+  markerId: string;
+}) {
+  const isRead = direction === "read";
+  const stroke = isRead ? "#0d9488" : "#d97706";
+  const pathD = isRead ? "M 12 14 L 388 14" : "M 388 14 L 12 14";
+  const motionPath = pathD;
+  const labelClass = isRead
+    ? "text-teal-800 dark:text-teal-200 bg-slate-50 dark:bg-gray-900/90"
+    : "text-amber-800 dark:text-amber-200 bg-slate-50 dark:bg-gray-900/90";
+
+  return (
+    <div className="relative w-full h-10 shrink-0" aria-hidden>
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 400 28"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <marker id={markerId} markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill={stroke} />
+          </marker>
+        </defs>
+        <path
+          d={pathD}
+          fill="none"
+          stroke={stroke}
+          strokeWidth="2.5"
+          strokeDasharray="6 4"
+          markerEnd={`url(#${markerId})`}
+          vectorEffect="non-scaling-stroke"
+          className="opacity-90"
+        />
+        <circle r="3.5" fill={stroke}>
+          <animateMotion dur="2.5s" repeatCount="indefinite" path={motionPath} />
+        </circle>
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span
+          className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-md shadow-sm border border-gray-200/80 dark:border-gray-600/80 ${labelClass}`}
+        >
+          {label}
+        </span>
+      </div>
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 text-[9px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        S3
+      </div>
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[9px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        Elastic
+      </div>
+    </div>
   );
 }
