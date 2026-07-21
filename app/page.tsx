@@ -75,6 +75,7 @@ interface SavedState {
   elasticStreamsTco?: ElasticStreamsTcoPolicy;
   datadogHostsAuto?: boolean;
   datadogManualHosts?: number;
+  configPanelCollapsed?: boolean;
 }
 
 function loadState(): SavedState | null {
@@ -148,6 +149,7 @@ export default function Home() {
   // Operational cost state
   const [includeOperationalCost, setIncludeOperationalCost] = useState(true);
   const [engineerHourlyRate, setEngineerHourlyRate] = useState(DEFAULT_ENGINEER_HOURLY_RATE);
+  const [configPanelCollapsed, setConfigPanelCollapsed] = useState(false);
   
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -177,6 +179,9 @@ export default function Home() {
       }
       if (savedState.datadogHostsAuto !== undefined) setDatadogHostsAuto(savedState.datadogHostsAuto);
       if (savedState.datadogManualHosts !== undefined) setDatadogManualHosts(savedState.datadogManualHosts);
+      if (savedState.configPanelCollapsed !== undefined) {
+        setConfigPanelCollapsed(savedState.configPanelCollapsed);
+      }
       if (savedState.metricsInputMode) setMetricsInputMode(savedState.metricsInputMode);
       if (savedState.infraItems) setInfraItems(savedState.infraItems);
     }
@@ -203,9 +208,10 @@ export default function Home() {
         elasticStreamsTco,
         datadogHostsAuto,
         datadogManualHosts,
+        configPanelCollapsed,
       });
     }
-  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, elasticStreamsTco, datadogHostsAuto, datadogManualHosts, isHydrated]);
+  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, elasticStreamsTco, datadogHostsAuto, datadogManualHosts, configPanelCollapsed, isHydrated]);
 
   const elasticPricing = useMemo(
     () => ({
@@ -452,6 +458,33 @@ export default function Home() {
 
   const multiplier = tags.length > 0 ? Math.pow(tagValues, tags.length) : 1;
 
+  const configScenarioSummary = useMemo(() => {
+    switch (activeTab) {
+      case "metrics":
+        return metricsInputMode === "infrastructure"
+          ? `${infraGbPerDay >= 1 ? `${infraGbPerDay.toFixed(1)} GB/day` : `${(infraGbPerDay * 1000).toFixed(0)} MB/day`} · ${formatMetricsPerSecond(infraMetricsPerSecond)}`
+          : `${formatMetricsPerSecond(metricsPerSecond)} base · ${formatMonthlyMetrics(effectiveMonthlyMetrics)}/mo`;
+      case "tracing":
+        return `${spansPerSecond.toLocaleString()} spans/sec`;
+      case "logs":
+        return `${gbPerDay.toFixed(1)} GB/day`;
+      case "security":
+        return `${eventsPerSecond.toLocaleString()} events/sec`;
+      default:
+        return "";
+    }
+  }, [
+    activeTab,
+    metricsInputMode,
+    infraGbPerDay,
+    infraMetricsPerSecond,
+    metricsPerSecond,
+    effectiveMonthlyMetrics,
+    spansPerSecond,
+    gbPerDay,
+    eventsPerSecond,
+  ]);
+
   if (!platforms || platforms.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -517,13 +550,31 @@ export default function Home() {
           )}
 
           {activeTab !== "fullstack" && (
-          <><div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          <><div
+            className={`grid gap-8 mb-8 transition-[grid-template-columns] duration-300 ${
+              configPanelCollapsed ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12"
+            }`}
+          >
             {/* Configuration Panel */}
-            <div className="lg:col-span-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-slide-in">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3" />
-                Configuration
-              </h2>
+            {!configPanelCollapsed && (
+            <div className="lg:col-span-4 xl:col-span-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-slide-in lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+              <div className="flex items-start justify-between gap-3 mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center min-w-0">
+                  <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3 shrink-0" />
+                  Configuration
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setConfigPanelCollapsed(true)}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  aria-label="Hide configuration panel"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                  Hide
+                </button>
+              </div>
               <div className="space-y-6">
                 {activeTab === "metrics" && (
                   <div className="space-y-5">
@@ -864,9 +915,47 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Volume Summary */}
-            <div className="lg:col-span-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
+            <div
+              className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up ${
+                configPanelCollapsed ? "lg:col-span-1" : "lg:col-span-8 xl:col-span-9"
+              }`}
+            >
+              {configPanelCollapsed && (
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      Scenario
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                      {configScenarioSummary}
+                    </span>
+                    {includeOperationalCost && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                        + ops FTE
+                      </span>
+                    )}
+                    {includeEgress && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                        + egress
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConfigPanelCollapsed(false)}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-sm transition-all"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Edit configuration
+                  </button>
+                </div>
+              )}
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <span className="w-1 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3" />
                 {activeTab === "metrics" && "Metric Volume Impact"}
@@ -1096,6 +1185,23 @@ export default function Home() {
 
           {/* Cost Comparison */}
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
+            {configPanelCollapsed && (
+              <div className="sticky top-2 z-10 -mx-2 px-2 mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-xl bg-slate-900/90 dark:bg-gray-950/90 text-white shadow-lg backdrop-blur-sm border border-white/10">
+                  <span className="text-sm truncate">
+                    <span className="text-slate-400 font-medium mr-2">Inputs</span>
+                    {configScenarioSummary}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setConfigPanelCollapsed(false)}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 transition-colors"
+                  >
+                    Configure
+                  </button>
+                </div>
+              </div>
+            )}
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
               <span className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full mr-3" />
               TCO Comparison*
