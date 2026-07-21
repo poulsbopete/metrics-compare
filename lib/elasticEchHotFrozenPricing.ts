@@ -1,9 +1,8 @@
 /**
- * Elastic Cloud Hosted retention architecture (PayPal RFP / Enterprise demo model):
+ * Elastic Cloud Hosted retention architecture (enterprise hot + frozen model):
  * 1-day data hot (RAM-hour) + ILM → searchable snapshots on blob (writable frozen).
  *
- * Rates align with cloud.elastic.co/cloud-pricing-table (AWS us-east-1) as used on
- * https://paypal-2026-o11y-platform.vercel.app/
+ * Rates align with cloud.elastic.co/cloud-pricing-table (AWS us-east-1).
  */
 
 import {
@@ -17,7 +16,7 @@ export const ECH_HOT_FROZEN_ARCHITECTURE = {
   summary: "1-day hot · ILM → blob (writable frozen)",
 } as const;
 
-/** Official ECH list rates (AWS us-east-1) — same constants as PayPal demo. */
+/** Official ECH list rates (AWS us-east-1). */
 export const ECH_CLOUD_HOSTED_LIST_RATES = {
   hoursPerMonth: 730,
   dataHotRamGbHourUsd: 0.048,

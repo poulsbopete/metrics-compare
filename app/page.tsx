@@ -28,6 +28,7 @@ import {
   DEFAULT_ELASTIC_STREAMS_TCO,
   type ElasticStreamsTcoPolicy,
 } from "@/lib/elasticStreamsTco";
+import { ECH_HOT_FROZEN_ARCHITECTURE } from "@/lib/elasticEchHotFrozenPricing";
 import { estimateMonitoredHosts } from "@/lib/hostEstimation";
 import {
   integrations,
@@ -689,16 +690,16 @@ export default function Home() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
                     <strong>Serverless only:</strong> baseline comparison when Streams shaping is off. Billed Elastic
                     Serverless costs always include Streams policies below. <strong>ECH</strong> ignores this slider — it
-                    uses fixed 1-day hot + 25-day ILM blob (
+                    uses fixed {ECH_HOT_FROZEN_ARCHITECTURE.summary} per{" "}
                     <a
-                      href="https://paypal-2026-o11y-platform.vercel.app/"
+                      href={ELASTIC_CLOUD_HOSTED_PRICING_URL}
                       className="underline"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      PayPal RFP model
+                      Cloud Hosted pricing
                     </a>
-                    ).
+                    .
                   </p>
                   <div className="space-y-4">
                     <div>

@@ -57,7 +57,7 @@ export default function ElasticSchemalessBlocksVisual({
           </h3>
           <p className="text-xs text-gray-700 dark:text-gray-300">
             {ECH_HOT_FROZEN_ARCHITECTURE.summary}. Enterprise commits often quote{" "}
-            <strong>$/TiB-month</strong> on this architecture (see PayPal RFP demo).
+            <strong>$/TiB-month</strong> on this hot + frozen architecture.
           </p>
         </div>
         <div className="rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/60 dark:bg-indigo-950/20 p-4">
@@ -137,15 +137,15 @@ export default function ElasticSchemalessBlocksVisual({
         <strong>unified schemaless block</strong> view: same ingested TiB/month for any mix of logs, metrics, and
         traces. Serverless column uses Complete-tier math with Streams defaults; retention slider (
         {elasticRetentionMonths} mo) applies to Serverless tiering. ECH column ignores that slider and uses{" "}
-        {ECH_HOT_FROZEN_ARCHITECTURE.hotDays}d hot + {ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}d blob. Not a
-        quote — confirm on{" "}
+        {ECH_HOT_FROZEN_ARCHITECTURE.hotDays}d hot + {ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}d blob. Not a quote —
+        confirm with your account team and{" "}
         <a
-          href="https://paypal-2026-o11y-platform.vercel.app/"
+          href={ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL}
           className="underline"
           target="_blank"
           rel="noopener noreferrer"
         >
-          enterprise block economics
+          Elastic Cloud pricing
         </a>
         .
       </p>

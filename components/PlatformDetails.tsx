@@ -932,11 +932,8 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                         Full-fidelity ingest (no Streams sampling on ECH). Rates from{" "}
                         <a href="https://cloud.elastic.co/cloud-pricing-table" className="underline" target="_blank" rel="noopener noreferrer">
                           cloud.elastic.co
-                        </a>{" "}
-                        — same model as{" "}
-                        <a href="https://paypal-2026-o11y-platform.vercel.app/" className="underline" target="_blank" rel="noopener noreferrer">
-                          PayPal RFP demo
-                        </a>.
+                        </a>
+                        .
                       </p>
                     </>
                   )}

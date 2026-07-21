@@ -23,15 +23,15 @@ export interface ElasticStreamsTcoPolicy {
   traces: ElasticStreamsSignalControls;
 }
 
-/** PayPal RFP Streams defaults — https://paypal-2026-o11y-platform.vercel.app/ */
-export const PAYPAL_STREAMS_LOGS_INGEST_FILTER_PCT = 35;
-export const PAYPAL_STREAMS_INGEST_FILTER_EFFICIENCY = 0.92;
-export const PAYPAL_STREAMS_TRACES_TAIL_SAMPLE_PCT = 15;
-export const PAYPAL_STREAMS_TRACES_KEEP_ERRORS_FRACTION = 0.08;
-export const PAYPAL_STREAMS_TRACES_SAMPLE_WEIGHT = 0.87;
-export const PAYPAL_STREAMS_METRICS_AGGREGATE_MULT = 0.72;
-export const PAYPAL_STREAMS_METRICS_HOT_RESOLUTION_DAYS = 14;
-export const PAYPAL_STREAMS_METRICS_DEFAULT_RETENTION_DAYS = 90;
+/** Default Streams TCO shaping assumptions (Serverless calculator). */
+export const ELASTIC_STREAMS_LOGS_INGEST_FILTER_PCT = 35;
+export const ELASTIC_STREAMS_INGEST_FILTER_EFFICIENCY = 0.92;
+export const ELASTIC_STREAMS_TRACES_TAIL_SAMPLE_PCT = 15;
+export const ELASTIC_STREAMS_TRACES_KEEP_ERRORS_FRACTION = 0.08;
+export const ELASTIC_STREAMS_TRACES_SAMPLE_WEIGHT = 0.87;
+export const ELASTIC_STREAMS_METRICS_AGGREGATE_MULT = 0.72;
+export const ELASTIC_STREAMS_METRICS_HOT_RESOLUTION_DAYS = 14;
+export const ELASTIC_STREAMS_METRICS_DEFAULT_RETENTION_DAYS = 90;
 
 export const DEFAULT_ELASTIC_STREAMS_TCO: ElasticStreamsTcoPolicy = {
   enabled: true,
@@ -83,7 +83,7 @@ function metricsDownsampleStoredMultiplier(
 ): number {
   const controls = policy.metrics;
   if (!controls.downsample) return 1;
-  const hotDays = PAYPAL_STREAMS_METRICS_HOT_RESOLUTION_DAYS;
+  const hotDays = ELASTIC_STREAMS_METRICS_HOT_RESOLUTION_DAYS;
   const totalDays = controls.retentionDays || globalRetentionDays;
   if (totalDays <= 0) return 1;
   const hotFraction = Math.min(1, hotDays / totalDays);
@@ -123,15 +123,15 @@ export function applyElasticStreamsVolume(
   if (controls.drop && signal === "logs") {
     ingestMultiplier *=
       1 -
-      (PAYPAL_STREAMS_LOGS_INGEST_FILTER_PCT / 100) * PAYPAL_STREAMS_INGEST_FILTER_EFFICIENCY;
+      (ELASTIC_STREAMS_LOGS_INGEST_FILTER_PCT / 100) * ELASTIC_STREAMS_INGEST_FILTER_EFFICIENCY;
   }
   if (controls.drop && signal === "tracing") {
     ingestMultiplier =
-      PAYPAL_STREAMS_TRACES_KEEP_ERRORS_FRACTION +
-      (PAYPAL_STREAMS_TRACES_TAIL_SAMPLE_PCT / 100) * PAYPAL_STREAMS_TRACES_SAMPLE_WEIGHT;
+      ELASTIC_STREAMS_TRACES_KEEP_ERRORS_FRACTION +
+      (ELASTIC_STREAMS_TRACES_TAIL_SAMPLE_PCT / 100) * ELASTIC_STREAMS_TRACES_SAMPLE_WEIGHT;
   }
   if (controls.aggregate && signal === "metrics") {
-    ingestMultiplier *= PAYPAL_STREAMS_METRICS_AGGREGATE_MULT;
+    ingestMultiplier *= ELASTIC_STREAMS_METRICS_AGGREGATE_MULT;
   }
 
   const retentionDays = controls.retentionDays;

@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 import {
   EXAMPLE_WIRED_STREAMS,
-  PAYPAL_STREAMS_LOGS_INGEST_FILTER_PCT,
-  PAYPAL_STREAMS_TRACES_TAIL_SAMPLE_PCT,
+  ELASTIC_STREAMS_LOGS_INGEST_FILTER_PCT,
+  ELASTIC_STREAMS_TRACES_TAIL_SAMPLE_PCT,
   calculateElasticVolumeCostWithStreams,
   type ElasticStreamsSignalControls,
   type ElasticStreamsTcoPolicy,
@@ -112,16 +112,7 @@ export default function ElasticStreamsTcoControls({
           All <strong>ECH</strong> rows always use{" "}
           <strong>{ECH_HOT_FROZEN_ARCHITECTURE.summary}</strong> — 1-day data hot (RAM-hour) plus{" "}
           {ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}-day ILM on blob (writable frozen, queryable in Kibana). Full-fidelity
-          ingest; no Streams sampling on ECH. Same architecture as the{" "}
-          <a
-            href="https://paypal-2026-o11y-platform.vercel.app/"
-            className="underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            PayPal observability RFP demo
-          </a>
-          .
+          ingest; no Streams sampling on ECH.
         </p>
       </div>
 
@@ -131,8 +122,8 @@ export default function ElasticStreamsTcoControls({
             Elastic Serverless · Streams TCO (always on)
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 max-w-2xl">
-            All <strong>Serverless</strong> Elastic pricing uses PayPal-style Streams policies by default: drop (~
-            {PAYPAL_STREAMS_LOGS_INGEST_FILTER_PCT}% logs), aggregate (TSDS metrics), downsample, and per-signal
+            All <strong>Serverless</strong> Elastic pricing uses default Streams policies: drop (~
+            {ELASTIC_STREAMS_LOGS_INGEST_FILTER_PCT}% logs), aggregate (TSDS metrics), downsample, and per-signal
             retention — plus Observability Complete ingest/retention tiers. Adjust levers below; ECH is not shaped by
             Streams.
           </p>
@@ -219,7 +210,7 @@ export default function ElasticStreamsTcoControls({
 
         {activeSignal === "tracing" && controls.drop && (
           <p className="text-[11px] text-violet-700 dark:text-violet-300 mb-2">
-            Trace ingest uses ~{PAYPAL_STREAMS_TRACES_TAIL_SAMPLE_PCT}% tail sampling plus error retention (PayPal RFP
+            Trace ingest uses ~{ELASTIC_STREAMS_TRACES_TAIL_SAMPLE_PCT}% tail sampling plus error retention (calculator
             defaults).
           </p>
         )}

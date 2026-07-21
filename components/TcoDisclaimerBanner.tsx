@@ -79,7 +79,7 @@ export default function TcoDisclaimerBanner() {
                   </li>
                   <li>
                     <strong>Elastic Streams TCO is always on:</strong> per-signal drop, aggregate,
-                    downsample, and retention (PayPal RFP-style defaults) — adjust in Configuration.
+                    downsample, and retention (default Streams policies) — adjust in Configuration.
                   </li>
                   <li>
                     Retention slider affects the unshaped baseline only; billed Serverless totals
