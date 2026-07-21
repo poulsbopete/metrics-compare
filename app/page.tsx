@@ -1352,7 +1352,7 @@ export default function Home() {
               </a>{" "}
               (TSDS metrics effective {ELASTIC_TSDS_METRICS_EFFECTIVE_LABEL}). All figures are estimates — actual
               costs vary with negotiated discounts, committed use, and deployment configuration.{" "}
-              <strong>Use the Full Stack TCO tab for a complete cross-signal comparison.</strong> Contact your SE
+              <strong>Use the Full Stack TCO tab for a complete cross-signal comparison.</strong> Contact your SA
               for a custom TCO analysis.
             </p>
           </div>
