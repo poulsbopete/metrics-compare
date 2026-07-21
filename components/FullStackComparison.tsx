@@ -278,7 +278,7 @@ export default function FullStackComparison({
       {/* Vendor picker */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5">
         <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-          Compare vendors — Datadog + Elastic + Dynatrace (four-signal when all toggles on).
+          Compare vendors — ECH, Serverless &amp; Datadog shown by default (four-signal when all toggles on).
         </div>
         <div className="flex flex-wrap gap-2">
           {FULL_STACK_VENDORS.map((vendor) => {
