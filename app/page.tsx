@@ -545,16 +545,16 @@ export default function Home() {
           >
             {/* Configuration Panel */}
             {!configPanelCollapsed && (
-            <div className="lg:col-span-4 xl:col-span-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-slide-in lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
-              <div className="flex items-start justify-between gap-3 mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center min-w-0">
+            <div className="lg:col-span-4 xl:col-span-3 min-w-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
+              <div className="flex items-center justify-between gap-2 mb-6 min-w-0">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center min-w-0 truncate">
                   <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3 shrink-0" />
                   Configuration
                 </h2>
                 <button
                   type="button"
                   onClick={() => setConfigPanelCollapsed(true)}
-                  className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   aria-label="Hide configuration panel"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
@@ -563,7 +563,7 @@ export default function Home() {
                   Hide
                 </button>
               </div>
-              <div className="space-y-6">
+              <div className="space-y-6 min-w-0">
                 {activeTab === "metrics" && (
                   <div className="space-y-5">
                     {/* Input mode toggle */}

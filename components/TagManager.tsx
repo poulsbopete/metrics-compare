@@ -36,18 +36,18 @@ export default function TagManager({
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
           Tags (each tag multiplies metric volume)
         </label>
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-3 min-w-0">
           <input
             type="text"
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && addTag()}
             placeholder="e.g., environment, service, region"
-            className="flex-1 px-4 py-2.5 border-2 border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white transition-all duration-200"
+            className="min-w-0 flex-1 px-3 py-2.5 border-2 border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white transition-all duration-200"
           />
           <button
             onClick={addTag}
-            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95 font-medium"
+            className="shrink-0 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
           >
             Add
           </button>
