@@ -59,14 +59,22 @@ export const ELASTIC_DAYS_PER_MONTH = 365 / 12;
 
 /**
  * TSDS index mode metrics on Observability Serverless:
- * 25% of standard Observability Complete per-GB ingest and retention rates.
- * Same billing units (GB ingested + GB-month stored) — no customer setup change.
+ * 25% of standard Observability Complete per-GB ingest and retention tier rates
+ * (same billing units — GB ingested + GB-month stored).
+ *
+ * Matches Elastic list floors effective July 1, 2026: $0.023/GB ingest, $0.005/GB-month retention
+ * at Complete tier minimums — see elastic.co/pricing/serverless-observability.
  */
 export const ELASTIC_TSDS_METRICS_RATE_MULTIPLIER = 0.25;
 
-/** Effective floor for 1-month retention at 25% of Complete floors ($0.09 + $0.019). */
+/** Published Complete floor rates for TSDS metrics (July 1, 2026). */
+export const ELASTIC_TSDS_METRICS_PUBLISHED_INGEST_FLOOR_PER_GB = 0.023;
+export const ELASTIC_TSDS_METRICS_PUBLISHED_RETENTION_FLOOR_PER_GB = 0.005;
+
+/** Effective floor for 1-month retention at published TSDS list rates. */
 export const ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH =
-  (0.09 + 0.019) * ELASTIC_TSDS_METRICS_RATE_MULTIPLIER;
+  ELASTIC_TSDS_METRICS_PUBLISHED_INGEST_FLOOR_PER_GB +
+  ELASTIC_TSDS_METRICS_PUBLISHED_RETENTION_FLOOR_PER_GB;
 
 /** Observability Complete - Data Retention (AWS us-east-1). */
 export const OBSERVABILITY_COMPLETE_RETENTION_TIERS: VolumeTier[] = [

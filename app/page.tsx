@@ -49,7 +49,14 @@ import {
   gbPerDayToMonthly,
   eventsPerSecondToMonthly,
 } from "@/lib/observabilityPricing";
-import { TCO_VALIDATION_FOOTNOTE } from "@/lib/tcoDisclaimer";
+import {
+  ELASTIC_CLOUD_HOSTED_PRICING_URL,
+  ELASTIC_CLOUD_SERVERLESS_PRICING_URL,
+  ELASTIC_SERVERLESS_OBSERVABILITY_MARKETING_URL,
+  ELASTIC_TSDS_METRICS_EFFECTIVE_LABEL,
+  TCO_LIST_RATES_AS_OF,
+  TCO_VALIDATION_FOOTNOTE,
+} from "@/lib/tcoDisclaimer";
 import TcoDisclaimerBanner from "@/components/TcoDisclaimerBanner";
 import ElasticSchemalessBlocksVisual from "@/components/ElasticSchemalessBlocksVisual";
 
@@ -1315,7 +1322,37 @@ export default function Home() {
         <div className="mt-12 text-center">
           <div className="inline-block bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl px-6 py-4 border border-gray-200/50 dark:border-gray-700/50 shadow-md">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Pricing is based on publicly available list rates as of March 2026. Elastic Serverless reflects the <a href="https://www.elastic.co/pricing/serverless-observability" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">November 2025 pricing</a>. All figures are estimates — actual costs vary with negotiated discounts, committed use, and deployment configuration. <strong>Use the Full Stack TCO tab for a complete cross-signal comparison.</strong> Contact your SE for a custom TCO analysis.
+              Pricing is based on publicly available list rates as of {TCO_LIST_RATES_AS_OF} (AWS us-east-1{" "}
+              <a
+                href={ELASTIC_CLOUD_SERVERLESS_PRICING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Serverless
+              </a>{" "}
+              and{" "}
+              <a
+                href={ELASTIC_CLOUD_HOSTED_PRICING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Cloud Hosted
+              </a>{" "}
+              pricing tables). Elastic Observability Serverless Complete and TSDS metrics rates per{" "}
+              <a
+                href={ELASTIC_SERVERLESS_OBSERVABILITY_MARKETING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                elastic.co pricing
+              </a>{" "}
+              (TSDS metrics effective {ELASTIC_TSDS_METRICS_EFFECTIVE_LABEL}). All figures are estimates — actual
+              costs vary with negotiated discounts, committed use, and deployment configuration.{" "}
+              <strong>Use the Full Stack TCO tab for a complete cross-signal comparison.</strong> Contact your SE
+              for a custom TCO analysis.
             </p>
           </div>
         </div>

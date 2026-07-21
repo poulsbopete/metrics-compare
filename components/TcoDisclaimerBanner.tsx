@@ -4,6 +4,9 @@ import {
   ELASTIC_CLOUD_HOSTED_PRICING_URL,
   ELASTIC_CLOUD_SERVERLESS_PRICING_URL,
   ELASTIC_HOSTED_LIST_RATES_URL,
+  ELASTIC_SERVERLESS_OBSERVABILITY_MARKETING_URL,
+  ELASTIC_TSDS_METRICS_EFFECTIVE_LABEL,
+  TCO_LIST_RATES_AS_OF,
 } from "@/lib/tcoDisclaimer";
 import { ECH_HOT_FROZEN_ARCHITECTURE } from "@/lib/elasticEchHotFrozenPricing";
 
@@ -22,7 +25,7 @@ export default function TcoDisclaimerBanner() {
               </p>
               <p className="text-amber-900/90 dark:text-amber-100/90">
                 This tool is not validated by Elastic Product, Marketing, or Competitive Intelligence
-                for accuracy. It is calibrated against the{" "}
+                for accuracy. List rates reconciled as of <strong>{TCO_LIST_RATES_AS_OF}</strong> against the{" "}
                 <a
                   href={ELASTIC_CLOUD_SERVERLESS_PRICING_URL}
                   className="underline font-medium"
@@ -40,9 +43,18 @@ export default function TcoDisclaimerBanner() {
                 >
                   Cloud Hosted
                 </a>{" "}
-                pricing tables plus ad hoc field feedback (e.g. Serverless estimator alignment). Other
-                vendor rates and unit conversions are approximate. Confirm all figures with official
-                pricing, contracts, and measured usage before customer-facing quotes.
+                pricing tables plus ad hoc field feedback (e.g. Serverless estimator alignment). See also{" "}
+                <a
+                  href={ELASTIC_SERVERLESS_OBSERVABILITY_MARKETING_URL}
+                  className="underline font-medium"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Serverless Observability pricing
+                </a>{" "}
+                (TSDS metrics effective {ELASTIC_TSDS_METRICS_EFFECTIVE_LABEL}). Other vendor rates and unit
+                conversions are approximate. Confirm all figures with official pricing, contracts, and measured
+                usage before customer-facing quotes.
               </p>
             </div>
 
@@ -57,8 +69,9 @@ export default function TcoDisclaimerBanner() {
                     us-east-1 list rates).
                   </li>
                   <li>
-                    <strong>Metrics (TSDS):</strong> 25% of Complete per-GB ingest and retention;
-                    logs/traces/security use full Complete rates.
+                    <strong>Metrics (TSDS):</strong> 25% of Complete ingest + retention tiers (list floors{" "}
+                    {ELASTIC_TSDS_METRICS_EFFECTIVE_LABEL}: $0.023/GB ingest, $0.005/GB-month retained); logs,
+                    traces, and security use full Complete rates.
                   </li>
                   <li>
                     <strong>Logs:</strong> metered ingest uses ~1.66× raw GB (enriched size per
