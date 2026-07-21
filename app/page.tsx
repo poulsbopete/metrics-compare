@@ -10,6 +10,7 @@ import TracingConfig from "@/components/TracingConfig";
 import LogsConfig from "@/components/LogsConfig";
 import SecurityConfig from "@/components/SecurityConfig";
 import ElasticStreamsTcoControls from "@/components/ElasticStreamsTcoControls";
+import FederatedDataSourcesVisual from "@/components/FederatedDataSourcesVisual";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import FullStackComparison from "@/components/FullStackComparison";
 import {
@@ -537,7 +538,7 @@ export default function Home() {
         <ObservabilityTabs activeTab={activeTab} onTabChange={setActiveTab}>
           {/* Full Stack TCO tab */}
           {activeTab === "fullstack" && (
-            <div className="animate-fade-in-up">
+            <div className="animate-fade-in-up space-y-8">
               <FullStackComparison
                 metricsCosts={metricsCosts}
                 tracingCosts={tracingCosts}
@@ -546,6 +547,7 @@ export default function Home() {
                 operationalCosts={operationalCosts}
                 engineerHourlyRate={engineerHourlyRate}
               />
+              <FederatedDataSourcesVisual />
             </div>
           )}
 
@@ -1182,6 +1184,8 @@ export default function Home() {
               )}
             </div>
           </div>
+
+          <FederatedDataSourcesVisual />
 
           {/* Cost Comparison */}
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
