@@ -113,6 +113,14 @@ export default function TcoDisclaimerBanner() {
             </div>
 
             <p className="text-xs text-amber-900/80 dark:text-amber-200/80 pt-1 border-t border-amber-200/80 dark:border-amber-800/60">
+              <strong>Schemaless data blocks:</strong> Observability ingest is priced on{" "}
+              <strong>GB/TiB committed</strong>, not separate metrics vs logs vs traces SKUs — one block can
+              carry mixed OTLP. See the <strong>Schemaless observability · data blocks</strong> table below for
+              illustrative $/TiB-month at 1, 50, 100, and 500 TiB/mo. Per-tab comparisons may still apply
+              signal-specific metering for vendor parity (TSDS 25%, logs 1.66×, etc.).
+            </p>
+
+            <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
               <strong>Not included:</strong> Datadog/Splunk/etc. use approximate public list pricing;
               operational FTE is optional. Excludes synthetics, LLM observability, Agent Builder,
               support ECUs, Cross-project Search mounted-GB charges, and negotiated discounts.

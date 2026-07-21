@@ -51,6 +51,7 @@ import {
 } from "@/lib/observabilityPricing";
 import { TCO_VALIDATION_FOOTNOTE } from "@/lib/tcoDisclaimer";
 import TcoDisclaimerBanner from "@/components/TcoDisclaimerBanner";
+import ElasticSchemalessBlocksVisual from "@/components/ElasticSchemalessBlocksVisual";
 
 const STORAGE_KEY = "observability-compare-state";
 
@@ -516,6 +517,8 @@ export default function Home() {
         </div>
 
         <TcoDisclaimerBanner />
+
+        <ElasticSchemalessBlocksVisual elasticRetentionMonths={elasticRetentionMonths} />
 
         {/* Tabs */}
         <ObservabilityTabs activeTab={activeTab} onTabChange={setActiveTab}>
