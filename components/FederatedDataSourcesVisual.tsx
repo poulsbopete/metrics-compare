@@ -111,11 +111,11 @@ export default function FederatedDataSourcesVisual() {
               </marker>
             </defs>
 
-            {/* Read path S3 → Elastic */}
+            {/* Read path S3 → Elastic (upper lane) */}
             {showRead && (
               <>
                 <path
-                  d="M 20 100 C 120 100, 120 140, 210 140"
+                  d="M 16 125 L 404 125"
                   fill="none"
                   stroke="#0d9488"
                   strokeWidth="2.5"
@@ -124,19 +124,19 @@ export default function FederatedDataSourcesVisual() {
                   className="opacity-90"
                 />
                 <circle r="4" fill="#0d9488" className="animate-pulse">
-                  <animateMotion dur="2.5s" repeatCount="indefinite" path="M 20 100 C 120 100, 120 140, 210 140" />
+                  <animateMotion dur="2.5s" repeatCount="indefinite" path="M 16 125 L 404 125" />
                 </circle>
-                <text x="105" y="118" textAnchor="middle" className="fill-teal-700 dark:fill-teal-300" fontSize="10" fontWeight="600">
+                <text x="210" y="112" textAnchor="middle" className="fill-teal-700 dark:fill-teal-300" fontSize="10" fontWeight="600">
                   READ · federated query
                 </text>
               </>
             )}
 
-            {/* Write path Elastic → S3 */}
+            {/* Write path Elastic → S3 (lower lane, mirrored) */}
             {showWrite && (
               <>
                 <path
-                  d="M 400 180 C 300 180, 300 220, 210 220"
+                  d="M 404 155 L 16 155"
                   fill="none"
                   stroke="#d97706"
                   strokeWidth="2.5"
@@ -145,15 +145,15 @@ export default function FederatedDataSourcesVisual() {
                   className="opacity-90"
                 />
                 <circle r="4" fill="#d97706" className="animate-pulse">
-                  <animateMotion dur="2.5s" repeatCount="indefinite" path="M 400 180 C 300 180, 300 220, 210 220" />
+                  <animateMotion dur="2.5s" repeatCount="indefinite" path="M 404 155 L 16 155" />
                 </circle>
-                <text x="315" y="198" textAnchor="middle" className="fill-amber-700 dark:fill-amber-300" fontSize="10" fontWeight="600">
+                <text x="210" y="172" textAnchor="middle" className="fill-amber-700 dark:fill-amber-300" fontSize="10" fontWeight="600">
                   WRITE · snapshot / export
                 </text>
               </>
             )}
 
-            {/* Hub */}
+            {/* Hub — centered between read/write lanes */}
             <rect x="155" y="108" width="110" height="64" rx="10" fill="none" stroke="#6366f1" strokeWidth="2" strokeDasharray="4 3" />
             <text x="210" y="132" textAnchor="middle" className="fill-indigo-700 dark:fill-indigo-300" fontSize="11" fontWeight="700">
               Federated
