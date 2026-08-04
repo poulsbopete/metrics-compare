@@ -520,13 +520,13 @@ export default function Home() {
             Observability TCO Comparison
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Compare true total cost of ownership — infrastructure <em>and</em> human operational costs — across observability platforms
+            Compare true total cost of ownership — infrastructure <em>and</em> human operational costs —
+            across observability platforms. Or open <strong>Data Blocks</strong> for Elastic schemaless
+            ingest + long-retention unit economics.
           </p>
         </div>
 
         <TcoDisclaimerBanner />
-
-        <ElasticSchemalessBlocksVisual elasticRetentionMonths={elasticRetentionMonths} />
 
         {/* Tabs */}
         <ObservabilityTabs activeTab={activeTab} onTabChange={setActiveTab}>
@@ -545,7 +545,12 @@ export default function Home() {
             </div>
           )}
 
-          {activeTab !== "fullstack" && (
+          {/* Data Blocks tab — Elastic unit economics (ingest + retention architecture) */}
+          {activeTab === "datablocks" && (
+            <ElasticSchemalessBlocksVisual elasticRetentionMonths={elasticRetentionMonths} />
+          )}
+
+          {activeTab !== "fullstack" && activeTab !== "datablocks" && (
           <><div
             className={`grid gap-8 mb-8 transition-[grid-template-columns] duration-300 ${
               configPanelCollapsed ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12"
@@ -1316,7 +1321,7 @@ export default function Home() {
               </a>
             </div>
           )}
-          </> )} {/* end activeTab !== "fullstack" */}
+          </> )} {/* end per-signal tabs (not fullstack / datablocks) */}
         </ObservabilityTabs>
 
         {/* Footer */}
