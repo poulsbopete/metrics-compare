@@ -129,8 +129,9 @@ export default function TcoDisclaimerBanner() {
               <strong>Schemaless data blocks:</strong> Observability ingest is priced on{" "}
               <strong>GB/TiB committed</strong>, not separate metrics vs logs vs traces SKUs — one block can
               carry mixed OTLP. Open the <strong>Data Blocks</strong> tab for illustrative $/TiB-month at 1,
-              50, 100, and 500 TiB/mo (ECH hot→blob and Serverless Complete + Streams). Per-tab comparisons
-              may still apply signal-specific metering for vendor parity (TSDS 25%, logs 1.66×, etc.).
+              50, 100, and 500 TiB/mo: ECH hot→blob and Serverless <strong>Streams → S3</strong> (comparable
+              TCO); Complete retention GB-months shown only as contrast. Per-tab comparisons may still apply
+              signal-specific metering for vendor parity (TSDS 25%, logs 1.66×, etc.).
             </p>
 
             <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
