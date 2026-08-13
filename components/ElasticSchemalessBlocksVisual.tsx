@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import DataBlocksCostChart from "@/components/DataBlocksCostChart";
 import {
   formatBlockCurrency,
   formatBlockCurrencyExact,
@@ -365,7 +366,7 @@ export default function ElasticSchemalessBlocksVisual({
 
           <div className="rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/50 dark:bg-indigo-950/20 p-4">
             <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-100 mb-2">
-              Serverless · Complete rates + Streams → S3
+              Serverless · Streams → S3
             </h4>
             <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-2 leading-relaxed">
               <li>
@@ -412,8 +413,8 @@ export default function ElasticSchemalessBlocksVisual({
             <span className="rounded-md bg-rose-400 text-slate-900 px-2.5 py-1.5">S3</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-3">
-            Ingest and hot retention use published Complete rates. Older data can export to S3 with
-            short-lived tokens from the Workload Identity Issuer.
+            Ingest and the hot window use published Observability Serverless rates. Older data can export
+            to S3 with short-lived tokens from the Workload Identity Issuer.
           </p>
         </div>
 
@@ -474,9 +475,15 @@ export default function ElasticSchemalessBlocksVisual({
             <span className="text-indigo-700 dark:text-indigo-300 font-semibold">
               Serverless Streams→S3 ~{formatBlockCurrency(oneTb.serverless.perTbMonth)}/TiB-mo
             </span>
-            .
+            . Click a block in the chart to update the math worksheet above.
           </p>
         )}
+
+        <DataBlocksCostChart
+          quotes={quotes}
+          selectedTierTb={selectedTierTb}
+          onSelectTier={setSelectedTierTb}
+        />
 
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
           <table className="w-full text-sm">
