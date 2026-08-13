@@ -87,9 +87,9 @@ export default function TcoDisclaimerBanner() {
                     Elastic estimator).
                   </li>
                   <li>
-                    <strong>Data Blocks · Streams → S3:</strong> Complete ingest + short hot retention at
-                    published floors; aged days on S3 Standard-class storage (~$0.023/GB-mo proxy until
-                    Streams→S3 list rates publish).
+                    <strong>Data Blocks · Streams → S3:</strong> Complete ingest and short hot retention at
+                    published floors; older data estimated on S3 Standard-class object storage (~$0.023/GB-mo)
+                    until a dedicated Streams→S3 list rate is published.
                   </li>
                   <li>
                     <strong>Elastic Streams TCO is always on:</strong> per-signal drop, aggregate,

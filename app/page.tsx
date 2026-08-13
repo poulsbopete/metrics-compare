@@ -522,7 +522,7 @@ export default function Home() {
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Compare true total cost of ownership — infrastructure <em>and</em> human operational costs —
             across observability platforms. Or open <strong>Data Blocks</strong> for Elastic schemaless
-            ingest + long-retention unit economics.
+            ingest and retention estimates.
           </p>
         </div>
 
