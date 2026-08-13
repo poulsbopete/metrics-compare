@@ -65,17 +65,31 @@ export default function TcoDisclaimerBanner() {
                 </h3>
                 <ul className="text-xs space-y-1.5 text-amber-950/90 dark:text-amber-50/90 list-disc pl-4">
                   <li>
-                    <strong>Observability Complete</strong> ingest + retention tier table (AWS
-                    us-east-1 list rates).
+                    <strong>Observability Complete</strong> rates from{" "}
+                    <a
+                      href={ELASTIC_SERVERLESS_OBSERVABILITY_MARKETING_URL}
+                      className="underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      elastic.co/pricing/serverless-observability
+                    </a>
+                    : as low as $0.09/GB ingest · $0.019/GB-mo retention (logs/traces); volume tiers on the
+                    Cloud pricing table clamp to those floors.
                   </li>
                   <li>
-                    <strong>Metrics (TSDS):</strong> 25% of Complete ingest + retention tiers (list floors{" "}
-                    {ELASTIC_TSDS_METRICS_EFFECTIVE_LABEL}: $0.023/GB ingest, $0.005/GB-month retained); logs,
-                    traces, and security use full Complete rates.
+                    <strong>Metrics (TSDS):</strong> published floors {ELASTIC_TSDS_METRICS_EFFECTIVE_LABEL}:
+                    $0.023/GB ingest, $0.005/GB-month retained (25% of Complete); logs, traces, and security
+                    use full Complete rates.
                   </li>
                   <li>
                     <strong>Logs:</strong> metered ingest uses ~1.66× raw GB (enriched size per
                     Elastic estimator).
+                  </li>
+                  <li>
+                    <strong>Data Blocks · Streams → S3:</strong> Complete ingest + short hot retention at
+                    published floors; aged days on S3 Standard-class storage (~$0.023/GB-mo proxy until
+                    Streams→S3 list rates publish).
                   </li>
                   <li>
                     <strong>Elastic Streams TCO is always on:</strong> per-signal drop, aggregate,
@@ -129,9 +143,18 @@ export default function TcoDisclaimerBanner() {
               <strong>Schemaless data blocks:</strong> Observability ingest is priced on{" "}
               <strong>GB/TiB committed</strong>, not separate metrics vs logs vs traces SKUs — one block can
               carry mixed OTLP. Open the <strong>Data Blocks</strong> tab for illustrative $/TiB-month at 1,
-              50, 100, and 500 TiB/mo: ECH hot→blob and Serverless <strong>Streams → S3</strong> (comparable
-              TCO); Complete retention GB-months shown only as contrast. Per-tab comparisons may still apply
-              signal-specific metering for vendor parity (TSDS 25%, logs 1.66×, etc.).
+              50, 100, and 500 TiB/mo grounded in{" "}
+              <a
+                href={ELASTIC_SERVERLESS_OBSERVABILITY_MARKETING_URL}
+                className="underline font-medium"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Serverless Observability pricing
+              </a>{" "}
+              Complete floors ($0.09/GB ingest · $0.019/GB-mo retention for logs/traces; TSDS metrics $0.023 /
+              $0.005) plus Streams → S3 aged storage. Per-tab comparisons may still apply signal-specific
+              metering for vendor parity (TSDS 25%, logs 1.66×, etc.).
             </p>
 
             <p className="text-xs text-amber-900/80 dark:text-amber-200/80">

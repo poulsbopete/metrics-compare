@@ -1,18 +1,22 @@
 /**
  * Schemaless “data block” quotes — same $/month per ingested TB whether the bytes are logs, metrics, or traces.
- * ECH: 1d hot + ILM blob. Serverless primary: Streams → S3 (comparable TCO). Legacy: Complete retention.
+ *
+ * Serverless numbers grounded in published Observability Complete floors:
+ * https://www.elastic.co/pricing/serverless-observability
+ *   — ingest as low as $0.09/GB (logs/traces); metrics TSDS $0.023/GB
+ *   — retention $0.019/GB-mo (logs/traces); metrics $0.005/GB-mo
+ *
+ * ECH: 1d hot + ILM blob (Cloud Hosted list). Serverless primary: Streams → S3 (Complete ingest + hot
+ * retention floors + S3-class aged). Contrast: full Complete retention months at published floors.
  */
 
 import { calculateEchHotFrozenVolumeCost } from "./elasticEchHotFrozenPricing";
 import { calculateServerlessStreamsS3VolumeCost } from "./elasticServerlessStreamsS3Pricing";
 import {
+  calculateObservabilityCompleteFloorCost,
   DEFAULT_ELASTIC_PRICING_OPTIONS,
   ELASTIC_DAYS_PER_MONTH,
 } from "./elasticServerlessPricing";
-import {
-  calculateElasticVolumeCostWithStreams,
-  DEFAULT_ELASTIC_STREAMS_TCO,
-} from "./elasticStreamsTco";
 
 export const GB_PER_TIB = 1024;
 
@@ -30,24 +34,20 @@ export interface SchemalessBlockQuote {
     annual: number;
     perTbMonth: number;
   };
-  /** Primary Serverless block — Streams → S3 long retention (comparable to ECH). */
+  /** Primary Serverless — Streams → S3 using Complete published floors + S3-class aged. */
   serverless: {
     monthly: number;
     annual: number;
     perTbMonth: number;
     withStreamsS3: true;
+    ingestCost: number;
+    retentionCost: number;
   };
   /**
-   * Legacy workbook: Observability Complete ingest + retention GB-months (Streams shaping only).
-   * Kept as contrast — not the Data Blocks lead story.
+   * Contrast: Observability Complete ingest + retention at published floors (no S3 export).
+   * Uses logs/traces Complete floors for schemaless mixed OTLP.
    */
   serverlessCompleteRetention: {
-    monthly: number;
-    annual: number;
-    perTbMonth: number;
-  };
-  /** Complete retention with Streams shaping disabled. */
-  serverlessUnshaped: {
     monthly: number;
     annual: number;
     perTbMonth: number;
@@ -64,6 +64,7 @@ function perTb(monthly: number, tierTb: number): number {
 
 /**
  * Unified observability ingest GB/month — signal-agnostic (schemaless wire volume).
+ * Serverless paths use Complete logs/traces published floors (conservative for mixed OTLP).
  */
 export function quoteSchemalessBlock(
   tierTb: number,
@@ -73,29 +74,11 @@ export function quoteSchemalessBlock(
   const dailyIngestGb = monthlyIngestGb / ELASTIC_DAYS_PER_MONTH;
 
   const echMonthly = calculateEchHotFrozenVolumeCost(monthlyIngestGb).volumeCost;
-  const serverlessS3Monthly =
-    calculateServerlessStreamsS3VolumeCost(monthlyIngestGb).volumeCost;
-
-  const elasticOpts = {
-    ...DEFAULT_ELASTIC_PRICING_OPTIONS,
+  const streamsS3 = calculateServerlessStreamsS3VolumeCost(monthlyIngestGb);
+  const completeFloor = calculateObservabilityCompleteFloorCost(
+    monthlyIngestGb,
     retentionMonths,
-    productTier: "observability-complete" as const,
-  };
-
-  const serverlessShaped = calculateElasticVolumeCostWithStreams(
-    monthlyIngestGb,
-    elasticOpts,
-    DEFAULT_ELASTIC_STREAMS_TCO,
-    "metrics",
-    { platformKind: "serverless", productTier: "observability-complete" }
-  );
-
-  const serverlessRaw = calculateElasticVolumeCostWithStreams(
-    monthlyIngestGb,
-    elasticOpts,
-    { ...DEFAULT_ELASTIC_STREAMS_TCO, enabled: false },
-    "metrics",
-    { platformKind: "serverless", productTier: "observability-complete" }
+    "logs_traces"
   );
 
   return {
@@ -108,20 +91,17 @@ export function quoteSchemalessBlock(
       perTbMonth: perTb(echMonthly, tierTb),
     },
     serverless: {
-      monthly: serverlessS3Monthly,
-      annual: serverlessS3Monthly * 12,
-      perTbMonth: perTb(serverlessS3Monthly, tierTb),
+      monthly: streamsS3.volumeCost,
+      annual: streamsS3.volumeCost * 12,
+      perTbMonth: perTb(streamsS3.volumeCost, tierTb),
       withStreamsS3: true,
+      ingestCost: streamsS3.ingestCost,
+      retentionCost: streamsS3.retentionCost,
     },
     serverlessCompleteRetention: {
-      monthly: serverlessShaped.volumeCost,
-      annual: serverlessShaped.volumeCost * 12,
-      perTbMonth: perTb(serverlessShaped.volumeCost, tierTb),
-    },
-    serverlessUnshaped: {
-      monthly: serverlessRaw.volumeCost,
-      annual: serverlessRaw.volumeCost * 12,
-      perTbMonth: perTb(serverlessRaw.volumeCost, tierTb),
+      monthly: completeFloor.volumeCost,
+      annual: completeFloor.volumeCost * 12,
+      perTbMonth: perTb(completeFloor.volumeCost, tierTb),
     },
   };
 }

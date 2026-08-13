@@ -1,8 +1,12 @@
 /**
  * Elastic Observability / Security Serverless pricing
  *
- * Observability Complete ingest + retention tiers match the Elastic Cloud pricing table
- * (AWS us-east-1): cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability
+ * Published marketing floors (canonical public rates):
+ * https://www.elastic.co/pricing/serverless-observability
+ *
+ * Volume tier tables (AWS us-east-1) track the Cloud pricing table where available:
+ * cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability
+ * Tier bottoms are clamped to the published marketing floors (“as low as”).
  *
  * Not modeled in this TCO tool: Agent Builder executions, synthetics, LLM add-ons, workflows.
  * Serverless Data Out (egress): 50 GB free/month, then $0.05/GB — see costCalculator egress fields.
@@ -16,9 +20,33 @@ import { calculateEchHotFrozenVolumeCost } from "./elasticEchHotFrozenPricing";
 export const ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL =
   "https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability";
 
+export const ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL =
+  "https://www.elastic.co/pricing/serverless-observability";
+
+/**
+ * Published Observability Serverless rates from elastic.co/pricing/serverless-observability
+ * (Complete + Logs Essentials “as low as” floors; Complete metrics TSDS floors effective July 1, 2026).
+ */
+export const OBSERVABILITY_SERVERLESS_PUBLISHED = {
+  complete: {
+    ingestLogsTracesPerGB: 0.09,
+    retentionLogsTracesPerGBMonth: 0.019,
+    ingestMetricsPerGB: 0.023,
+    retentionMetricsPerGBMonth: 0.005,
+  },
+  logsEssentials: {
+    ingestPerGB: 0.07,
+    retentionPerGBMonth: 0.017,
+  },
+  egressFreeGB: 50,
+  egressPerGB: 0.05,
+} as const;
+
 /** Serverless Data Out — 0–50 GB free, then $0.05/GB (Observability pricing table add-ons). */
-export const ELASTIC_SERVERLESS_DATA_OUT_FREE_GB = 50;
-export const ELASTIC_SERVERLESS_DATA_OUT_PRICE_PER_GB = 0.05;
+export const ELASTIC_SERVERLESS_DATA_OUT_FREE_GB =
+  OBSERVABILITY_SERVERLESS_PUBLISHED.egressFreeGB;
+export const ELASTIC_SERVERLESS_DATA_OUT_PRICE_PER_GB =
+  OBSERVABILITY_SERVERLESS_PUBLISHED.egressPerGB;
 
 export type ElasticServerlessProductTier =
   | "observability-complete"
@@ -68,15 +96,21 @@ export const ELASTIC_DAYS_PER_MONTH = 365 / 12;
 export const ELASTIC_TSDS_METRICS_RATE_MULTIPLIER = 0.25;
 
 /** Published Complete floor rates for TSDS metrics (July 1, 2026). */
-export const ELASTIC_TSDS_METRICS_PUBLISHED_INGEST_FLOOR_PER_GB = 0.023;
-export const ELASTIC_TSDS_METRICS_PUBLISHED_RETENTION_FLOOR_PER_GB = 0.005;
+export const ELASTIC_TSDS_METRICS_PUBLISHED_INGEST_FLOOR_PER_GB =
+  OBSERVABILITY_SERVERLESS_PUBLISHED.complete.ingestMetricsPerGB;
+export const ELASTIC_TSDS_METRICS_PUBLISHED_RETENTION_FLOOR_PER_GB =
+  OBSERVABILITY_SERVERLESS_PUBLISHED.complete.retentionMetricsPerGBMonth;
 
 /** Effective floor for 1-month retention at published TSDS list rates. */
 export const ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH =
   ELASTIC_TSDS_METRICS_PUBLISHED_INGEST_FLOOR_PER_GB +
   ELASTIC_TSDS_METRICS_PUBLISHED_RETENTION_FLOOR_PER_GB;
 
-/** Observability Complete - Data Retention (AWS us-east-1). */
+/**
+ * Observability Complete — Data Retention (GB retained / month).
+ * Marketing publishes $0.019/GB-mo for logs/traces (as low as). Tier bottoms clamp to that floor;
+ * earlier higher steps are volume-table list until committed volume reaches the floor.
+ */
 export const OBSERVABILITY_COMPLETE_RETENTION_TIERS: VolumeTier[] = [
   { min: 0, max: 10_000, pricePerGB: 0.04 },
   { min: 10_000, max: 20_000, pricePerGB: 0.032 },
@@ -85,10 +119,16 @@ export const OBSERVABILITY_COMPLETE_RETENTION_TIERS: VolumeTier[] = [
   { min: 100_000, max: 250_000, pricePerGB: 0.026 },
   { min: 250_000, max: 1_000_000, pricePerGB: 0.022 },
   { min: 1_000_000, max: 2_500_000, pricePerGB: 0.02 },
-  { min: 2_500_000, pricePerGB: 0.0188 },
+  {
+    min: 2_500_000,
+    pricePerGB: OBSERVABILITY_SERVERLESS_PUBLISHED.complete.retentionLogsTracesPerGBMonth,
+  },
 ];
 
-/** Observability Complete - Data Ingestion (AWS us-east-1). */
+/**
+ * Observability Complete — Data Ingestion (GB ingested).
+ * Marketing “as low as $0.09/GB” for logs/traces; final tier matches that floor.
+ */
 export const OBSERVABILITY_COMPLETE_INGEST_TIERS: VolumeTier[] = [
   { min: 0, max: 1_500, pricePerGB: 0.5 },
   { min: 1_500, max: 3_000, pricePerGB: 0.325 },
@@ -97,7 +137,10 @@ export const OBSERVABILITY_COMPLETE_INGEST_TIERS: VolumeTier[] = [
   { min: 15_000, max: 30_000, pricePerGB: 0.105 },
   { min: 30_000, max: 60_000, pricePerGB: 0.1 },
   { min: 60_000, max: 150_000, pricePerGB: 0.095 },
-  { min: 150_000, pricePerGB: 0.0925 },
+  {
+    min: 150_000,
+    pricePerGB: OBSERVABILITY_SERVERLESS_PUBLISHED.complete.ingestLogsTracesPerGB,
+  },
 ];
 
 const OBSERVABILITY_LOGS_ESSENTIALS_INGEST_TIERS: VolumeTier[] = [
@@ -108,7 +151,10 @@ const OBSERVABILITY_LOGS_ESSENTIALS_INGEST_TIERS: VolumeTier[] = [
   { min: 15_000, max: 30_000, pricePerGB: 0.0735 },
   { min: 30_000, max: 60_000, pricePerGB: 0.07 },
   { min: 60_000, max: 150_000, pricePerGB: 0.0665 },
-  { min: 150_000, pricePerGB: 0.0648 },
+  {
+    min: 150_000,
+    pricePerGB: OBSERVABILITY_SERVERLESS_PUBLISHED.logsEssentials.ingestPerGB,
+  },
 ];
 
 const OBSERVABILITY_LOGS_ESSENTIALS_RETENTION_TIERS: VolumeTier[] = [
@@ -119,7 +165,10 @@ const OBSERVABILITY_LOGS_ESSENTIALS_RETENTION_TIERS: VolumeTier[] = [
   { min: 100_000, max: 250_000, pricePerGB: 0.0234 },
   { min: 250_000, max: 1_000_000, pricePerGB: 0.0198 },
   { min: 1_000_000, max: 2_500_000, pricePerGB: 0.018 },
-  { min: 2_500_000, pricePerGB: 0.0169 },
+  {
+    min: 2_500_000,
+    pricePerGB: OBSERVABILITY_SERVERLESS_PUBLISHED.logsEssentials.retentionPerGBMonth,
+  },
 ];
 
 const SECURITY_ANALYTICS_COMPLETE_INGEST_TIERS: VolumeTier[] = [
@@ -160,8 +209,8 @@ export const ELASTIC_SERVERLESS_RATES: Record<
   "observability-complete": buildRates(
     "observability-complete",
     "Observability Complete",
-    0.09,
-    0.019,
+    OBSERVABILITY_SERVERLESS_PUBLISHED.complete.ingestLogsTracesPerGB,
+    OBSERVABILITY_SERVERLESS_PUBLISHED.complete.retentionLogsTracesPerGBMonth,
     OBSERVABILITY_COMPLETE_INGEST_TIERS,
     OBSERVABILITY_COMPLETE_RETENTION_TIERS,
     { logsMeteringMultiplier: 1.66 }
@@ -169,8 +218,8 @@ export const ELASTIC_SERVERLESS_RATES: Record<
   "observability-logs-essentials": buildRates(
     "observability-logs-essentials",
     "Observability Logs Essentials",
-    0.07,
-    0.017,
+    OBSERVABILITY_SERVERLESS_PUBLISHED.logsEssentials.ingestPerGB,
+    OBSERVABILITY_SERVERLESS_PUBLISHED.logsEssentials.retentionPerGBMonth,
     OBSERVABILITY_LOGS_ESSENTIALS_INGEST_TIERS,
     OBSERVABILITY_LOGS_ESSENTIALS_RETENTION_TIERS
   ),
@@ -178,7 +227,7 @@ export const ELASTIC_SERVERLESS_RATES: Record<
     "security-analytics-complete",
     "Security Analytics Complete",
     0.11,
-    0.019,
+    OBSERVABILITY_SERVERLESS_PUBLISHED.complete.retentionLogsTracesPerGBMonth,
     SECURITY_ANALYTICS_COMPLETE_INGEST_TIERS,
     OBSERVABILITY_COMPLETE_RETENTION_TIERS
   ),
@@ -259,8 +308,8 @@ export function calculateElasticServerlessCost(
       ingestCost,
       retentionCost,
       volumeCost: ingestCost + retentionCost,
-      ingestRateLabel: `$${rates.ingestFloorPerGB.toFixed(3)}/GB ingest (floor)`,
-      retentionRateLabel: `$${rates.retentionFloorPerGB.toFixed(3)}/GB retained/mo (floor)`,
+      ingestRateLabel: `$${rates.ingestFloorPerGB.toFixed(3)}/GB ingest (published floor)`,
+      retentionRateLabel: `$${rates.retentionFloorPerGB.toFixed(3)}/GB retained/mo (published floor)`,
     };
   }
 
@@ -275,6 +324,35 @@ export function calculateElasticServerlessCost(
     volumeCost: ingestCost + retentionCost,
     ingestRateLabel: effectiveRate(ingestCost, monthlyIngestGB) + " ingest (tiered avg)",
     retentionRateLabel: effectiveRate(retentionCost, storedGB) + " retained/mo (tiered avg)",
+  };
+}
+
+/**
+ * Observability Complete at published marketing floors (elastic.co/pricing/serverless-observability).
+ * Prefer for Data Blocks / enterprise committed-volume quotes (“as low as” rates).
+ */
+export function calculateObservabilityCompleteFloorCost(
+  monthlyIngestGB: number,
+  retentionMonths: number,
+  signal: "logs_traces" | "metrics" = "logs_traces"
+): ElasticServerlessCostBreakdown {
+  const pub = OBSERVABILITY_SERVERLESS_PUBLISHED.complete;
+  const ingestRate =
+    signal === "metrics" ? pub.ingestMetricsPerGB : pub.ingestLogsTracesPerGB;
+  const retentionRate =
+    signal === "metrics" ? pub.retentionMetricsPerGBMonth : pub.retentionLogsTracesPerGBMonth;
+  const months = Math.max(0, retentionMonths);
+  const storedGB = monthlyIngestGB * months;
+  const ingestCost = monthlyIngestGB * ingestRate;
+  const retentionCost = storedGB * retentionRate;
+  return {
+    monthlyIngestGB,
+    storedGB,
+    ingestCost,
+    retentionCost,
+    volumeCost: ingestCost + retentionCost,
+    ingestRateLabel: `$${ingestRate.toFixed(3)}/GB ingest (Complete published floor)`,
+    retentionRateLabel: `$${retentionRate.toFixed(3)}/GB retained/mo (Complete published floor)`,
   };
 }
 

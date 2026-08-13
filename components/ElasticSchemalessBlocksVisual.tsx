@@ -13,7 +13,11 @@ import {
   ECH_HOT_FROZEN_ARCHITECTURE,
 } from "@/lib/elasticEchHotFrozenPricing";
 import { SERVERLESS_STREAMS_S3_ARCHITECTURE } from "@/lib/elasticServerlessStreamsS3Pricing";
-import { ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL } from "@/lib/elasticServerlessPricing";
+import {
+  ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL,
+  OBSERVABILITY_SERVERLESS_PUBLISHED,
+} from "@/lib/elasticServerlessPricing";
+import { ELASTIC_CLOUD_HOSTED_PRICING_URL } from "@/lib/tcoDisclaimer";
 
 interface ElasticSchemalessBlocksVisualProps {
   elasticRetentionMonths?: number;
@@ -31,30 +35,34 @@ export default function ElasticSchemalessBlocksVisual({
 
   const selected = quotes.find((q) => q.tierTb === selectedTierTb) ?? quotes[0];
   const oneTb = quotes.find((q) => q.tierTb === 1);
-
-  const completeVsS3 =
-    selected && selected.serverless.monthly > 0
-      ? selected.serverlessCompleteRetention.monthly / selected.serverless.monthly
-      : null;
+  const pub = OBSERVABILITY_SERVERLESS_PUBLISHED.complete;
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      {/* Hero: all-in unit price for selected block */}
       <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-200/60 dark:border-emerald-800/40 p-6">
         <div className="mb-5">
           <p className="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300 mb-2">
             Elastic unit economics · schemaless data blocks
           </p>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Commit ingest blocks — long retention on S3, not Complete GB-months
+            Commit ingest blocks — Serverless rates from published O11Y pricing
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-3xl leading-relaxed">
             OpenTelemetry, Elastic Agent, and Beats land <strong>logs, metrics, and traces</strong> in
-            the same project. The commercial unit is <strong>committed ingested TiB/month</strong> on
-            the wire. TCO drops when aged data lives on <strong>object storage</strong>: ECH via ILM →
-            blob; Serverless via <strong>Streams → S3</strong> (source → processors → S3 exporter,
-            workload-identity JWTs). ECH and Serverless land at <strong>comparable $/TiB</strong> on
-            that architecture — not Complete retention tiers.
+            the same project. Serverless block math uses{" "}
+            <a
+              href={ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL}
+              className="underline font-medium text-indigo-700 dark:text-indigo-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              elastic.co/pricing/serverless-observability
+            </a>{" "}
+            Complete floors for logs/traces: <strong>${pub.ingestLogsTracesPerGB.toFixed(2)}/GB ingest</strong>{" "}
+            (as low as) · <strong>${pub.retentionLogsTracesPerGBMonth.toFixed(3)}/GB-mo retention</strong>.
+            Metrics TSDS floors: ${pub.ingestMetricsPerGB.toFixed(3)} / ${pub.retentionMetricsPerGBMonth.toFixed(3)}.
+            Streams → S3 keeps only a short hot window on Complete retention and ages the rest to S3-class
+            storage.
           </p>
         </div>
 
@@ -89,7 +97,7 @@ export default function ElasticSchemalessBlocksVisual({
                 {GB_PER_TIB * selected.tierTb} GiB/mo
               </p>
               <p className="text-xs text-emerald-800/80 dark:text-emerald-200/80 mt-3">
-                Same all-in rate whether the bytes are logs, metrics, or traces.
+                Schemaless mixed OTLP priced at Complete logs/traces floors (conservative vs TSDS metrics).
               </p>
             </div>
 
@@ -108,7 +116,11 @@ export default function ElasticSchemalessBlocksVisual({
                 {formatBlockCurrency(selected.ech.annual)}/yr
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Full fidelity · hot for triage · aged on blob
+                Cloud Hosted list (hot RAM-hour + snapshot ${ECH_CLOUD_HOSTED_LIST_RATES.snapshotStorageGbMonthUsd}
+                /GB-mo) —{" "}
+                <a href={ELASTIC_CLOUD_HOSTED_PRICING_URL} className="underline" target="_blank" rel="noopener noreferrer">
+                  pricing table
+                </a>
               </p>
             </div>
 
@@ -126,86 +138,88 @@ export default function ElasticSchemalessBlocksVisual({
                 {formatBlockCurrency(selected.serverless.monthly)}/mo ·{" "}
                 {formatBlockCurrency(selected.serverless.annual)}/yr
               </p>
-              <p className="text-xs text-indigo-800 dark:text-indigo-200 mt-2">
-                Roadmap · comparable to ECH when aged data is on S3
+              <p className="text-xs text-indigo-800 dark:text-indigo-200 mt-2 tabular-nums">
+                Ingest {formatBlockCurrency(selected.serverless.ingestCost)} · hot+S3 retention{" "}
+                {formatBlockCurrency(selected.serverless.retentionCost)} · roadmap exporter
               </p>
             </div>
           </div>
         )}
 
-        {selected && completeVsS3 !== null && completeVsS3 > 2 && (
-          <p className="mt-4 text-sm text-amber-800 dark:text-amber-200/90 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg px-4 py-3">
-            <strong>Do not lead with Complete retention GB-months.</strong> That workbook path is ~
-            {completeVsS3.toFixed(0)}× this block (
-            {formatBlockCurrency(selected.serverlessCompleteRetention.perTbMonth)}/TiB-mo) because it
-            keeps aged data on Observability Complete retention instead of Streams → S3. Use Full Stack
-            TCO only when an RFP forces that metering.
+        {selected && (
+          <p className="mt-4 text-sm text-gray-700 dark:text-gray-300 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3">
+            <strong>Published Complete floors</strong> (logs/traces): ${pub.ingestLogsTracesPerGB.toFixed(2)}
+            /GB ingest + ${pub.retentionLogsTracesPerGBMonth.toFixed(3)}/GB-mo retained. At this block,
+            full Complete retention ({elasticRetentionMonths} mo, no S3 export) ={" "}
+            <strong>{formatBlockCurrency(selected.serverlessCompleteRetention.perTbMonth)}/TiB-mo</strong>
+            .             Streams → S3 moves aged days off Complete retention onto S3-class storage (@ $
+            {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth.toFixed(3)}/GB-mo S3 Standard proxy).
           </p>
         )}
       </section>
 
-      {/* Architecture: Streams → S3 */}
       <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-          Why long retention lowers TCO
+          Rate card · where the dollars come from
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 max-w-3xl">
-          Lead with <strong>where aged data lives</strong>. Incident triage needs a short hot window;
-          compliance and historical queries belong on cheap, searchable object storage — ECH blob or
-          Serverless Streams → S3.
+          Serverless line items map 1:1 to{" "}
+          <a
+            href={ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL}
+            className="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Observability Serverless pricing
+          </a>
+          . ECH uses Cloud Hosted capacity + snapshot. Streams → S3 is roadmap for aging off the Search AI
+          Lake.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
           <div className="rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50/50 dark:bg-blue-950/20 p-4">
             <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-2">
-              ECH · ingest + hot → blob (S3-class)
+              ECH · {ECH_HOT_FROZEN_ARCHITECTURE.summary}
             </h4>
             <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-2 leading-relaxed">
               <li>
-                <strong>{ECH_HOT_FROZEN_ARCHITECTURE.hotDays}-day hot</strong> (RAM-hour) for
-                sub-second triage on live signals.
+                <strong>{ECH_HOT_FROZEN_ARCHITECTURE.hotDays}-day hot</strong> @ $
+                {ECH_CLOUD_HOSTED_LIST_RATES.dataHotRamGbHourUsd}/GB-RAM-hour (Cloud Hosted list).
               </li>
               <li>
-                <strong>
-                  ILM → {ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}d writable frozen on blob
-                </strong>{" "}
-                (~${ECH_CLOUD_HOSTED_LIST_RATES.snapshotStorageGbMonthUsd}/GB-mo) — searchable aged
-                logs, metrics, and traces without a 30-day hot tax.
+                <strong>{ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}d writable frozen</strong> @ $
+                {ECH_CLOUD_HOSTED_LIST_RATES.snapshotStorageGbMonthUsd}/GB-mo snapshot storage.
               </li>
-              <li>
-                Schemaless: one committed TiB/mo covers mixed OTLP — no separate metrics / logs / APM
-                line items in the block rate.
-              </li>
+              <li>Schemaless TiB/mo — same rate for logs, metrics, traces on this backbone.</li>
             </ul>
           </div>
 
           <div className="rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/50 dark:bg-indigo-950/20 p-4">
             <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-100 mb-2">
-              Serverless · Streams data plane → S3
+              Serverless · Complete floors + Streams → S3
             </h4>
             <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-2 leading-relaxed">
               <li>
-                <strong>Streams data plane:</strong>{" "}
-                {SERVERLESS_STREAMS_S3_ARCHITECTURE.dataPlane.join(" → ")} — shape signals, then export
-                aged bytes to S3.
+                <strong>Ingest:</strong> ${pub.ingestLogsTracesPerGB.toFixed(2)}/GB Complete (as low as) —
+                metrics TSDS ${pub.ingestMetricsPerGB.toFixed(3)}/GB.
               </li>
               <li>
-                <strong>Secure auth:</strong> {SERVERLESS_STREAMS_S3_ARCHITECTURE.identity} — zero
-                static AWS keys in the exporter; refresh on expiry.
+                <strong>Hot ({SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}d):</strong> Complete retention $
+                {pub.retentionLogsTracesPerGBMonth.toFixed(3)}/GB-mo on Search AI Lake.
               </li>
               <li>
-                <strong>
-                  {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}d hot ·{" "}
-                  {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days}d S3
-                </strong>{" "}
-                — same retention shape as ECH, so Data Blocks quote{" "}
-                <strong>comparable $/TiB</strong> (illustrative until Streams→S3 list rates publish).
+                <strong>Aged ({SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days}d):</strong> Streams S3 exporter @ $
+                {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth.toFixed(3)}/GB-mo (S3 Standard-class
+                customer-bucket proxy until Streams→S3 list rate publishes). Auth:{" "}
+                {SERVERLESS_STREAMS_S3_ARCHITECTURE.identity}.
+              </li>
+              <li>
+                Data plane: {SERVERLESS_STREAMS_S3_ARCHITECTURE.dataPlane.join(" → ")}.
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Mini architecture flow */}
         <div className="rounded-xl border border-indigo-200/80 dark:border-indigo-800/40 bg-slate-900 text-white p-4 mb-5 overflow-x-auto">
           <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 mb-3">
             Serverless Streams → S3 (architecture)
@@ -229,8 +243,8 @@ export default function ElasticSchemalessBlocksVisual({
             <span className="rounded-md bg-rose-400 text-slate-900 px-2.5 py-1.5">S3</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-3">
-            S3 exporter gets a short-lived JWT from the Workload Identity Issuer (POST /token via ECP
-            proxy) — federated identity, no static credentials.
+            Elastic ingest + hot retention = published Complete floors. Aged GB leave Complete retention via
+            S3 exporter (short-lived JWT from Workload Identity Issuer).
           </p>
         </div>
 
@@ -241,10 +255,11 @@ export default function ElasticSchemalessBlocksVisual({
             </h4>
             <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
               <li>Committed ingest volume (TiB/mo on the wire)</li>
-              <li>Logs · metrics · traces — schemaless, one rate</li>
-              <li>ECH: hot capacity + blob + transfer</li>
-              <li>Serverless: hot + Streams → S3 (comparable backbone)</li>
-              <li>Kibana, ES|QL, alerting, APM on the same project</li>
+              <li>Logs · metrics · traces — schemaless planning unit</li>
+              <li>ECH: hot capacity + blob + transfer (Hosted list)</li>
+              <li>
+                Serverless: Complete ingest floor + hot retention floor + S3 aged
+              </li>
             </ul>
           </div>
           <div className="rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/60 dark:bg-gray-900/40 p-4">
@@ -252,43 +267,34 @@ export default function ElasticSchemalessBlocksVisual({
               Not in the block unit price
             </h4>
             <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
-              <li>
-                <strong>Host packs</strong> — inventory for ops, not the commercial unit
-              </li>
-              <li>
-                <strong>Custom-metric SKUs</strong> — capacity signal only; billable path is ingest GB
-              </li>
-              <li>
-                <strong>RUM / session packs</strong> — discuss separately if required for scoring
-              </li>
-              <li>
-                <strong>Complete retention GB-months</strong> — legacy path when not using Streams → S3
-              </li>
+              <li>Host packs / custom-metric SKUs / RUM session packs</li>
+              <li>Synthetics, Agent Builder, Workflows, Managed LLM add-ons</li>
+              <li>Support % of spend (Gold/Platinum/Enterprise)</li>
+              <li>Use Full Stack TCO for vendor-parity bake-offs</li>
             </ul>
           </div>
         </div>
       </section>
 
-      {/* Block table */}
       <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
           Committed ingest blocks
         </h3>
         {oneTb && (
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Illustrative effective rates at <strong>1 TiB/month</strong> ({GB_PER_TIB} GiB/mo):{" "}
+            At <strong>1 TiB/month</strong> ({GB_PER_TIB} GiB/mo) using published Complete floors for
+            Serverless:{" "}
             <span className="text-blue-700 dark:text-blue-300 font-semibold">
               ECH ~{formatBlockCurrency(oneTb.ech.perTbMonth)}/TiB-mo
             </span>
             {" · "}
             <span className="text-indigo-700 dark:text-indigo-300 font-semibold">
-              Serverless Streams→S3 ~{formatBlockCurrency(oneTb.serverless.perTbMonth)}/TiB-mo
+              Streams→S3 ~{formatBlockCurrency(oneTb.serverless.perTbMonth)}/TiB-mo
             </span>
             {" · "}
             <span className="text-gray-500 dark:text-gray-400">
-              Complete retention (no S3 export) ~{" "}
-              {formatBlockCurrency(oneTb.serverlessCompleteRetention.perTbMonth)}/TiB-mo — contrast
-              only
+              Complete retention ({elasticRetentionMonths} mo, no S3) ~
+              {formatBlockCurrency(oneTb.serverlessCompleteRetention.perTbMonth)}/TiB-mo
             </span>
             .
           </p>
@@ -333,7 +339,7 @@ export default function ElasticSchemalessBlocksVisual({
                   <td className="px-4 py-3 tabular-nums font-semibold text-indigo-700 dark:text-indigo-300">
                     {formatBlockCurrency(row.serverless.perTbMonth)}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-gray-400 line-through decoration-gray-300">
+                  <td className="px-4 py-3 tabular-nums text-gray-400">
                     {formatBlockCurrency(row.serverlessCompleteRetention.monthly)}
                   </td>
                   <td className="px-4 py-3 tabular-nums text-gray-400">
@@ -346,25 +352,26 @@ export default function ElasticSchemalessBlocksVisual({
         </div>
 
         <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-4 leading-relaxed">
-          <strong>Primary columns:</strong> ECH ({ECH_HOT_FROZEN_ARCHITECTURE.hotDays}d hot +{" "}
-          {ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}d blob) and Serverless Streams → S3 (
-          {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}d hot +{" "}
-          {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days}d S3) share the same illustrative hot +
-          object-storage backbone so Data Blocks show <strong>comparable TCO</strong>. Streams→S3 is
-          roadmap — confirm list rates with your account team.{" "}
-          <strong>Complete retention</strong> columns are the legacy Observability Complete ingest +
-          retention GB-month path (Streams shaping, {elasticRetentionMonths} mo slider) — useful as
-          contrast, not the lead story. Per-signal tabs / Full Stack still apply TSDS 25% and logs
-          1.66× for vendor-parity bake-offs. Not a quote — see{" "}
+          <strong>Serverless sources:</strong>{" "}
           <a
-            href={ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL}
+            href={ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL}
             className="underline"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Elastic Cloud pricing
-          </a>
-          .
+            elastic.co/pricing/serverless-observability
+          </a>{" "}
+          Complete floors (${pub.ingestLogsTracesPerGB.toFixed(2)} ingest / $
+          {pub.retentionLogsTracesPerGBMonth.toFixed(3)} retention for logs/traces; metrics TSDS $
+          {pub.ingestMetricsPerGB.toFixed(3)} / ${pub.retentionMetricsPerGBMonth.toFixed(3)}; egress{" "}
+          {OBSERVABILITY_SERVERLESS_PUBLISHED.egressFreeGB} GB free then $
+          {OBSERVABILITY_SERVERLESS_PUBLISHED.egressPerGB.toFixed(2)}/GB). Streams→S3 ages{" "}
+          {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days}d at $
+          {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth.toFixed(3)}/GB-mo (S3 Standard proxy —
+          roadmap). Complete retention column = ingest + {elasticRetentionMonths} mo on Search AI Lake at
+          those floors (no S3 export). Longer Complete retention multiplies the lake GB-months; Streams→S3
+          keeps aged cost flat on object storage. ECH from Cloud Hosted list. Not a quote — confirm with
+          your account team.
         </p>
       </section>
     </div>
