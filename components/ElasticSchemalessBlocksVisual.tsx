@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import {
   formatBlockCurrency,
+  formatBlockCurrencyExact,
+  formatGb,
   GB_PER_TIB,
   quoteAllSchemalessBlocks,
   SCHEMALESS_BLOCK_TIERS_TB,
@@ -18,6 +20,30 @@ import {
   OBSERVABILITY_SERVERLESS_PUBLISHED,
 } from "@/lib/elasticServerlessPricing";
 import { ELASTIC_CLOUD_HOSTED_PRICING_URL } from "@/lib/tcoDisclaimer";
+
+function MathRow({
+  label,
+  formula,
+  result,
+}: {
+  label: string;
+  formula: string;
+  result: string;
+}) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-1 sm:gap-3 py-2 border-b border-gray-100 dark:border-gray-700/80 last:border-0">
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{label}</p>
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-mono break-all leading-relaxed">
+          {formula}
+        </p>
+      </div>
+      <p className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white sm:text-right">
+        {result}
+      </p>
+    </div>
+  );
+}
 
 interface ElasticSchemalessBlocksVisualProps {
   elasticRetentionMonths?: number;
@@ -158,22 +184,175 @@ export default function ElasticSchemalessBlocksVisual({
 
         {selected && (
           <p className="mt-4 text-sm text-gray-700 dark:text-gray-300 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3">
-            <strong>Complete published rates</strong> (logs/traces): $
-            {pub.ingestLogsTracesPerGB.toFixed(2)}/GB ingest + $
-            {pub.retentionLogsTracesPerGBMonth.toFixed(3)}/GB-mo retained. At this block, keeping{" "}
-            {elasticRetentionMonths} month{elasticRetentionMonths === 1 ? "" : "s"} on Complete retention
-            (no S3 export) is about{" "}
-            <strong>{formatBlockCurrency(selected.serverlessCompleteRetention.perTbMonth)}/TiB-mo</strong>
-            . Streams → S3 estimates older data at about $
-            {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth.toFixed(3)}/GB-mo object storage after a short
-            hot window.
+            Block size = <strong>{selected.tierTb} TiB/mo × {GB_PER_TIB} GiB/TiB = {formatGb(selected.monthlyIngestGb)} GiB/mo</strong>{" "}
+            on the wire (~{formatGb(selected.dailyIngestGb)} GiB/day using {selected.daysPerMonth.toFixed(2)} days/mo).
+            All paths below use that same committed volume. Mixed OTLP is estimated at Complete{" "}
+            <strong>logs/traces</strong> floors (metrics TSDS floors are lower).
           </p>
         )}
       </section>
 
+      {selected && (
+        <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+            Math for {selected.tierTb} TiB/mo
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 max-w-3xl">
+            Line items and formulas for the selected block. Serverless rates from{" "}
+            <a
+              href={ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL}
+              className="underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Observability Serverless pricing
+            </a>
+            ; Cloud Hosted from the{" "}
+            <a
+              href={ELASTIC_CLOUD_HOSTED_PRICING_URL}
+              className="underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Hosted pricing table
+            </a>
+            .
+          </p>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            {/* ECH math */}
+            <div className="rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50/40 dark:bg-blue-950/20 p-4">
+              <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-1">
+                Elastic Cloud Hosted
+              </h4>
+              <p className="text-[11px] text-blue-800/80 dark:text-blue-200/80 mb-3">
+                {ECH_HOT_FROZEN_ARCHITECTURE.summary}
+              </p>
+              <MathRow
+                label="Wire volume / day"
+                formula={`${formatGb(selected.monthlyIngestGb)} GiB/mo ÷ ${selected.daysPerMonth.toFixed(2)} d/mo`}
+                result={`${formatGb(selected.ech.rawGbPerDay)} GiB/day`}
+              />
+              <MathRow
+                label="Indexed volume / day"
+                formula={`${formatGb(selected.ech.rawGbPerDay)} ÷ ${selected.ech.compressionRatio} compression`}
+                result={`${formatGb(selected.ech.indexedGbPerDay)} GiB/day`}
+              />
+              <MathRow
+                label={`${selected.ech.hotDays}d hot (RAM capacity)`}
+                formula={`(${formatGb(selected.ech.indexedGbPerDay)} × ${selected.ech.hotDays}d × ${selected.ech.replicaFactor} replicas ÷ ${selected.ech.indexedGbPerRamGbHot} GiB/RAM) × ${selected.ech.hoursPerMonth} h × $${selected.ech.dataHotRamGbHourUsd}/GB-RAM-h`}
+                result={formatBlockCurrencyExact(selected.ech.hotCapacityCost)}
+              />
+              <MathRow
+                label={`${selected.ech.ilmBlobDays}d snapshot / blob`}
+                formula={`${formatGb(selected.ech.indexedGbPerDay)} × ${selected.ech.ilmBlobDays}d × $${selected.ech.snapshotStorageGbMonthUsd}/GB-mo`}
+                result={formatBlockCurrencyExact(selected.ech.blobStorageCost)}
+              />
+              <MathRow
+                label="Data transfer"
+                formula={`max(0, ${formatGb(selected.monthlyIngestGb)} × ${selected.ech.dataTransferIngestPct} − ${selected.ech.freeDataTransferGbMonth} free) × $${selected.ech.dataTransferOutPerGbUsd}/GB`}
+                result={formatBlockCurrencyExact(selected.ech.dataTransferCost)}
+              />
+              <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800/60 flex justify-between gap-2 text-sm font-bold text-blue-900 dark:text-blue-100">
+                <span>Total / month</span>
+                <span className="tabular-nums">{formatBlockCurrencyExact(selected.ech.monthly)}</span>
+              </div>
+              <p className="text-[11px] text-blue-800/70 dark:text-blue-200/70 mt-1 tabular-nums">
+                = {formatBlockCurrencyExact(selected.ech.perTbMonth)}/TiB-mo ·{" "}
+                {formatBlockCurrencyExact(selected.ech.annual)}/yr
+              </p>
+            </div>
+
+            {/* Streams→S3 math */}
+            <div className="rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/40 dark:bg-indigo-950/20 p-4">
+              <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-100 mb-1">
+                Serverless · Streams → S3
+              </h4>
+              <p className="text-[11px] text-indigo-800/80 dark:text-indigo-200/80 mb-3">
+                Complete published floors + object storage for older data
+              </p>
+              <MathRow
+                label="Wire volume / day"
+                formula={`${formatGb(selected.monthlyIngestGb)} GiB/mo ÷ ${selected.daysPerMonth.toFixed(2)} d/mo`}
+                result={`${formatGb(selected.serverless.gbPerDay)} GiB/day`}
+              />
+              <MathRow
+                label="Complete ingest"
+                formula={`${formatGb(selected.monthlyIngestGb)} GiB × $${selected.serverless.ingestPerGB.toFixed(2)}/GB`}
+                result={formatBlockCurrencyExact(selected.serverless.ingestCost)}
+              />
+              <MathRow
+                label={`${selected.serverless.hotDays}d hot (Complete retention)`}
+                formula={`${formatGb(selected.serverless.gbPerDay)} × ${selected.serverless.hotDays}d × $${selected.serverless.hotRetentionPerGBMonth.toFixed(3)}/GB-mo`}
+                result={formatBlockCurrencyExact(selected.serverless.hotRetentionCost)}
+              />
+              <MathRow
+                label={`${selected.serverless.s3Days}d S3 (object storage)`}
+                formula={`${formatGb(selected.serverless.gbPerDay)} × ${selected.serverless.s3Days}d × $${selected.serverless.s3PerGBMonth.toFixed(3)}/GB-mo`}
+                result={formatBlockCurrencyExact(selected.serverless.s3StorageCost)}
+              />
+              <MathRow
+                label="Retention subtotal"
+                formula={`${formatBlockCurrencyExact(selected.serverless.hotRetentionCost)} hot + ${formatBlockCurrencyExact(selected.serverless.s3StorageCost)} S3`}
+                result={formatBlockCurrencyExact(selected.serverless.retentionCost)}
+              />
+              <div className="mt-3 pt-3 border-t border-indigo-200 dark:border-indigo-800/60 flex justify-between gap-2 text-sm font-bold text-indigo-900 dark:text-indigo-100">
+                <span>Total / month</span>
+                <span className="tabular-nums">
+                  {formatBlockCurrencyExact(selected.serverless.monthly)}
+                </span>
+              </div>
+              <p className="text-[11px] text-indigo-800/70 dark:text-indigo-200/70 mt-1 tabular-nums">
+                ingest {formatBlockCurrencyExact(selected.serverless.ingestCost)} + retention{" "}
+                {formatBlockCurrencyExact(selected.serverless.retentionCost)} ={" "}
+                {formatBlockCurrencyExact(selected.serverless.perTbMonth)}/TiB-mo
+              </p>
+            </div>
+
+            {/* Complete retention math */}
+            <div className="rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/60 dark:bg-gray-900/40 p-4">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">
+                Serverless · Complete retention
+              </h4>
+              <p className="text-[11px] text-gray-600 dark:text-gray-400 mb-3">
+                Same Complete floors, {selected.serverlessCompleteRetention.retentionMonths} month
+                {selected.serverlessCompleteRetention.retentionMonths === 1 ? "" : "s"} on Search AI Lake
+                (no S3 export)
+              </p>
+              <MathRow
+                label="Complete ingest"
+                formula={`${formatGb(selected.monthlyIngestGb)} GiB × $${selected.serverlessCompleteRetention.ingestPerGB.toFixed(2)}/GB`}
+                result={formatBlockCurrencyExact(selected.serverlessCompleteRetention.ingestCost)}
+              />
+              <MathRow
+                label="Stored GB-months"
+                formula={`${formatGb(selected.monthlyIngestGb)} GiB × ${selected.serverlessCompleteRetention.retentionMonths} mo`}
+                result={`${formatGb(selected.serverlessCompleteRetention.storedGb)} GB-mo`}
+              />
+              <MathRow
+                label="Complete retention"
+                formula={`${formatGb(selected.serverlessCompleteRetention.storedGb)} GB-mo × $${selected.serverlessCompleteRetention.retentionPerGBMonth.toFixed(3)}/GB-mo`}
+                result={formatBlockCurrencyExact(selected.serverlessCompleteRetention.retentionCost)}
+              />
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-between gap-2 text-sm font-bold text-gray-900 dark:text-gray-100">
+                <span>Total / month</span>
+                <span className="tabular-nums">
+                  {formatBlockCurrencyExact(selected.serverlessCompleteRetention.monthly)}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 tabular-nums">
+                ingest {formatBlockCurrencyExact(selected.serverlessCompleteRetention.ingestCost)} +
+                retention {formatBlockCurrencyExact(selected.serverlessCompleteRetention.retentionCost)}{" "}
+                = {formatBlockCurrencyExact(selected.serverlessCompleteRetention.perTbMonth)}/TiB-mo
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-          How these estimates are calculated
+          Architecture notes
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 max-w-3xl">
           Serverless figures follow{" "}
