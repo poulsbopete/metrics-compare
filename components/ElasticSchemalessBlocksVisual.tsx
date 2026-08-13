@@ -293,7 +293,13 @@ export default function ElasticSchemalessBlocksVisual({
               Not included in these block estimates
             </h4>
             <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
-              <li>RUM / session packs</li>
+              <li>
+                <strong>RUM / session packs</strong> — Elastic does not sell a packaged RUM or session-based
+                SKU. Browser and mobile experience monitoring today relies on open-source /
+                OpenTelemetry-oriented instrumentation; any such telemetry sent to Observability is billed
+                as <strong>ingest GB</strong>, not sessions. A fuller RUM product experience (instrumentation,
+                mobile SDKs, journey analysis) is on the roadmap and is not modeled here.
+              </li>
               <li>Synthetics, Agent Builder, Workflows, and Managed LLM add-ons</li>
               <li>Support charges (Gold, Platinum, or Enterprise)</li>
               <li>Negotiated discounts and marketplace commitments</li>
