@@ -92,7 +92,7 @@ export default function ElasticSchemalessBlocksVisual({
             <strong>${pub.retentionLogsTracesPerGBMonth.toFixed(3)}/GB-mo retention</strong>. Metrics in
             TSDS index mode: ${pub.ingestMetricsPerGB.toFixed(3)}/GB ingest · $
             {pub.retentionMetricsPerGBMonth.toFixed(3)}/GB-mo retention. With Streams → S3, recent data
-            stays on Complete retention and older data can move to object storage.
+            stays in a short hot window and older data can move to object storage.
           </p>
         </div>
 
@@ -219,7 +219,7 @@ export default function ElasticSchemalessBlocksVisual({
             .
           </p>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* ECH math */}
             <div className="rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50/40 dark:bg-blue-950/20 p-4">
               <h4 className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-1">
@@ -269,7 +269,7 @@ export default function ElasticSchemalessBlocksVisual({
                 Serverless · Streams → S3
               </h4>
               <p className="text-[11px] text-indigo-800/80 dark:text-indigo-200/80 mb-3">
-                Complete published floors + object storage for older data
+                Published Complete ingest/hot rates + object storage for older data
               </p>
               <MathRow
                 label="Wire volume / day"
@@ -277,12 +277,12 @@ export default function ElasticSchemalessBlocksVisual({
                 result={`${formatGb(selected.serverless.gbPerDay)} GiB/day`}
               />
               <MathRow
-                label="Complete ingest"
+                label="Ingest"
                 formula={`${formatGb(selected.monthlyIngestGb)} GiB × $${selected.serverless.ingestPerGB.toFixed(2)}/GB`}
                 result={formatBlockCurrencyExact(selected.serverless.ingestCost)}
               />
               <MathRow
-                label={`${selected.serverless.hotDays}d hot (Complete retention)`}
+                label={`${selected.serverless.hotDays}d hot window`}
                 formula={`${formatGb(selected.serverless.gbPerDay)} × ${selected.serverless.hotDays}d × $${selected.serverless.hotRetentionPerGBMonth.toFixed(3)}/GB-mo`}
                 result={formatBlockCurrencyExact(selected.serverless.hotRetentionCost)}
               />
@@ -308,45 +308,19 @@ export default function ElasticSchemalessBlocksVisual({
                 {formatBlockCurrencyExact(selected.serverless.perTbMonth)}/TiB-mo
               </p>
             </div>
-
-            {/* Complete retention math */}
-            <div className="rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/60 dark:bg-gray-900/40 p-4">
-              <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">
-                Serverless · Complete retention
-              </h4>
-              <p className="text-[11px] text-gray-600 dark:text-gray-400 mb-3">
-                Same Complete floors, {selected.serverlessCompleteRetention.retentionMonths} month
-                {selected.serverlessCompleteRetention.retentionMonths === 1 ? "" : "s"} on Search AI Lake
-                (no S3 export)
-              </p>
-              <MathRow
-                label="Complete ingest"
-                formula={`${formatGb(selected.monthlyIngestGb)} GiB × $${selected.serverlessCompleteRetention.ingestPerGB.toFixed(2)}/GB`}
-                result={formatBlockCurrencyExact(selected.serverlessCompleteRetention.ingestCost)}
-              />
-              <MathRow
-                label="Stored GB-months"
-                formula={`${formatGb(selected.monthlyIngestGb)} GiB × ${selected.serverlessCompleteRetention.retentionMonths} mo`}
-                result={`${formatGb(selected.serverlessCompleteRetention.storedGb)} GB-mo`}
-              />
-              <MathRow
-                label="Complete retention"
-                formula={`${formatGb(selected.serverlessCompleteRetention.storedGb)} GB-mo × $${selected.serverlessCompleteRetention.retentionPerGBMonth.toFixed(3)}/GB-mo`}
-                result={formatBlockCurrencyExact(selected.serverlessCompleteRetention.retentionCost)}
-              />
-              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 flex justify-between gap-2 text-sm font-bold text-gray-900 dark:text-gray-100">
-                <span>Total / month</span>
-                <span className="tabular-nums">
-                  {formatBlockCurrencyExact(selected.serverlessCompleteRetention.monthly)}
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 tabular-nums">
-                ingest {formatBlockCurrencyExact(selected.serverlessCompleteRetention.ingestCost)} +
-                retention {formatBlockCurrencyExact(selected.serverlessCompleteRetention.retentionCost)}{" "}
-                = {formatBlockCurrencyExact(selected.serverlessCompleteRetention.perTbMonth)}/TiB-mo
-              </p>
-            </div>
           </div>
+
+          <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            Keeping the same {formatGb(selected.monthlyIngestGb)} GiB for{" "}
+            {selected.serverlessCompleteRetention.retentionMonths} month
+            {selected.serverlessCompleteRetention.retentionMonths === 1 ? "" : "s"} entirely on Search AI
+            Lake (ingest + retention at published Complete floors, no S3 export) would be about{" "}
+            <strong className="text-gray-700 dark:text-gray-300">
+              {formatBlockCurrencyExact(selected.serverlessCompleteRetention.monthly)}/mo
+            </strong>{" "}
+            ({formatBlockCurrencyExact(selected.serverlessCompleteRetention.perTbMonth)}/TiB-mo). Data
+            Blocks leads with Streams → S3 instead of that all-lake path.
+          </p>
         </section>
       )}
 
@@ -365,8 +339,7 @@ export default function ElasticSchemalessBlocksVisual({
             Observability Serverless pricing
           </a>
           . Elastic Cloud Hosted figures use capacity and snapshot storage from the Cloud Hosted pricing
-          table. Streams → S3 models a short hot window on Complete retention with older data in object
-          storage.
+          table. Streams → S3 models a short hot window with older data in object storage.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
@@ -400,8 +373,8 @@ export default function ElasticSchemalessBlocksVisual({
                 metrics TSDS ${pub.ingestMetricsPerGB.toFixed(3)}/GB.
               </li>
               <li>
-                <strong>Hot ({SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}d):</strong> Complete retention $
-                {pub.retentionLogsTracesPerGBMonth.toFixed(3)}/GB-mo.
+                <strong>Hot ({SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}d):</strong> $
+                {pub.retentionLogsTracesPerGBMonth.toFixed(3)}/GB-mo on Search AI Lake.
               </li>
               <li>
                 <strong>Older data ({SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days}d):</strong> Streams S3
@@ -501,11 +474,6 @@ export default function ElasticSchemalessBlocksVisual({
             <span className="text-indigo-700 dark:text-indigo-300 font-semibold">
               Serverless Streams→S3 ~{formatBlockCurrency(oneTb.serverless.perTbMonth)}/TiB-mo
             </span>
-            {" · "}
-            <span className="text-gray-500 dark:text-gray-400">
-              Serverless Complete retention ({elasticRetentionMonths} mo) ~
-              {formatBlockCurrency(oneTb.serverlessCompleteRetention.perTbMonth)}/TiB-mo
-            </span>
             .
           </p>
         )}
@@ -519,8 +487,6 @@ export default function ElasticSchemalessBlocksVisual({
                 <th className="px-4 py-3">$/TiB-mo (Hosted)</th>
                 <th className="px-4 py-3">Serverless Streams→S3 / mo</th>
                 <th className="px-4 py-3">$/TiB-mo (Streams→S3)</th>
-                <th className="px-4 py-3 text-gray-400">Complete retention / mo</th>
-                <th className="px-4 py-3 text-gray-400">$/TiB-mo (Complete)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -549,12 +515,6 @@ export default function ElasticSchemalessBlocksVisual({
                   <td className="px-4 py-3 tabular-nums font-semibold text-indigo-700 dark:text-indigo-300">
                     {formatBlockCurrency(row.serverless.perTbMonth)}
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-gray-400">
-                    {formatBlockCurrency(row.serverlessCompleteRetention.monthly)}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums text-gray-400">
-                    {formatBlockCurrency(row.serverlessCompleteRetention.perTbMonth)}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -571,17 +531,15 @@ export default function ElasticSchemalessBlocksVisual({
           >
             elastic.co/pricing/serverless-observability
           </a>
-          : Complete as low as ${pub.ingestLogsTracesPerGB.toFixed(2)}/GB ingest and $
+          : as low as ${pub.ingestLogsTracesPerGB.toFixed(2)}/GB ingest and $
           {pub.retentionLogsTracesPerGBMonth.toFixed(3)}/GB-mo retention for logs/traces; metrics TSDS $
           {pub.ingestMetricsPerGB.toFixed(3)} / ${pub.retentionMetricsPerGBMonth.toFixed(3)}; egress{" "}
           {OBSERVABILITY_SERVERLESS_PUBLISHED.egressFreeGB} GB free then $
-          {OBSERVABILITY_SERVERLESS_PUBLISHED.egressPerGB.toFixed(2)}/GB. Streams→S3 estimates{" "}
-          {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days} days of older data at $
-          {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth.toFixed(3)}/GB-mo object storage. Complete
-          retention column keeps {elasticRetentionMonths} month
-          {elasticRetentionMonths === 1 ? "" : "s"} on Search AI Lake at those published rates. Elastic
-          Cloud Hosted from the Cloud Hosted pricing table. Illustrative only — confirm with your Elastic
-          account team before purchasing decisions.
+          {OBSERVABILITY_SERVERLESS_PUBLISHED.egressPerGB.toFixed(2)}/GB. Streams→S3 uses those ingest and
+          hot-window rates, then estimates {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days} days of older data at $
+          {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth.toFixed(3)}/GB-mo object storage. Elastic Cloud
+          Hosted from the Cloud Hosted pricing table. Illustrative only — confirm with your Elastic account
+          team before purchasing decisions.
         </p>
       </section>
     </div>
