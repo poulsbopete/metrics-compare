@@ -140,10 +140,11 @@ export default function TcoDisclaimerBanner() {
             </div>
 
             <p className="text-xs text-amber-900/80 dark:text-amber-200/80 pt-1 border-t border-amber-200/80 dark:border-amber-800/60">
-              <strong>Schemaless data blocks:</strong> Observability ingest is priced on{" "}
-              <strong>GB/TiB committed</strong>, not separate metrics vs logs vs traces SKUs — one block can
-              carry mixed OTLP. Open the <strong>Data Blocks</strong> tab for illustrative $/TiB-month at 1,
-              50, 100, and 500 TiB/mo grounded in{" "}
+              <strong>Schemaless data blocks:</strong> Observability is schemaless at ingest —{" "}
+              <strong>Streams</strong> uses AI to identify patterns, so there is no custom-metric SKU;
+              the billable path is <strong>ingested GB/TiB</strong> (plus retention), not per-series
+              metric packs. One block can carry mixed OTLP. Open the <strong>Data Blocks</strong> tab for
+              illustrative $/TiB-month at 1, 50, 100, and 500 TiB/mo grounded in{" "}
               <a
                 href={ELASTIC_SERVERLESS_OBSERVABILITY_MARKETING_URL}
                 className="underline font-medium"
@@ -153,7 +154,7 @@ export default function TcoDisclaimerBanner() {
                 Serverless Observability pricing
               </a>{" "}
               Complete floors ($0.09/GB ingest · $0.019/GB-mo retention for logs/traces; TSDS metrics $0.023 /
-              $0.005) plus Streams → S3 aged storage. Per-tab comparisons may still apply signal-specific
+              $0.005) plus Streams → S3 object storage. Per-tab comparisons may still apply signal-specific
               metering for vendor parity (TSDS 25%, logs 1.66×, etc.).
             </p>
 

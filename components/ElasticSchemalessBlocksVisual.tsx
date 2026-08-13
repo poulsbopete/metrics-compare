@@ -45,11 +45,14 @@ export default function ElasticSchemalessBlocksVisual({
             Schemaless observability · data blocks
           </p>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Plan on committed ingest blocks — logs, metrics, and traces together
+            Schemaless ingest — no custom-metric SKUs
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-3xl leading-relaxed">
-            OpenTelemetry, Elastic Agent, and Beats land <strong>logs, metrics, and traces</strong> in
-            the same project. Estimates use published{" "}
+            Elastic Observability is <strong>schemaless</strong>: OpenTelemetry, Elastic Agent, and Beats
+            land <strong>logs, metrics, and traces</strong> in the same project without picking a separate
+            SKU per signal or per custom metric. <strong>Streams</strong> uses AI to identify patterns in
+            that data — so you are not charged for custom-metric series; the billable path is{" "}
+            <strong>ingested GB</strong> (and retention). Estimates use published{" "}
             <a
               href={ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL}
               className="underline font-medium text-indigo-700 dark:text-indigo-300"
@@ -98,7 +101,8 @@ export default function ElasticSchemalessBlocksVisual({
                 {GB_PER_TIB * selected.tierTb} GiB/mo
               </p>
               <p className="text-xs text-emerald-800/80 dark:text-emerald-200/80 mt-3">
-                Mixed OTLP estimated at Complete logs/traces rates (metrics TSDS rates are lower).
+                Schemaless: high-cardinality and custom metrics count as ingest GB — not a separate
+                custom-metric SKU. Streams AI finds patterns on that data.
               </p>
             </div>
 
@@ -200,7 +204,10 @@ export default function ElasticSchemalessBlocksVisual({
                 <strong>{ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}d writable frozen</strong> @ $
                 {ECH_CLOUD_HOSTED_LIST_RATES.snapshotStorageGbMonthUsd}/GB-mo snapshot storage.
               </li>
-              <li>Same committed TiB/mo rate whether the bytes are logs, metrics, or traces.</li>
+              <li>
+                Schemaless committed TiB/mo — same GB path for logs, metrics, and traces; no custom-metric
+                SKU.
+              </li>
             </ul>
           </div>
 
@@ -261,13 +268,24 @@ export default function ElasticSchemalessBlocksVisual({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/40 dark:bg-emerald-950/15 p-4">
             <h4 className="text-xs font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-200 mb-2">
-              Included in these block estimates
+              Why there is no custom-metric SKU
             </h4>
             <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
-              <li>Committed ingest volume (TiB/month on the wire)</li>
-              <li>Logs, metrics, and traces in one planning unit</li>
-              <li>Elastic Cloud Hosted: hot capacity, snapshot storage, and transfer</li>
-              <li>Serverless: Complete ingest and retention, with optional Streams → S3 for older data</li>
+              <li>
+                <strong>Schemaless at ingest</strong> — logs, metrics, and traces share one GB-based path
+              </li>
+              <li>
+                <strong>Streams + AI</strong> identify patterns and structure without a per-series metric
+                catalog charge
+              </li>
+              <li>
+                <strong>Billable path is ingest GB</strong> (plus retention) — cardinality affects volume,
+                not a separate custom-metric line item
+              </li>
+              <li>
+                Host counts and custom-metric series remain useful as capacity signals for sizing, not as
+                Elastic commercial units
+              </li>
             </ul>
           </div>
           <div className="rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/60 dark:bg-gray-900/40 p-4">
@@ -275,10 +293,10 @@ export default function ElasticSchemalessBlocksVisual({
               Not included in these block estimates
             </h4>
             <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
-              <li>Host-based or custom-metric product packs</li>
               <li>RUM / session packs</li>
               <li>Synthetics, Agent Builder, Workflows, and Managed LLM add-ons</li>
               <li>Support charges (Gold, Platinum, or Enterprise)</li>
+              <li>Negotiated discounts and marketplace commitments</li>
             </ul>
           </div>
         </div>
