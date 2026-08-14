@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Datadog to Elastic — Cost, Cardinality &amp; Unified O11Y</title>
+  <link rel="stylesheet" href="slides/deck.css">
+</head>
+<body>
+<div class="deck">
+  <header class="deck-header">
+    <span class="deck-title">Datadog → Elastic · Cost &amp; Unified O11Y</span>
+    <nav class="deck-nav">
+      <button type="button" data-nav="prev" aria-label="Previous">‹</button>
+      <div class="deck-dots"></div>
+      <button type="button" data-nav="next" aria-label="Next">›</button>
+    </nav>
+  </header>
+  <div class="slide-viewport">
+
+    <section class="slide" data-slide="1">
+      <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
+      <h1>See the <em>bill drivers</em> Datadog charges you for.</h1>
+      <p class="value-outcome">Customer value: Named cardinality and debug series — before the next custom-metrics invoice.</p>
+      <p class="lede">Datadog bills grow with hosts, custom metrics, and high-cardinality tags. On Elastic Serverless the same noise shows up as scrape churn, <code>user_id</code> labels, and <code>/debug/pprof</code> — audit it on a live stream.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">DRIVER</div>
+              <h3>High cardinality</h3>
+              <p>Per-user or per-pod labels that explode series count without improving MTTR.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">DRIVER</div>
+              <h3>Debug / scrape noise</h3>
+              <p><code>/debug/pprof</code>, scrape metadata, churn metrics that never page anyone.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">DRIVER</div>
+              <h3>Tool sprawl</h3>
+              <p>Metrics in Datadog, investigations elsewhere — context switching tax.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Streams → <code>metrics-generic.otel-default</code> → name two bill drivers you’d cut.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="2">
+      <div class="eyebrow">Competitive lab · Challenge 2 · ~15 min</div>
+      <h1>Cut cost <em>at ingest</em> — before it hits the bill.</h1>
+      <p class="value-outcome">Customer value: Drop + lifecycle on Serverless ≈ predictable TCO vs Datadog custom metrics.</p>
+      <p class="lede">Apply Streams Drop on <code>/debug/pprof</code>, bound retention with delete + downsample, then open <strong>Horizon — Datadog displacement savings</strong>. Elastic Serverless is ~<strong>25%</strong> the cost of Datadog for comparable observability workloads.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">LEVER</div>
+              <h3>Drop</h3>
+              <p>Noise never stored — immediate ingest reduction.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">LEVER</div>
+              <h3>Lifecycle</h3>
+              <p>Delete window + downsample for executive charts without hot-storage forever.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">PROOF</div>
+              <h3>Savings board</h3>
+              <p>Noise vs signal, drop %, and PB/TB examples for the CFO conversation.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Drop + lifecycle → read drop % on the displacement dashboard.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="3">
+      <div class="eyebrow">Competitive lab · Challenge 3 · ~15 min</div>
+      <h1>Unified O11Y — migrate boards, investigate in <em>one</em> project.</h1>
+      <p class="value-outcome">Customer value: Cost at ingest + obs-migrate for boards/monitors + metrics beside service context.</p>
+      <p class="lede">Open a Horizon service in Services/APM, then the sample Datadog board and monitors migrated with <strong>obs-migrate</strong>. Displacement is TCO <em>and</em> a path off rewrite debt.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">VS DATADOG</div>
+              <h3>One investigation path</h3>
+              <p>Streams → Metrics → Services in one Serverless project.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">MIGRATE</div>
+              <h3>obs-migrate</h3>
+              <p>Sample: Host Basics + monitors → Rules tagged <code>obs-migration</code> (disabled until review).</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">TAKEAWAY</div>
+              <h3>Leadership line</h3>
+              <p>Drop cardinality at ingest; migrate priority assets; investigate without leaving the project.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Services → Sample: Host Basics → Rules <code>obs-migration</code> → one leadership sentence.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+  </div>
+</div>
+<script src="slides/deck.js"></script>
+</body>
+</html>

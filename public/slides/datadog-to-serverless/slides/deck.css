@@ -1,0 +1,281 @@
+/* Metrics workshop slides — Neon-on-dark (Metrics Analyst style) */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #06080c;
+  --surface: #0f1218;
+  --card: #141820;
+  --border: rgba(255,255,255,0.08);
+  --text: #f4f6f9;
+  --muted: #8b95a8;
+  --dim: #5c6578;
+  --teal: #00bfb3;
+  --cyan: #22d3ee;
+  --purple: #a78bfa;
+  --blue: #60a5fa;
+  --orange: #f59e0b;
+  --green: #34d399;
+  --red: #f87171;
+  --max-w: 1180px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+.deck {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.deck-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(6,8,12,0.92);
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.deck-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.deck-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.deck-nav button {
+  font-family: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--teal);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+.deck-nav button:hover { background: rgba(0,191,179,0.12); }
+.deck-nav button:disabled { opacity: 0.35; cursor: default; }
+
+.deck-dots {
+  display: flex;
+  gap: 0.35rem;
+}
+.deck-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.deck-dots span.active {
+  background: var(--teal);
+  transform: scale(1.15);
+}
+
+.slide-viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  padding: 1.5rem 1.75rem 1.25rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(12px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 0.5rem;
+}
+
+.slide h1 {
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  max-width: 920px;
+  margin-bottom: 0.55rem;
+}
+.slide h1 em {
+  font-style: normal;
+  color: var(--cyan);
+}
+
+.lede {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  max-width: 780px;
+  margin-bottom: 0.75rem;
+}
+
+.value-outcome {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--green);
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  margin-bottom: 1rem;
+  max-width: 780px;
+  line-height: 1.4;
+}
+
+.slide-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 900px) {
+  .slide-body { grid-template-columns: 1fr; }
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.metric-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr 140px;
+  gap: 0.75rem;
+  align-items: center;
+}
+.metric-card .tag {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  color: var(--dim);
+  margin-bottom: 0.25rem;
+}
+.metric-card h3 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+.metric-card p {
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.metric-card .chart {
+  width: 140px;
+  height: 56px;
+}
+
+.diagram-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+}
+.diagram-panel .panel-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 0.35rem;
+}
+.diagram-panel .panel-stat {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 0.75rem;
+}
+.diagram-panel svg {
+  flex: 1;
+  width: 100%;
+  min-height: 180px;
+}
+
+.slide-footer {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(0,191,179,0.06);
+  border: 1px solid rgba(0,191,179,0.18);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+.slide-footer strong { color: var(--text); }
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+.pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.pill-teal { color: var(--teal); background: rgba(0,191,179,0.1); }
+.pill-purple { color: var(--purple); background: rgba(167,139,250,0.12); }
+.pill-blue { color: var(--blue); background: rgba(96,165,250,0.12); }
+.pill-orange { color: var(--orange); background: rgba(245,158,11,0.12); }
+.pill-green { color: var(--green); background: rgba(52,211,153,0.12); }
+
+.elastic-mark {
+  position: absolute;
+  bottom: 1rem;
+  right: 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--dim);
+  letter-spacing: 0.06em;
+}

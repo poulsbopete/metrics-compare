@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Horizon Media — From Noise to Signal</title>
+  <link rel="stylesheet" href="slides/deck.css">
+</head>
+<body>
+<div class="deck">
+  <header class="deck-header">
+    <span class="deck-title">Horizon Media · From Noise to Signal</span>
+    <nav class="deck-nav">
+      <button type="button" data-nav="prev" aria-label="Previous">‹</button>
+      <div class="deck-dots"></div>
+      <button type="button" data-nav="next" aria-label="Next">›</button>
+    </nav>
+  </header>
+  <div class="slide-viewport">
+
+    <section class="slide" data-slide="1">
+      <div class="eyebrow">Horizon Media · Challenge 1</div>
+      <h1>See what you’re paying for — and what you can <em>stop storing.</em></h1>
+      <p class="value-outcome">Customer value: A clear baseline of noisy vs useful metrics before the next renewal conversation.</p>
+      <p class="lede">Elastic Agent and OTel ship metrics into Observability Serverless. Most teams discover 10–30% of series never drive an alert or dashboard — but still hit the bill.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>Honest ingest picture</h3>
+              <p>Scrape churn, debug routes, and high-cardinality labels — named and measurable.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><polyline fill="none" stroke="#f87171" stroke-width="2" points="0,40 25,35 50,42 75,20 100,38 125,15 140,30"/></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>Signal vs noise ratio</h3>
+              <p>What leadership monitors: errors, requests, heartbeats — vs everything else.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><rect x="4" y="20" width="132" height="28" rx="4" fill="#141820"/><rect x="4" y="20" width="40" height="28" fill="#00bfb3"/></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>One Agent path</h3>
+              <p>Elastic Agent / EDOT into Serverless — same PromQL, no rip-and-replace.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><text x="70" y="32" text-anchor="middle" fill="#00bfb3" font-size="9">metrics-generic.otel-default</text></svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">Why this matters to the CIO</div>
+          <div class="panel-stat">Before you optimize</div>
+          <svg viewBox="0 0 320 200">
+            <text x="160" y="30" text-anchor="middle" fill="#8b95a8" font-size="10">Elastic Agent → Observability Serverless</text>
+            <rect x="60" y="50" width="200" height="100" rx="10" fill="#141820" stroke="#f59e0b"/>
+            <text x="160" y="82" text-anchor="middle" fill="#f59e0b" font-size="11">Paying for data nobody queries</text>
+            <text x="160" y="102" text-anchor="middle" fill="#8b95a8" font-size="9">Audit first → then drop with confidence</text>
+            <text x="160" y="130" text-anchor="middle" fill="#00bfb3" font-size="10">Outcome: defensible % to cut at renewal</text>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-teal">Elastic Agent</span>
+            <span class="pill pill-orange">Serverless</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Audit <code>metrics-generic.otel-default</code> in Streams — name your top noise sources.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="2">
+      <div class="eyebrow">Horizon Media · Challenge 2</div>
+      <h1>Cut the bill at ingest — <em>keep what matters</em> for Sev-1.</h1>
+      <p class="value-outcome">Customer value: Immediate ingest reduction without losing login, playback, or billing signals.</p>
+      <p class="lede">On Serverless, Streams drops noise and downsamples signal; federated data sources keep compliance history and long-term trends without breaking the budget.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>~10% off the bill now</h3>
+              <p>Drop <code>/debug/pprof</code> and scrape churn before it’s stored.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><line x1="0" y1="28" x2="100" y2="28" stroke="#5c6578"/><line x1="100" y1="28" x2="140" y2="28" stroke="#f87171" stroke-dasharray="4 3"/></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>Federated long-term store</h3>
+              <p>Compliance and historical trending via federated data sources — without copying everything into observability.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><rect x="10" y="24" width="120" height="8" fill="#141820"/><rect x="10" y="24" width="72" height="8" fill="#00bfb3"/></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>Months of trends, not months of spend</h3>
+              <p>Elastic Serverless is ~25% the cost of Datadog — long-range signal without breaking the budget.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><polyline fill="none" stroke="#60a5fa" stroke-width="2" points="0,15 35,18 70,16 105,20 140,17"/></svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">Source → Destination</div>
+          <div class="panel-stat">Drop · Federate · Downsample</div>
+          <svg viewBox="0 0 320 200">
+            <rect x="20" y="80" width="70" height="40" rx="6" fill="#141820" stroke="#8b95a8"/><text x="55" y="105" text-anchor="middle" fill="#8b95a8" font-size="9">Agent</text>
+            <rect x="125" y="60" width="70" height="80" rx="6" fill="#141820" stroke="#00bfb3"/><text x="160" y="95" text-anchor="middle" fill="#00bfb3" font-size="9">Streams</text>
+            <rect x="230" y="70" width="70" height="60" rx="6" fill="#141820" stroke="#34d399"/><text x="265" y="105" text-anchor="middle" fill="#34d399" font-size="9">Signal</text>
+            <path d="M90,100 H125 M195,100 H230" stroke="#5c6578" stroke-width="2"/>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-teal">/app/streams</span>
+            <span class="pill pill-green">~25% of Datadog</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Apply Drop + lifecycle on your stream — capture ingest ↓ % for your cost story.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="3">
+      <div class="eyebrow">Horizon Media · Challenge 3</div>
+      <h1>A TCO story leadership can <em>repeat in the hallway.</em></h1>
+      <p class="value-outcome">Customer value: Measured savings from Elastic Agent + Streams on Serverless — not a generic cost slide.</p>
+      <p class="lede">Connect Drop and retention to dollars. Your platform team leaves with numbers from the lab project — same stack you’ll run in production.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>Measured savings</h3>
+              <p>Real noise vs signal counts from your stream — not vendor estimates.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><text x="70" y="32" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">−10–25%</text></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>Why it matters to you</h3>
+              <p>“We pay for signal, not scrape churn — Elastic Agent into Serverless, ~25% Datadog TCO.”</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><text x="70" y="32" text-anchor="middle" fill="#00bfb3" font-size="11">TCO</text></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>Path to production</h3>
+              <p>Ingest proof today → adoption velocity and agentic ROI on the same stack.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><path d="M10,28 H130" stroke="#a78bfa" stroke-width="2"/></svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">Leadership summary</div>
+          <div class="panel-stat">From Serverless Streams</div>
+          <svg viewBox="0 0 320 200">
+            <rect x="40" y="40" width="240" height="120" rx="10" fill="#141820" stroke="#00bfb3"/>
+            <text x="60" y="70" fill="#8b95a8" font-size="9">"Elastic Agent ships OTel to Serverless.</text>
+            <text x="60" y="88" fill="#8b95a8" font-size="9">We dropped [X]% noisy telemetry at ingest —</text>
+            <text x="60" y="106" fill="#8b95a8" font-size="9">errors stay full fidelity for Sev-1."</text>
+            <text x="60" y="130" fill="#00bfb3" font-size="9">Horizon — Streams savings dashboard</text>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-teal">Elastic Agent</span>
+            <span class="pill pill-green">Serverless</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Open the savings dashboard — deliver one Drop %, one retention idea, one PB/TB example.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+  </div>
+</div>
+<script src="slides/deck.js"></script>
+</body>
+</html>

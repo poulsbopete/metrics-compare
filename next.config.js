@@ -1,6 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Keep /slides/.../ trailing slash so relative deck.css/js resolve correctly.
+  trailingSlash: true,
+  // Workshop slide decks under /slides/* are iframe-embedded in Instruqt labs.
+  async headers() {
+    return [
+      {
+        source: "/slides/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors *" },
+        ],
+      },
+    ];
+  },
   webpack: (config, { isServer, webpack }) => {
     if (isServer) {
       // Ignore optional OpenTelemetry dependencies that may not be installed

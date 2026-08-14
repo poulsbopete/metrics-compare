@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Companion — Metrics GA</title>
+  <link rel="stylesheet" href="slides/deck.css">
+</head>
+<body>
+<div class="deck">
+  <header class="deck-header">
+    <span class="deck-title">Companion · Metrics GA — PromQL &amp; DORA</span>
+    <nav class="deck-nav">
+      <button type="button" data-nav="prev" aria-label="Previous">‹</button>
+      <div class="deck-dots"></div>
+      <button type="button" data-nav="next" aria-label="Next">›</button>
+    </nav>
+  </header>
+  <div class="slide-viewport">
+
+    <section class="slide" data-slide="1">
+      <div class="eyebrow">Native PromQL</div>
+      <h1>Their PromQL. Your OTel backend. <em>Zero retrain.</em></h1>
+      <p class="lede">Run identical queries in Metrics UI and via PROMQL ES|QL on BlueRiver seed — disprove the #1 Grafana objection in five minutes.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">METRICS UI</div>
+              <h3>Grafana runbook paste</h3>
+              <p>sum by (service.name) (rate(http.server.requests[5m]))</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><polyline fill="rgba(0,191,179,0.15)" stroke="#00bfb3" stroke-width="2" points="0,45 35,38 70,28 105,32 140,18"/></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">PROMQL ES|QL</div>
+              <h3>Discover + unified stack</h3>
+              <p>One platform for metrics, logs, traces later.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><rect x="8" y="12" width="124" height="32" rx="4" fill="#141820" stroke="#22d3ee"/><text x="70" y="32" text-anchor="middle" fill="#22d3ee" font-size="7">PROMQL index=...</text></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">PROOF</div>
+              <h3>blueriver-* on Serverless</h3>
+              <p>Managed OTLP seed — Last 24h in lab.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><circle cx="70" cy="28" r="16" fill="none" stroke="#34d399" stroke-width="2"/><text x="70" y="32" text-anchor="middle" fill="#34d399" font-size="8">OTel</text></svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">Migration story</div>
+          <div class="panel-stat">Backend swap</div>
+          <svg viewBox="0 0 320 200">
+            <rect x="40" y="60" width="100" height="50" rx="8" fill="#141820" stroke="#f59e0b"/><text x="90" y="90" text-anchor="middle" fill="#f59e0b" font-size="10">Grafana/Mimir</text>
+            <text x="160" y="90" text-anchor="middle" fill="#5c6578" font-size="16">→</text>
+            <rect x="180" y="60" width="100" height="50" rx="8" fill="#141820" stroke="#00bfb3"/><text x="230" y="90" text-anchor="middle" fill="#00bfb3" font-size="10">Elastic Metrics</text>
+            <text x="160" y="140" text-anchor="middle" fill="#8b95a8" font-size="9">Same PromQL · same dashboards · new economics</text>
+            <text x="160" y="165" text-anchor="middle" fill="#f4f6f9" font-size="10">30× query perf · 4× TCO vs Datadog</text>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-teal">PromQL GA</span>
+            <span class="pill pill-blue">ES|QL</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>Challenge 1:</strong> Instant + rate PromQL on blueriver-* — cite Elastic #promql proof.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="2">
+      <div class="eyebrow">DORA language</div>
+      <h1>Engineering KPIs on <em>live charts</em> — not platform slides.</h1>
+      <p class="lede">OOTB K8s/OTel dashboards + deployment.completed / error PromQL — speak DORA with Gartner CC scores (#1 DevOps, #1 SW Eng, #2 SRE).</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">DEPLOYMENT FREQUENCY</div>
+              <h3>deployment.completed</h3>
+              <p>DORA “velocity” language buyers report upward.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><rect x="12" y="30" width="16" height="22" fill="#00bfb3"/><rect x="36" y="22" width="16" height="30" fill="#00bfb3"/><rect x="60" y="26" width="16" height="26" fill="#00bfb3"/></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">CHANGE FAIL RATE</div>
+              <h3>service.errors</h3>
+              <p>RED metrics SREs already monitor.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><polyline fill="none" stroke="#f87171" stroke-width="2" points="0,20 40,35 80,15 120,40"/></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">OOTB K8s</div>
+              <h3>No custom build</h3>
+              <p>First meeting ready — Elastic #kubernetes proof.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><polygon points="70,8 95,45 45,45" fill="none" stroke="#60a5fa" stroke-width="2"/></svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">Gartner CC while demoing</div>
+          <div class="panel-stat">Say out loud</div>
+          <svg viewBox="0 0 320 200">
+            <text x="40" y="50" fill="#00bfb3" font-size="11">#1 DevOps Engineering</text>
+            <text x="40" y="75" fill="#00bfb3" font-size="11">#1 Software Engineering</text>
+            <text x="40" y="100" fill="#22d3ee" font-size="11">#2 Site Reliability Engineering</text>
+            <rect x="180" y="40" width="120" height="100" rx="8" fill="#141820" stroke="#5c6578"/>
+            <text x="240" y="75" text-anchor="middle" fill="#8b95a8" font-size="9">Live chart</text>
+            <text x="240" y="95" text-anchor="middle" fill="#8b95a8" font-size="9">+ competitive</text>
+            <text x="240" y="115" text-anchor="middle" fill="#8b95a8" font-size="9">proof together</text>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-green">DORA-shaped</span>
+            <span class="pill pill-purple">Not a formal scorecard</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>Challenge 2:</strong> OOTB dashboard + lab PromQL — 60s pitch to DevOps/SRE champion.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="3">
+      <div class="eyebrow">Offering close</div>
+      <h1>One Serverless story: <em>TCO → Streams → Metrics GA.</em></h1>
+      <p class="lede">Package consolidation economics, ingest control, and PromQL preservation in ~60 seconds for CFO + engineering champion.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">W1 SALES LAB</div>
+              <h3>Consolidation / TCO</h3>
+              <p>Fewer vendors, predictable spend.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><rect x="20" y="20" width="100" height="24" rx="4" fill="#00bfb3" opacity="0.3"/></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">STREAMS</div>
+              <h3>Signal economics</h3>
+              <p>Pay for what drives alerts — extends TCO.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><rect x="4" y="24" width="132" height="20" fill="#141820"/><rect x="4" y="24" width="80" height="20" fill="#22d3ee" opacity="0.7"/></svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">METRICS GA</div>
+              <h3>PromQL + OTel day one</h3>
+              <p>Engineers adopt — backend swap not behavior change.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56"><polyline fill="none" stroke="#a78bfa" stroke-width="2" points="0,40 70,15 140,25"/></svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">60-second Offering</div>
+          <div class="panel-stat">Elastic #offering</div>
+          <svg viewBox="0 0 320 200">
+            <rect x="30" y="50" width="260" height="90" rx="10" fill="#141820" stroke="#00bfb3"/>
+            <text x="160" y="80" text-anchor="middle" fill="#f4f6f9" font-size="10">"PromQL preserved · OTel day one ·</text>
+            <text x="160" y="98" text-anchor="middle" fill="#f4f6f9" font-size="10">Streams economics · one Serverless tier"</text>
+            <text x="160" y="125" text-anchor="middle" fill="#00bfb3" font-size="9">→ W3 Agentic ROI on same stack</text>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-teal">Close</span>
+            <span class="pill pill-orange">SE follow-on: migration lab</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>Challenge 3:</strong> Deliver Offering cost story → <strong>Check</strong> to complete companion lab.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+  </div>
+</div>
+<script src="slides/deck.js"></script>
+</body>
+</html>

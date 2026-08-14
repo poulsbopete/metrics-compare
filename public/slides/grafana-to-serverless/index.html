@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grafana to Elastic — PromQL Continuity &amp; Serverless TCO</title>
+  <link rel="stylesheet" href="slides/deck.css">
+</head>
+<body>
+<div class="deck">
+  <header class="deck-header">
+    <span class="deck-title">Grafana → Elastic · PromQL &amp; TCO</span>
+    <nav class="deck-nav">
+      <button type="button" data-nav="prev" aria-label="Previous">‹</button>
+      <div class="deck-dots"></div>
+      <button type="button" data-nav="next" aria-label="Next">›</button>
+    </nav>
+  </header>
+  <div class="slide-viewport">
+
+    <section class="slide" data-slide="1">
+      <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
+      <h1>Keep <em>PromQL</em> — prove the same services on Serverless.</h1>
+      <p class="value-outcome">Customer value: No rewrite of Grafana runbooks to evaluate Elastic as the metrics backend.</p>
+      <p class="lede">Your SREs already think in PromQL and service names. Elastic Observability Serverless ingests the same OTel/Prom-style series so Queries stay familiar while the backend consolidates.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>PromQL muscle memory</h3>
+              <p>Horizon services on <code>metrics-generic.otel-default</code> — same names you’d panel in Grafana.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>One ingest path</h3>
+              <p>Cloud, on-prem, and direct OTLP → one Serverless project — not a second metrics silo.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">YOU GET</div>
+              <h3>Signal you keep</h3>
+              <p>Request/error style series for playback, auth, CDN, billing — what Grafana already watches.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Open Metrics → run the ES|QL copies → name one PromQL-style signal you’d keep.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="2">
+      <div class="eyebrow">Competitive lab · Challenge 2 · ~15 min</div>
+      <h1>Grafana continuity — <em>panels map</em>, plus easy migration.</h1>
+      <p class="value-outcome">Customer value: Familiar boards on Kibana — and a path to migrate a few real Grafana exports without a rewrite project.</p>
+      <p class="lede">Open <strong>Horizon — Grafana continuity</strong>, then the sample board migrated with <strong>obs-migrate</strong>. Unsupported panels and draft alerts are tagged for review — not silently dropped.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">MAP</div>
+              <h3>Grafana → Kibana</h3>
+              <p>Time series, stat, table → same story on the continuity board.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">MIGRATE</div>
+              <h3>obs-migrate</h3>
+              <p>Sample: Prometheus Basics + PromQL alerts → Dashboards + Rules tagged <code>obs-migration</code>.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">REVIEW</div>
+              <h3>Honest queue</h3>
+              <p>World Map unsupported; draft rules stay disabled until you enable them.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Continuity board → Sample: Prometheus Basics → Rules filter <code>obs-migration</code>.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="3">
+      <div class="eyebrow">Competitive lab · Challenge 3 · ~15 min</div>
+      <h1>Serverless TCO — cut storage <em>at the stream</em>.</h1>
+      <p class="value-outcome">Customer value: Lower Prom/Grafana Cloud–class storage cost without losing Sev-1 signal.</p>
+      <p class="lede">Drop <code>/debug/pprof</code> at ingest, keep successful-data lifecycle bounded, and read <strong>Horizon — Streams savings</strong>. Primary contrast: self-managed Prom / Grafana Cloud retention cost — not a dashboard rewrite.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">LEVER</div>
+              <h3>Streams Drop</h3>
+              <p>Noise never stored — immediate ingest reduction.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">LEVER</div>
+              <h3>Lifecycle</h3>
+              <p>Delete + downsample so long-range charts stay affordable.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">TAKEAWAY</div>
+              <h3>Leadership line</h3>
+              <p>Keep PromQL + Grafana workflows; move the backend to Serverless and stop paying for scrape noise.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Apply Drop → open savings dashboard → leave with one TCO sentence.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+  </div>
+</div>
+<script src="slides/deck.js"></script>
+</body>
+</html>
