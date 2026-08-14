@@ -20,9 +20,9 @@
 
     <section class="slide" data-slide="1">
       <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
-      <h1>Your <em>PromQL</em> — run it in ES|QL on Serverless.</h1>
+      <h1>Your <em>PromQL</em> — paste it into Metrics.</h1>
       <p class="value-outcome">Customer value: Prometheus / Grafana SREs keep their language; Elastic is the backend, not a rewrite.</p>
-      <p class="lede">Start in Discover. Paste full <code>promql index=metrics-generic.otel-default …</code> lines — same expressions as Grafana (<code>sum by (service.name) (http.server.requests)</code>, <code>rate(...[5m])</code>). Bare PromQL without the <code>promql</code> keyword will not parse.</p>
+      <p class="lede">Open <strong>Metrics</strong> (not Discover). Paste the same expressions as Grafana Explore: <code>sum by (service.name) (http.server.requests)</code>, <code>rate(...[5m])</code>, <code>service.errors</code>. Horizon services light up on <code>metrics-generic.otel-default</code>.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card metric-card-solo">
@@ -35,8 +35,8 @@
           <div class="metric-card metric-card-solo">
             <div>
               <div class="tag">ON ELASTIC</div>
-              <h3>Same expression, ES|QL shell</h3>
-              <p><code>PROMQL index=metrics-generic.otel-default …</code> — Horizon services light up without relabel surgery.</p>
+              <h3>Metrics app = Explore habit</h3>
+              <p>Paste bare PromQL — no ES|QL wrapper required for the customer demo.</p>
             </div>
           </div>
           <div class="metric-card metric-card-solo">
@@ -48,7 +48,7 @@
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Discover → replace logs* → run the three PROMQL queries → name one expression you’d keep.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Metrics → Last 2 hours → paste A / B / C → name one expression you’d keep.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
