@@ -68,8 +68,8 @@ export default function ElasticMetricsPocPanel({
       <p className="text-xs text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
         Sample/sec worksheet for TSDS list floors (
         {ELASTIC_TSDS_METRICS_PUBLISHED_INGEST_FLOOR_PER_GB}/GB ingest,{" "}
-        {ELASTIC_TSDS_METRICS_PUBLISHED_RETENTION_FLOOR_PER_GB}/GB-month retention). Distinct from Datadog
-        host + custom-metric SKUs — use the bar chart for side-by-side vendor totals.
+        {ELASTIC_TSDS_METRICS_PUBLISHED_RETENTION_FLOOR_PER_GB}/GB-month retention). Use the bar chart below for
+        side-by-side vendor totals.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

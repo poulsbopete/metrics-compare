@@ -54,9 +54,9 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
       "Compare Elastic with Grafana Cloud and common self-managed options (Prometheus, Thanos, VictoriaMetrics, Cortex).",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "grafana-cloud", "prometheus", "thanos", "victoria-metrics", "cortex"],
-      tracing: [...ELASTIC_TRACING, "grafana-tracing", "tempo-self-hosted", "datadog-tracing"],
-      logs: [...ELASTIC_LOGS, "grafana-logs", "loki-self-hosted", "datadog-logs"],
-      security: [...ELASTIC_SECURITY, "datadog-security"],
+      tracing: [...ELASTIC_TRACING, "grafana-tracing", "tempo-self-hosted"],
+      logs: [...ELASTIC_LOGS, "grafana-logs", "loki-self-hosted"],
+      security: [...ELASTIC_SECURITY],
     },
     presets: {
       primaryMetricType: "Prometheus",
@@ -82,10 +82,10 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
     label: "Currently using Dynatrace",
     description: "Compare Elastic Cloud Hosted and Serverless with Dynatrace pricing.",
     platformIds: {
-      metrics: [...ELASTIC_METRICS, "dynatrace", "datadog"],
-      tracing: [...ELASTIC_TRACING, "dynatrace-tracing", "datadog-tracing"],
-      logs: [...ELASTIC_LOGS, "dynatrace-logs", "datadog-logs"],
-      security: [...ELASTIC_SECURITY, "dynatrace-security", "datadog-security"],
+      metrics: [...ELASTIC_METRICS, "dynatrace"],
+      tracing: [...ELASTIC_TRACING, "dynatrace-tracing"],
+      logs: [...ELASTIC_LOGS, "dynatrace-logs"],
+      security: [...ELASTIC_SECURITY, "dynatrace-security"],
     },
   },
   {
@@ -94,9 +94,9 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
     description: "Compare Elastic with cardinality-focused SaaS metrics platforms.",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "observe-inc", "chronosphere", "grafana-cloud"],
-      tracing: [...ELASTIC_TRACING, "grafana-tracing", "datadog-tracing"],
-      logs: [...ELASTIC_LOGS, "grafana-logs", "datadog-logs"],
-      security: [...ELASTIC_SECURITY, "datadog-security"],
+      tracing: [...ELASTIC_TRACING, "grafana-tracing"],
+      logs: [...ELASTIC_LOGS, "grafana-logs"],
+      security: [...ELASTIC_SECURITY],
     },
   },
   {
@@ -104,10 +104,10 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
     label: "Currently using Splunk / New Relic",
     description: "Compare Elastic with Splunk Observability and New Relic metrics pricing.",
     platformIds: {
-      metrics: [...ELASTIC_METRICS, "splunk-o11y", "new-relic", "datadog"],
-      tracing: [...ELASTIC_TRACING, "datadog-tracing", "new-relic"],
-      logs: [...ELASTIC_LOGS, "datadog-logs", "splunk-o11y"],
-      security: [...ELASTIC_SECURITY, "datadog-security"],
+      metrics: [...ELASTIC_METRICS, "splunk-o11y", "new-relic"],
+      tracing: [...ELASTIC_TRACING, "new-relic"],
+      logs: [...ELASTIC_LOGS, "splunk-o11y"],
+      security: [...ELASTIC_SECURITY],
     },
   },
   {
@@ -140,4 +140,13 @@ export function getScenarioPlatformIds(
     return new Set(allPlatformIds);
   }
   return new Set(ids.filter((id) => allPlatformIds.includes(id)));
+}
+
+export function isDatadogPlatformId(id: string): boolean {
+  return id === "datadog" || id.startsWith("datadog-");
+}
+
+/** Datadog config + picker only for Datadog or Compare-all scenarios. */
+export function scenarioShowsDatadog(scenarioId: CompetitorScenarioId): boolean {
+  return scenarioId === "datadog" || scenarioId === "all";
 }

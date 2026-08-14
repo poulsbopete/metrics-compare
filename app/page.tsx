@@ -65,6 +65,7 @@ import ElasticMetricsPocPanel from "@/components/ElasticMetricsPocPanel";
 import {
   DEFAULT_COMPETITOR_SCENARIO_ID,
   getCompetitorScenario,
+  scenarioShowsDatadog,
   type CompetitorScenarioId,
 } from "@/lib/competitorScenarios";
 import {
@@ -909,7 +910,8 @@ export default function Home() {
                   />
                 )}
 
-                {/* Datadog host licensing */}
+                {/* Datadog host licensing — only when comparing Datadog */}
+                {scenarioShowsDatadog(competitorScenarioId) && (
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                     Datadog host licensing
@@ -954,6 +956,7 @@ export default function Home() {
                     )}
                   </div>
                 </div>
+                )}
 
                 {/* Operational Cost Options */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">

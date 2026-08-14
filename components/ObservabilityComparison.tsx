@@ -6,6 +6,8 @@ import {
   DEFAULT_COMPETITOR_SCENARIO_ID,
   getCompetitorScenario,
   getScenarioPlatformIds,
+  isDatadogPlatformId,
+  scenarioShowsDatadog,
   type CompetitorScenarioId,
 } from "@/lib/competitorScenarios";
 import { getOperationalFTE, getFTELabel } from "@/lib/operationalCosts";
@@ -114,7 +116,7 @@ export default function ObservabilityComparison({
     [platforms, activePlatformIds, tcoCosts]
   );
 
-  // Find Datadog TCO for this tab to compute savings %
+  // Find Datadog TCO for this tab to compute savings % — only when Datadog is in the comparison
   const DATADOG_IDS: Partial<Record<ObservabilityType, string>> = {
     metrics: "datadog",
     tracing: "datadog-tracing",
@@ -122,7 +124,11 @@ export default function ObservabilityComparison({
     security: "datadog-security",
   };
   const datadogId = DATADOG_IDS[type];
-  const datadogCost = datadogId ? (tcoCosts[datadogId] ?? 0) : 0;
+  const datadogInComparison =
+    !!datadogId &&
+    activePlatformIds.has(datadogId) &&
+    scenarioShowsDatadog(competitorScenarioId);
+  const datadogCost = datadogInComparison ? (tcoCosts[datadogId!] ?? 0) : 0;
 
   const hasOperationalCosts = Object.keys(operationalCosts).length > 0;
 
@@ -155,15 +161,18 @@ export default function ObservabilityComparison({
     color: p.color,
   }));
 
-  // Sort all platforms so Elastic comes first in the picker, then alphabetically
-  const pickerPlatforms = useMemo(() =>
-    [...platforms].sort((a, b) => {
-      const aE = isElasticPlatform(a.id) ? 0 : 1;
-      const bE = isElasticPlatform(b.id) ? 0 : 1;
-      return aE !== bE ? aE - bE : a.name.localeCompare(b.name);
-    }),
-    [platforms]
-  );
+  // Sort all platforms so Elastic comes first in the picker, then alphabetically.
+  // Hide Datadog from the picker unless this is a Datadog / Compare-all scenario.
+  const pickerPlatforms = useMemo(() => {
+    const showDatadog = scenarioShowsDatadog(competitorScenarioId);
+    return [...platforms]
+      .filter((p) => showDatadog || !isDatadogPlatformId(p.id))
+      .sort((a, b) => {
+        const aE = isElasticPlatform(a.id) ? 0 : 1;
+        const bE = isElasticPlatform(b.id) ? 0 : 1;
+        return aE !== bE ? aE - bE : a.name.localeCompare(b.name);
+      });
+  }, [platforms, competitorScenarioId]);
 
   return (
     <div className="space-y-4">
