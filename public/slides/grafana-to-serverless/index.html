@@ -20,35 +20,35 @@
 
     <section class="slide" data-slide="1">
       <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
-      <h1>Keep <em>PromQL</em> — prove the same services on Serverless.</h1>
-      <p class="value-outcome">Customer value: No rewrite of Grafana runbooks to evaluate Elastic as the metrics backend.</p>
-      <p class="lede">Your SREs already think in PromQL and service names. Elastic Observability Serverless ingests the same OTel/Prom-style series so Queries stay familiar while the backend consolidates.</p>
+      <h1>Your <em>PromQL</em> — run it in ES|QL on Serverless.</h1>
+      <p class="value-outcome">Customer value: Prometheus / Grafana SREs keep their language; Elastic is the backend, not a rewrite.</p>
+      <p class="lede">Start in Discover with ES|QL. Paste the same <code>sum by (service.name) (http.server.requests)</code> and <code>rate(...[5m])</code> you use in Grafana — wrapped in the <code>PROMQL</code> command on <code>metrics-generic.otel-default</code>.</p>
       <div class="slide-body">
         <div class="cards">
-          <div class="metric-card">
+          <div class="metric-card metric-card-solo">
             <div>
-              <div class="tag">YOU GET</div>
-              <h3>PromQL muscle memory</h3>
-              <p>Horizon services on <code>metrics-generic.otel-default</code> — same names you’d panel in Grafana.</p>
+              <div class="tag">GRAFANA TODAY</div>
+              <h3>PromQL you already run</h3>
+              <p><code>sum by (service.name) (http.server.requests)</code> · <code>rate(http.server.requests[5m])</code> · <code>service.errors</code></p>
             </div>
           </div>
-          <div class="metric-card">
+          <div class="metric-card metric-card-solo">
+            <div>
+              <div class="tag">ON ELASTIC</div>
+              <h3>Same expression, ES|QL shell</h3>
+              <p><code>PROMQL index=metrics-generic.otel-default …</code> — Horizon services light up without relabel surgery.</p>
+            </div>
+          </div>
+          <div class="metric-card metric-card-solo">
             <div>
               <div class="tag">YOU GET</div>
               <h3>One ingest path</h3>
-              <p>Cloud, on-prem, and direct OTLP → one Serverless project — not a second metrics silo.</p>
-            </div>
-          </div>
-          <div class="metric-card">
-            <div>
-              <div class="tag">YOU GET</div>
-              <h3>Signal you keep</h3>
-              <p>Request/error style series for playback, auth, CDN, billing — what Grafana already watches.</p>
+              <p>OTel / Prom-style series → one Serverless project — not a second metrics silo.</p>
             </div>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Open Metrics → run the ES|QL copies → name one PromQL-style signal you’d keep.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Discover → replace logs* → run the three PROMQL queries → name one expression you’d keep.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
