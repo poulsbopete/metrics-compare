@@ -14,7 +14,7 @@ export interface CompetitorScenario {
   id: CompetitorScenarioId;
   label: string;
   description: string;
-  /** Platform IDs pre-selected per signal tab (always includes both Elastic deployment options). */
+  /** Platform IDs pre-selected per signal tab (always includes ECH, Serverless, and Self-hosted on metrics). */
   platformIds: Record<ObservabilityTabSignal, string[]>;
   /** Optional metrics-tab defaults when this scenario is selected. */
   presets?: {
@@ -25,7 +25,7 @@ export interface CompetitorScenario {
   };
 }
 
-const ELASTIC_METRICS = ["elastic-ech", "elastic-serverless"] as const;
+const ELASTIC_METRICS = ["elastic-ech", "elastic-serverless", "elastic-self-hosted"] as const;
 const ELASTIC_TRACING = ["elastic-ech-tracing", "elastic-tracing"] as const;
 const ELASTIC_LOGS = ["elastic-ech-logs", "elastic-logs"] as const;
 const ELASTIC_SECURITY = ["elastic-security-ech", "elastic-security"] as const;

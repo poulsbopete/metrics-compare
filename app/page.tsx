@@ -826,13 +826,13 @@ export default function Home() {
                 {/* Elastic metrics + retention (Serverless TSDS; logs/traces use full Complete rates on their tabs) */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Elastic Serverless retention
+                    Elastic retention
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    <strong>Serverless always uses {SERVERLESS_STREAMS_S3_ARCHITECTURE.summary}:</strong>{" "}
+                    <strong>Serverless</strong> uses {SERVERLESS_STREAMS_S3_ARCHITECTURE.summary}:{" "}
                     {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}-day hot on Observability Complete, then Streams
-                    sends the rest to object storage (S3). This slider sets <strong>total retention</strong> (hot +
-                    S3). <strong>ECH</strong> ignores it and uses fixed {ECH_HOT_FROZEN_ARCHITECTURE.summary} per{" "}
+                    sends the rest to object storage (S3). <strong>ECH</strong> uses the same total retention
+                    window as {ECH_HOT_FROZEN_ARCHITECTURE.hotDays}-day hot + ILM writable-frozen blob (
                     <a
                       href={ELASTIC_CLOUD_HOSTED_PRICING_URL}
                       className="underline"
@@ -841,7 +841,7 @@ export default function Home() {
                     >
                       Cloud Hosted pricing
                     </a>
-                    .
+                    ). Self-hosted stays a fixed infra estimate.
                   </p>
                   <div className="space-y-4">
                     <div>
@@ -887,12 +887,12 @@ export default function Home() {
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       In short: keep recent data searchable for{" "}
-                      {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays} day, then write the rest to blob/object storage
-                      (S3, ~${SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth}/GB-mo) for long-term trending and
-                      retention. Metrics ingest + hot use the Observability Complete volume tier table × 25% (TSDS;
-                      as low as $
-                      {OBSERVABILITY_SERVERLESS_PUBLISHED.complete.ingestMetricsPerGB}/GB). ECH uses 1d hot + ILM
-                      blob plus the $200/mo cluster minimum.
+                      {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays} day, then age the rest to object storage for
+                      long-term retention. Serverless ages to S3 (~$
+                      {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth}/GB-mo); ECH ages to ILM blob (~$
+                      {0.033}/GB-mo snapshot) for the same total window. Metrics ingest + Serverless hot use the
+                      Observability Complete volume tier table × 25% (TSDS). ECH also includes the ~$200/mo cluster
+                      minimum.
                     </p>
                   </div>
                 </div>

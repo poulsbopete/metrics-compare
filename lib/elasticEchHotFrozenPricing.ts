@@ -32,6 +32,8 @@ export const ECH_CLOUD_HOSTED_LIST_RATES = {
 export interface EchHotFrozenOptions {
   hotDays?: number;
   ilmBlobDays?: number;
+  /** When set, ilmBlobDays = max(0, totalDays − hotDays). */
+  totalRetentionMonths?: number;
 }
 
 /**
@@ -44,7 +46,12 @@ export function calculateEchHotFrozenVolumeCost(
 ): ElasticServerlessCostBreakdown {
   const rates = ECH_CLOUD_HOSTED_LIST_RATES;
   const hotDays = options.hotDays ?? ECH_HOT_FROZEN_ARCHITECTURE.hotDays;
-  const ilmBlobDays = options.ilmBlobDays ?? ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays;
+  let ilmBlobDays = options.ilmBlobDays;
+  if (options.totalRetentionMonths != null && options.totalRetentionMonths >= 0) {
+    const totalDays = Math.round(options.totalRetentionMonths * ELASTIC_DAYS_PER_MONTH);
+    ilmBlobDays = Math.max(0, totalDays - hotDays);
+  }
+  ilmBlobDays = ilmBlobDays ?? ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays;
 
   if (monthlyIngestGB <= 0) {
     return {

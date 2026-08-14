@@ -313,8 +313,13 @@ function serverlessBreakdown(
   });
 }
 
-function echBreakdown(monthlyIngestGB: number): ElasticServerlessCostBreakdown {
-  return calculateEchHotFrozenVolumeCost(monthlyIngestGB);
+function echBreakdown(
+  monthlyIngestGB: number,
+  options: ElasticServerlessPricingOptions
+): ElasticServerlessCostBreakdown {
+  return calculateEchHotFrozenVolumeCost(monthlyIngestGB, {
+    totalRetentionMonths: options.retentionMonths,
+  });
 }
 
 function costWithPolicy(
@@ -349,7 +354,11 @@ function costWithPolicy(
           },
           !!opts.metricsTsd
         )
-      : echBreakdown(adjustment.billableMonthlyIngestGB);
+      : echBreakdown(adjustment.billableMonthlyIngestGB, {
+          ...elasticOptions,
+          retentionMonths: adjustment.retentionMonths,
+          productTier: opts.productTier ?? elasticOptions.productTier,
+        });
 
   breakdown = scaleBreakdownRetention(breakdown, adjustment.storedGBMultiplier);
   return { cost: breakdown.volumeCost, adjustment };
@@ -447,7 +456,11 @@ export function calculateElasticVolumeCostWithStreams(
           },
           !!opts.metricsTsd
         )
-      : echBreakdown(optimizedAdjustment.billableMonthlyIngestGB);
+      : echBreakdown(optimizedAdjustment.billableMonthlyIngestGB, {
+          ...elasticOptions,
+          retentionMonths: optimizedAdjustment.retentionMonths,
+          productTier: opts.productTier ?? elasticOptions.productTier,
+        });
   optimizedBreakdown = scaleBreakdownRetention(
     optimizedBreakdown,
     optimizedAdjustment.storedGBMultiplier

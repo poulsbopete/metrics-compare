@@ -157,7 +157,9 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
         : undefined;
     const echBreakdown =
       platform.id === "elastic-ech" && monthlyGB > 0
-        ? calculateEchMetricsCost(monthlyGB)
+        ? calculateEchMetricsCost(monthlyGB, {
+            totalRetentionMonths: calculationContext.elasticRetentionMonths ?? 1,
+          })
         : undefined;
     const infraSubtotalFromElastic = elasticBreakdown?.volumeCost;
     const infraSubtotalFromEch = echBreakdown
@@ -708,7 +710,9 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                       <>
                         {platform.id === "elastic-ech-tracing" ? (
                           (() => {
-                            const ech = calculateEchHotFrozenVolumeCost(calculationContext.monthlyGB!);
+                            const ech = calculateEchHotFrozenVolumeCost(calculationContext.monthlyGB!, {
+                              totalRetentionMonths: calculationContext.elasticRetentionMonths,
+                            });
                             return (
                               <>
                                 <div className="flex justify-between items-center text-blue-800 dark:text-blue-200">

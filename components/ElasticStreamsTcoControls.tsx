@@ -207,9 +207,9 @@ export default function ElasticStreamsTcoControls({
           Elastic Cloud Hosted (ECH)
         </h4>
         <p className="text-xs text-blue-800/90 dark:text-blue-200/90">
-          All <strong>ECH</strong> rows always use{" "}
-          <strong>{ECH_HOT_FROZEN_ARCHITECTURE.summary}</strong> — 1-day data hot (RAM-hour) plus{" "}
-          {ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}-day ILM on blob (writable frozen, queryable in Kibana). Full-fidelity
+          All <strong>ECH</strong> rows use{" "}
+          <strong>{ECH_HOT_FROZEN_ARCHITECTURE.summary}</strong> — 1-day data hot (RAM-hour) plus ILM on blob
+          (writable frozen) for the <strong>same total retention</strong> as the slider above. Full-fidelity
           ingest; no Streams sampling on ECH.
         </p>
       </div>

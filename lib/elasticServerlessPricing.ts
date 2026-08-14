@@ -381,8 +381,13 @@ export function calculateElasticServerlessMetricsCost(
 }
 
 /** ECH + self-managed: TSDS metrics use the same 1d hot + ILM blob backbone as logs/traces. */
-export function calculateEchMetricsCost(monthlyIngestGB: number): ElasticServerlessCostBreakdown {
-  return calculateEchHotFrozenVolumeCost(monthlyIngestGB);
+export function calculateEchMetricsCost(
+  monthlyIngestGB: number,
+  options: { totalRetentionMonths?: number } = {}
+): ElasticServerlessCostBreakdown {
+  return calculateEchHotFrozenVolumeCost(monthlyIngestGB, {
+    totalRetentionMonths: options.totalRetentionMonths,
+  });
 }
 
 export interface EchVolumePricingOptions {
