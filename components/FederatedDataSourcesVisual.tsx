@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type FlowMode = "read" | "write" | "both";
 
@@ -10,12 +10,68 @@ const S3_PREFIXES = [
   "s3://elastic-o11y-archive/snapshots/",
 ];
 
+const COLLAPSE_STORAGE_KEY = "federated-data-sources-collapsed";
+
 export default function FederatedDataSourcesVisual() {
   const [flowMode, setFlowMode] = useState<FlowMode>("both");
   const [activePrefix, setActivePrefix] = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+    try {
+      if (localStorage.getItem(COLLAPSE_STORAGE_KEY) === "1") {
+        setCollapsed(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(COLLAPSE_STORAGE_KEY, collapsed ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [collapsed, hydrated]);
 
   const showRead = flowMode === "read" || flowMode === "both";
   const showWrite = flowMode === "write" || flowMode === "both";
+
+  if (collapsed) {
+    return (
+      <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 px-4 py-3 mb-8 animate-fade-in-up">
+        <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
+          <div className="flex items-center min-w-0 gap-3">
+            <span className="w-1 h-6 bg-gradient-to-b from-teal-500 to-cyan-500 rounded-full shrink-0" />
+            <div className="min-w-0">
+              <h2 className="text-base font-bold text-gray-900 dark:text-white truncate">
+                Federated data sources
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                S3 read / write architecture — collapsed
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-teal-800 dark:text-teal-200 bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 rounded-lg border border-teal-200 dark:border-teal-800 transition-colors"
+            aria-expanded={false}
+            aria-label="Show federated data sources"
+          >
+            Show
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8 animate-fade-in-up">
@@ -32,27 +88,41 @@ export default function FederatedDataSourcesVisual() {
             under your IAM policies.
           </p>
         </div>
-        <div className="shrink-0 inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-900">
-          {(
-            [
-              { id: "read" as const, label: "Read" },
-              { id: "write" as const, label: "Write" },
-              { id: "both" as const, label: "Both" },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setFlowMode(opt.id)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                flowMode === opt.id
-                  ? "bg-teal-600 text-white shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="shrink-0 flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-900">
+            {(
+              [
+                { id: "read" as const, label: "Read" },
+                { id: "write" as const, label: "Write" },
+                { id: "both" as const, label: "Both" },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setFlowMode(opt.id)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                  flowMode === opt.id
+                    ? "bg-teal-600 text-white shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            aria-expanded={true}
+            aria-label="Hide federated data sources"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+            Hide
+          </button>
         </div>
       </div>
 
