@@ -691,7 +691,17 @@ export default function Home() {
                           formatValue={(v) => v.toFixed(2)}
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
-                          Post-dedup samples/sec (no tag multiplication). Volume drives the TCO chart below.
+                          Post-dedup samples/sec (no tag multiplication). Elastic cost uses GB from samples ×
+                          bytes.{" "}
+                          {scenarioShowsDatadog(competitorScenarioId) && (
+                            <>
+                              Datadog still uses <strong>host + custom-metric</strong> pricing — set monitored
+                              hosts below (samples/sec is not a host count).
+                            </>
+                          )}
+                          {!scenarioShowsDatadog(competitorScenarioId) && (
+                            <>Volume drives the TCO chart below.</>
+                          )}
                         </p>
                       </>
                     )}
@@ -731,6 +741,64 @@ export default function Home() {
                     )}
                   </div>
                 )}
+
+                {/* Datadog host licensing — prominent when comparing Datadog */}
+                {scenarioShowsDatadog(competitorScenarioId) &&
+                  (activeTab === "metrics" || activeTab === "tracing") && (
+                  <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                      Datadog host licensing
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                      Datadog bills <strong>Infrastructure Pro</strong> ($15/host/mo) on Metrics plus custom
+                      metrics ($0.05/series/mo after included series), and <strong>APM Pro</strong> ($31/host/mo)
+                      on Tracing. Host count is separate from samples/sec.
+                    </p>
+                    <div className="space-y-4">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={datadogHostsAuto}
+                          onChange={(e) => setDatadogHostsAuto(e.target.checked)}
+                          className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Auto-estimate hosts from inventory / log GB/day
+                        </span>
+                      </label>
+                      {datadogHostsAuto ? (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Estimated{" "}
+                          <span className="font-semibold text-purple-600 dark:text-purple-400">
+                            {estimatedDatadogHosts.toLocaleString()} hosts
+                          </span>{" "}
+                          (linux/windows/k8s-node inventory, or log GB/day ÷ 0.04 GB/host/day). Prefer manual
+                          hosts in Samples/sec mode.
+                        </p>
+                      ) : (
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                            Monitored hosts (Infra Pro + APM Pro)
+                          </label>
+                          <MetricSlider
+                            label=""
+                            value={datadogManualHosts}
+                            onChange={(v) => setDatadogManualHosts(Math.max(1, Math.round(v)))}
+                            min={1}
+                            max={50_000}
+                            step={1}
+                            logarithmic={true}
+                            formatValue={(v) => `${Math.round(v).toLocaleString()} hosts`}
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Infra Pro: ${(datadogManualHosts * 15).toLocaleString()}/mo · APM Pro (Tracing tab): $
+                            {(datadogManualHosts * 31).toLocaleString()}/mo — before custom metrics.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  )}
 
                 {activeTab === "tracing" && (
                   <TracingConfig
