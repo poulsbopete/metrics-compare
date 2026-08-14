@@ -24,6 +24,8 @@ interface ElasticStreamsTcoControlsProps {
   elasticPricing: ElasticServerlessPricingOptions;
   monthlyGB?: number;
   monthlyMetrics?: number;
+  /** Bytes per datapoint/sample — must match the chart (samples-poc uses bytes/sample). */
+  bytesPerDatapoint?: number;
   gbPerDay?: number;
 }
 
@@ -127,6 +129,7 @@ export default function ElasticStreamsTcoControls({
   elasticPricing,
   monthlyGB = 0,
   monthlyMetrics = 0,
+  bytesPerDatapoint = BYTES_PER_DATAPOINT.Mixed,
   gbPerDay = 0,
 }: ElasticStreamsTcoControlsProps) {
   const signalKey = activeSignal === "tracing" ? "traces" : activeSignal;
@@ -142,7 +145,7 @@ export default function ElasticStreamsTcoControls({
     };
 
     if (activeSignal === "metrics") {
-      const monthlyMetricsGB = metricsToGB(monthlyMetrics, BYTES_PER_DATAPOINT.Mixed);
+      const monthlyMetricsGB = metricsToGB(monthlyMetrics, bytesPerDatapoint);
       if (monthlyMetricsGB <= 0) return empty;
       const result = calculateElasticVolumeCostWithStreams(
         monthlyMetricsGB,
@@ -181,7 +184,15 @@ export default function ElasticStreamsTcoControls({
       levers: result.adjustment.levers,
       leverSavings: result.leverSavings,
     };
-  }, [activeSignal, elasticPricing, gbPerDay, monthlyGB, monthlyMetrics, policy]);
+  }, [
+    activeSignal,
+    bytesPerDatapoint,
+    elasticPricing,
+    gbPerDay,
+    monthlyGB,
+    monthlyMetrics,
+    policy,
+  ]);
 
   const showAggregate = activeSignal === "metrics" || activeSignal === "logs";
   const showDownsample = activeSignal === "metrics";

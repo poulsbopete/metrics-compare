@@ -309,6 +309,7 @@ function serverlessBreakdown(
   return calculateServerlessStreamsS3VolumeCost(monthlyIngestGB, {
     metricsTsd,
     totalRetentionMonths: options.retentionMonths,
+    useVolumeTiers: options.useVolumeTiers ?? true,
   });
 }
 

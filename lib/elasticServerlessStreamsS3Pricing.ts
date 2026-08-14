@@ -1,10 +1,10 @@
 /**
  * Serverless Streams → S3 long-retention architecture (roadmap / target TCO).
  *
- * Elastic bill grounded in published Observability Complete floors:
- * https://www.elastic.co/pricing/serverless-observability
- *   — ingest logs/traces as low as $0.09/GB
- *   — retention logs/traces $0.019/GB-mo (hot window only on Search AI Lake)
+ * Elastic bill uses Observability Complete **volume tiers** from cloud.elastic.co
+ * (not marketing “as low as” floors alone — floors underprice mid-volume POCs):
+ *   — ingest + short hot retention on Search AI Lake
+ *   — metrics in TSDS mode: 25% of Complete tier rates
  *
  * Aged bytes leave Complete retention via Streams S3 exporter (workload-identity JWT).
  * Object-storage aged rate uses AWS S3 Standard-class list (~$0.023/GB-mo us-east-1) as the
@@ -14,7 +14,10 @@
 import {
   ELASTIC_DAYS_PER_MONTH,
   ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL,
+  ELASTIC_TSDS_METRICS_RATE_MULTIPLIER,
   OBSERVABILITY_SERVERLESS_PUBLISHED,
+  calculateTieredVolumeCost,
+  getElasticServerlessRates,
   type ElasticServerlessCostBreakdown,
 } from "./elasticServerlessPricing";
 
@@ -41,12 +44,22 @@ export interface ServerlessStreamsS3Options {
   s3Days?: number;
   /** Total retention including hot; when set, s3Days = max(0, totalDays − hotDays). */
   totalRetentionMonths?: number;
-  /** Use Complete metrics TSDS floors instead of logs/traces floors. */
+  /** Use Complete metrics TSDS rates (25% of Complete tiers) instead of logs/traces. */
   metricsTsd?: boolean;
+  /**
+   * When true (default), bill Elastic ingest + hot retention from the Complete volume
+   * tier table. When false, use published marketing floors only (POC worksheets).
+   */
+  useVolumeTiers?: boolean;
+}
+
+function effectiveRate(totalCost: number, gb: number): string {
+  if (gb <= 0) return "$0.00/GB";
+  return `$${(totalCost / gb).toFixed(4)}/GB`;
 }
 
 /**
- * Serverless Streams→S3: Complete ingest floor + 1-day hot Complete retention + S3 aged storage.
+ * Serverless Streams→S3: Complete ingest (tiered) + 1-day hot retention + S3 aged storage.
  * Hot is always short (default 1 day); Streams moves the rest to object storage.
  */
 export function calculateServerlessStreamsS3VolumeCost(
@@ -61,13 +74,10 @@ export function calculateServerlessStreamsS3VolumeCost(
   }
   s3Days = s3Days ?? SERVERLESS_STREAMS_S3_ARCHITECTURE.defaultS3Days;
 
+  const useVolumeTiers = options.useVolumeTiers ?? true;
+  const rates = getElasticServerlessRates("observability-complete");
   const pub = OBSERVABILITY_SERVERLESS_PUBLISHED.complete;
-  const ingestRate = options.metricsTsd
-    ? pub.ingestMetricsPerGB
-    : pub.ingestLogsTracesPerGB;
-  const hotRetentionRate = options.metricsTsd
-    ? pub.retentionMetricsPerGBMonth
-    : pub.retentionLogsTracesPerGBMonth;
+  const tsdMult = options.metricsTsd ? ELASTIC_TSDS_METRICS_RATE_MULTIPLIER : 1;
   const s3Rate = SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth;
 
   if (monthlyIngestGB <= 0) {
@@ -86,8 +96,33 @@ export function calculateServerlessStreamsS3VolumeCost(
   const hotStoredGB = gbPerDay * hotDays;
   const s3StoredGB = gbPerDay * s3Days;
 
-  const ingestCost = monthlyIngestGB * ingestRate;
-  const hotRetentionCost = hotStoredGB * hotRetentionRate;
+  let ingestCost: number;
+  let hotRetentionCost: number;
+  let ingestRateLabel: string;
+  let hotRateLabel: string;
+
+  if (useVolumeTiers) {
+    ingestCost = calculateTieredVolumeCost(monthlyIngestGB, rates.ingestTiers) * tsdMult;
+    hotRetentionCost = calculateTieredVolumeCost(hotStoredGB, rates.retentionTiers) * tsdMult;
+    ingestRateLabel =
+      effectiveRate(ingestCost, monthlyIngestGB) +
+      (options.metricsTsd
+        ? " ingest (TSDS 25% of Complete tier table)"
+        : " ingest (Complete tier table)");
+    hotRateLabel =
+      effectiveRate(hotRetentionCost, hotStoredGB) +
+      (options.metricsTsd ? " hot (TSDS 25% of Complete tiers)" : " hot (Complete tiers)");
+  } else {
+    const ingestRate = options.metricsTsd ? pub.ingestMetricsPerGB : pub.ingestLogsTracesPerGB;
+    const hotRetentionRate = options.metricsTsd
+      ? pub.retentionMetricsPerGBMonth
+      : pub.retentionLogsTracesPerGBMonth;
+    ingestCost = monthlyIngestGB * ingestRate;
+    hotRetentionCost = hotStoredGB * hotRetentionRate;
+    ingestRateLabel = `$${ingestRate.toFixed(3)}/GB Complete ingest (published floor)`;
+    hotRateLabel = `$${hotRetentionRate.toFixed(3)}/GB-mo hot`;
+  }
+
   const s3StorageCost = s3StoredGB * s3Rate;
   const retentionCost = hotRetentionCost + s3StorageCost;
 
@@ -97,8 +132,8 @@ export function calculateServerlessStreamsS3VolumeCost(
     ingestCost,
     retentionCost,
     volumeCost: ingestCost + retentionCost,
-    ingestRateLabel: `$${ingestRate.toFixed(3)}/GB Complete ingest (published floor)`,
-    retentionRateLabel: `${hotDays}d hot @ $${hotRetentionRate.toFixed(3)}/GB-mo + ${s3Days}d S3 @ $${s3Rate.toFixed(3)}/GB-mo`,
+    ingestRateLabel,
+    retentionRateLabel: `${hotDays}d hot @ ${hotRateLabel} + ${s3Days}d S3 @ $${s3Rate.toFixed(3)}/GB-mo`,
     echHotFrozen: {
       hotDays,
       ilmBlobDays: s3Days,

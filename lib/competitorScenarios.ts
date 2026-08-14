@@ -94,6 +94,7 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
       metricsInputMode: "samples-poc",
       primaryMetricType: "Prometheus",
       samplesPerSecond: 100_000,
+      elasticRetentionMonths: 12,
     },
   },
   {

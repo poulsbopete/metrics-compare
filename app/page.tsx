@@ -825,10 +825,10 @@ export default function Home() {
                       In short: keep recent data searchable for{" "}
                       {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays} day, then write the rest to blob/object storage
                       (S3, ~${SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth}/GB-mo) for long-term trending and
-                      retention. Metrics use TSDS list rates ($
-                      {OBSERVABILITY_SERVERLESS_PUBLISHED.complete.ingestMetricsPerGB}/GB ingest · $
-                      {OBSERVABILITY_SERVERLESS_PUBLISHED.complete.retentionMetricsPerGBMonth}/GB-mo hot). ECH uses
-                      1d hot + ILM blob plus the $200/mo cluster minimum.
+                      retention. Metrics ingest + hot use the Observability Complete volume tier table × 25% (TSDS;
+                      as low as $
+                      {OBSERVABILITY_SERVERLESS_PUBLISHED.complete.ingestMetricsPerGB}/GB). ECH uses 1d hot + ILM
+                      blob plus the $200/mo cluster minimum.
                     </p>
                   </div>
                 </div>
@@ -854,6 +854,9 @@ export default function Home() {
                         : undefined
                     }
                     monthlyMetrics={activeTab === "metrics" ? effectiveMonthlyMetrics : undefined}
+                    bytesPerDatapoint={
+                      activeTab === "metrics" ? metricsBytesPerDatapoint : undefined
+                    }
                     gbPerDay={activeTab === "logs" ? gbPerDay : undefined}
                   />
                 )}
