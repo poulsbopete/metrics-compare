@@ -88,35 +88,46 @@
 
     <section class="slide" data-slide="3">
       <div class="eyebrow">Competitive lab · Challenge 3 · ~15 min</div>
-      <h1>Serverless TCO — cut storage <em>at the stream</em>.</h1>
-      <p class="value-outcome">Customer value: Lower Prom/Grafana Cloud–class storage cost without losing Sev-1 signal.</p>
-      <p class="lede">Drop <code>/debug/pprof</code> at ingest, keep successful-data lifecycle bounded, and read <strong>Horizon — Streams savings</strong>. Primary contrast: self-managed Prom / Grafana Cloud retention cost — not a dashboard rewrite.</p>
-      <div class="slide-body">
+      <h1>Serverless TCO — Elastic is ~<em>2%</em> of Grafana Cloud.</h1>
+      <p class="value-outcome">Customer value: Same PromQL workloads on Serverless at a fraction of Grafana Cloud series pricing — drop noise first.</p>
+      <p class="lede">On the <a href="https://tco-calc.o11ybot.app/?scenario=grafana-stack" target="_blank" rel="noopener">Grafana stack worksheet</a>, Grafana Cloud lands near <strong>$313K/mo</strong> while Elastic Serverless is ~<strong>$7.4K/mo</strong> (~2%) and ECH ~<strong>$3.7K/mo</strong>. In the lab: Drop <code>/debug/pprof</code>, open <strong>Horizon — Streams savings</strong>, then leave with that leadership line.</p>
+      <div class="slide-body tco-body">
+        <div class="tco-bars" aria-label="Illustrative monthly TCO">
+          <div class="tco-row">
+            <span class="tco-name">Grafana Cloud</span>
+            <div class="tco-track"><span class="tco-fill tco-fill-max" style="width:100%"></span></div>
+            <span class="tco-amt">~$313K</span>
+          </div>
+          <div class="tco-row">
+            <span class="tco-name">Elastic Serverless</span>
+            <div class="tco-track"><span class="tco-fill tco-fill-win" style="width:2.4%"></span></div>
+            <span class="tco-amt tco-amt-win">~$7.4K · ~2%</span>
+          </div>
+          <div class="tco-row">
+            <span class="tco-name">Elastic Cloud Hosted</span>
+            <div class="tco-track"><span class="tco-fill tco-fill-alt" style="width:1.2%"></span></div>
+            <span class="tco-amt">~$3.7K · ~1%</span>
+          </div>
+          <p class="tco-footnote">Illustrative list-rate worksheet (ops overhead on) · <a href="https://tco-calc.o11ybot.app/?scenario=grafana-stack" target="_blank" rel="noopener">tco-calc.o11ybot.app/?scenario=grafana-stack</a> · confirm with measured usage</p>
+        </div>
         <div class="cards">
-          <div class="metric-card">
+          <div class="metric-card metric-card-solo">
             <div>
               <div class="tag">LEVER</div>
               <h3>Streams Drop</h3>
-              <p>Noise never stored — immediate ingest reduction.</p>
+              <p>Cut scrape/debug noise before it hits Grafana Cloud–style series pricing — or your Prom TSDB.</p>
             </div>
           </div>
-          <div class="metric-card">
-            <div>
-              <div class="tag">LEVER</div>
-              <h3>Lifecycle</h3>
-              <p>Delete + downsample so long-range charts stay affordable.</p>
-            </div>
-          </div>
-          <div class="metric-card">
+          <div class="metric-card metric-card-solo">
             <div>
               <div class="tag">TAKEAWAY</div>
               <h3>Leadership line</h3>
-              <p>Keep PromQL + Grafana workflows; move the backend to Serverless and stop paying for scrape noise.</p>
+              <p>Keep PromQL; move the backend to Elastic — Serverless is ~2% of Grafana Cloud on the same TCO worksheet.</p>
             </div>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Apply Drop → open savings dashboard → leave with one TCO sentence.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Drop → savings dashboard → open the TCO calc → one sentence for leadership.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 

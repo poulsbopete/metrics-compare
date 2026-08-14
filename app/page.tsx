@@ -31,6 +31,7 @@ import {
 } from "@/lib/elasticStreamsTco";
 import { ECH_HOT_FROZEN_ARCHITECTURE } from "@/lib/elasticEchHotFrozenPricing";
 import { SERVERLESS_STREAMS_S3_ARCHITECTURE } from "@/lib/elasticServerlessStreamsS3Pricing";
+import { OBSERVABILITY_SERVERLESS_PUBLISHED } from "@/lib/elasticServerlessPricing";
 import { estimateMonitoredHosts } from "@/lib/hostEstimation";
 import {
   integrations,
@@ -61,16 +62,15 @@ import {
   TCO_VALIDATION_FOOTNOTE,
 } from "@/lib/tcoDisclaimer";
 import CompetitorScenarioSelect from "@/components/CompetitorScenarioSelect";
-import ElasticMetricsPocPanel from "@/components/ElasticMetricsPocPanel";
 import {
   DEFAULT_COMPETITOR_SCENARIO_ID,
   getCompetitorScenario,
+  isCompetitorScenarioId,
   scenarioShowsDatadog,
   type CompetitorScenarioId,
 } from "@/lib/competitorScenarios";
 import {
   samplesPerSecondToMonthlyIngestGbDecimal,
-  type ElasticSupportTierId,
 } from "@/lib/elasticMetricsPoc";
 import TcoDisclaimerBanner from "@/components/TcoDisclaimerBanner";
 import ElasticSchemalessBlocksVisual from "@/components/ElasticSchemalessBlocksVisual";
@@ -91,8 +91,6 @@ interface SavedState {
   competitorScenarioId?: CompetitorScenarioId;
   samplesPerSecond?: number;
   bytesPerSample?: number;
-  tsdbStoredCompressionFactor?: number;
-  elasticSupportTier?: ElasticSupportTierId;
   // Tracing
   spansPerSecond: number;
   // Logs
@@ -107,7 +105,6 @@ interface SavedState {
   elasticStreamsTco?: ElasticStreamsTcoPolicy;
   datadogHostsAuto?: boolean;
   datadogManualHosts?: number;
-  configPanelCollapsed?: boolean;
 }
 
 function loadState(): SavedState | null {
@@ -158,8 +155,6 @@ export default function Home() {
   );
   const [samplesPerSecond, setSamplesPerSecond] = useState(400_000);
   const [bytesPerSample, setBytesPerSample] = useState(1.5);
-  const [tsdbStoredCompressionFactor, setTsdbStoredCompressionFactor] = useState(3.12);
-  const [elasticSupportTier, setElasticSupportTier] = useState<ElasticSupportTierId>("platinum");
   
   // Tracing state
   const [spansPerSecond, setSpansPerSecond] = useState(100);
@@ -188,11 +183,10 @@ export default function Home() {
   // Operational cost state
   const [includeOperationalCost, setIncludeOperationalCost] = useState(true);
   const [engineerHourlyRate, setEngineerHourlyRate] = useState(DEFAULT_ENGINEER_HOURLY_RATE);
-  const [configPanelCollapsed, setConfigPanelCollapsed] = useState(false);
   
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Load state from localStorage after hydration
+  // Load state from localStorage after hydration; URL ?scenario= wins when present
   useEffect(() => {
     setIsHydrated(true);
     const savedState = loadState();
@@ -218,18 +212,23 @@ export default function Home() {
       }
       if (savedState.datadogHostsAuto !== undefined) setDatadogHostsAuto(savedState.datadogHostsAuto);
       if (savedState.datadogManualHosts !== undefined) setDatadogManualHosts(savedState.datadogManualHosts);
-      if (savedState.configPanelCollapsed !== undefined) {
-        setConfigPanelCollapsed(savedState.configPanelCollapsed);
-      }
       if (savedState.metricsInputMode) setMetricsInputMode(savedState.metricsInputMode);
       if (savedState.competitorScenarioId) setCompetitorScenarioId(savedState.competitorScenarioId);
       if (savedState.samplesPerSecond !== undefined) setSamplesPerSecond(savedState.samplesPerSecond);
       if (savedState.bytesPerSample !== undefined) setBytesPerSample(savedState.bytesPerSample);
-      if (savedState.tsdbStoredCompressionFactor !== undefined) {
-        setTsdbStoredCompressionFactor(savedState.tsdbStoredCompressionFactor);
-      }
-      if (savedState.elasticSupportTier) setElasticSupportTier(savedState.elasticSupportTier);
       if (savedState.infraItems) setInfraItems(savedState.infraItems);
+    }
+
+    const scenarioParam = new URLSearchParams(window.location.search).get("scenario");
+    if (scenarioParam && isCompetitorScenarioId(scenarioParam)) {
+      setCompetitorScenarioId(scenarioParam);
+      const presets = getCompetitorScenario(scenarioParam).presets;
+      if (presets?.metricsInputMode) setMetricsInputMode(presets.metricsInputMode);
+      if (presets?.primaryMetricType) setPrimaryMetricType(presets.primaryMetricType);
+      if (presets?.samplesPerSecond !== undefined) setSamplesPerSecond(presets.samplesPerSecond);
+      if (presets?.elasticRetentionMonths !== undefined) {
+        setElasticRetentionMonths(presets.elasticRetentionMonths);
+      }
     }
   }, []);
 
@@ -247,8 +246,6 @@ export default function Home() {
         competitorScenarioId,
         samplesPerSecond,
         bytesPerSample,
-        tsdbStoredCompressionFactor,
-        elasticSupportTier,
         spansPerSecond,
         gbPerDay,
         eventsPerSecond,
@@ -259,10 +256,9 @@ export default function Home() {
         elasticStreamsTco,
         datadogHostsAuto,
         datadogManualHosts,
-        configPanelCollapsed,
       });
     }
-  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, competitorScenarioId, samplesPerSecond, bytesPerSample, tsdbStoredCompressionFactor, elasticSupportTier, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, elasticStreamsTco, datadogHostsAuto, datadogManualHosts, configPanelCollapsed, isHydrated]);
+  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, competitorScenarioId, samplesPerSecond, bytesPerSample, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, elasticStreamsTco, datadogHostsAuto, datadogManualHosts, isHydrated]);
 
   const applyCompetitorScenario = (id: CompetitorScenarioId) => {
     setCompetitorScenarioId(id);
@@ -534,38 +530,6 @@ export default function Home() {
 
   const multiplier = tags.length > 0 ? Math.pow(tagValues, tags.length) : 1;
 
-  const configScenarioSummary = useMemo(() => {
-    switch (activeTab) {
-      case "metrics":
-        if (metricsInputMode === "samples-poc") {
-          return `${getCompetitorScenario(competitorScenarioId).label} · ${samplesPerSecond.toLocaleString()} samples/sec`;
-        }
-        return metricsInputMode === "infrastructure"
-          ? `${infraGbPerDay >= 1 ? `${infraGbPerDay.toFixed(1)} GB/day` : `${(infraGbPerDay * 1000).toFixed(0)} MB/day`} · ${formatMetricsPerSecond(infraMetricsPerSecond)}`
-          : `${formatMetricsPerSecond(metricsPerSecond)} base · ${formatMonthlyMetrics(effectiveMonthlyMetrics)}/mo`;
-      case "tracing":
-        return `${spansPerSecond.toLocaleString()} spans/sec`;
-      case "logs":
-        return `${gbPerDay.toFixed(1)} GB/day`;
-      case "security":
-        return `${eventsPerSecond.toLocaleString()} events/sec`;
-      default:
-        return "";
-    }
-  }, [
-    activeTab,
-    metricsInputMode,
-    competitorScenarioId,
-    samplesPerSecond,
-    infraGbPerDay,
-    infraMetricsPerSecond,
-    metricsPerSecond,
-    effectiveMonthlyMetrics,
-    spansPerSecond,
-    gbPerDay,
-    eventsPerSecond,
-  ]);
-
   if (!platforms || platforms.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -621,30 +585,14 @@ export default function Home() {
           )}
 
           {activeTab !== "fullstack" && activeTab !== "datablocks" && (
-          <><div
-            className={`grid gap-8 mb-8 transition-[grid-template-columns] duration-300 ${
-              configPanelCollapsed ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12"
-            }`}
-          >
+          <><div className="grid gap-8 mb-8 grid-cols-1 lg:grid-cols-12">
             {/* Configuration Panel */}
-            {!configPanelCollapsed && (
             <div className="lg:col-span-4 xl:col-span-3 min-w-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
-              <div className="flex items-center justify-between gap-2 mb-6 min-w-0">
+              <div className="mb-6 min-w-0">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center min-w-0 truncate">
                   <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3 shrink-0" />
                   Configuration
                 </h2>
-                <button
-                  type="button"
-                  onClick={() => setConfigPanelCollapsed(true)}
-                  className="shrink-0 inline-flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  aria-label="Hide configuration panel"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                  </svg>
-                  Hide
-                </button>
               </div>
               <div className="space-y-6 min-w-0">
                 <CompetitorScenarioSelect
@@ -718,27 +666,34 @@ export default function Home() {
                     )}
 
                     {metricsInputMode === "samples-poc" && (
-                      <MetricSlider
-                        label="Samples per Second (post-dedup)"
-                        value={samplesPerSecond}
-                        onChange={setSamplesPerSecond}
-                        min={1_000}
-                        max={2_000_000}
-                        step={1_000}
-                        logarithmic={true}
-                        formatValue={(v) => {
-                          if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M/sec`;
-                          if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K/sec`;
-                          return `${v}/sec`;
-                        }}
-                      />
-                    )}
-
-                    {metricsInputMode === "samples-poc" && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
-                        Post-dedup samples/sec (no tag multiplication). Use the TSDS POC worksheet below the chart for
-                        ingest + retention + support line items.
-                      </p>
+                      <>
+                        <MetricSlider
+                          label="Samples per Second (post-dedup)"
+                          value={samplesPerSecond}
+                          onChange={setSamplesPerSecond}
+                          min={1_000}
+                          max={2_000_000}
+                          step={1_000}
+                          logarithmic={true}
+                          formatValue={(v) => {
+                            if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M/sec`;
+                            if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K/sec`;
+                            return `${v}/sec`;
+                          }}
+                        />
+                        <MetricSlider
+                          label="Bytes per sample"
+                          value={bytesPerSample}
+                          onChange={setBytesPerSample}
+                          min={0.5}
+                          max={8}
+                          step={0.05}
+                          formatValue={(v) => v.toFixed(2)}
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
+                          Post-dedup samples/sec (no tag multiplication). Volume drives the TCO chart below.
+                        </p>
+                      </>
                     )}
 
                     {/* Manual cardinality mode */}
@@ -866,21 +821,14 @@ export default function Home() {
                         <span className="absolute right-0">15 mo</span>
                       </div>
                     </div>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={!elasticUseVolumeTiers}
-                        onChange={(e) => setElasticUseVolumeTiers(!e.target.checked)}
-                        className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                      />
-                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Prefer published floor rates for POC worksheets (TSDS $0.023/$0.005)
-                      </span>
-                    </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Serverless billed path: Complete ingest + {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}d hot
-                      retention + Streams → S3 (~${0.023}/GB-mo object storage). Metrics use TSDS floors where
-                      applicable. ECH metrics bill 1d hot + ILM blob (plus $200/mo cluster minimum).
+                      In short: keep recent data searchable for{" "}
+                      {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays} day, then write the rest to blob/object storage
+                      (S3, ~${SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth}/GB-mo) for long-term trending and
+                      retention. Metrics use TSDS list rates ($
+                      {OBSERVABILITY_SERVERLESS_PUBLISHED.complete.ingestMetricsPerGB}/GB ingest · $
+                      {OBSERVABILITY_SERVERLESS_PUBLISHED.complete.retentionMetricsPerGBMonth}/GB-mo hot). ECH uses
+                      1d hot + ILM blob plus the $200/mo cluster minimum.
                     </p>
                   </div>
                 </div>
@@ -1047,47 +995,9 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            )}
 
             {/* Volume Summary */}
-            <div
-              className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up ${
-                configPanelCollapsed ? "lg:col-span-1" : "lg:col-span-8 xl:col-span-9"
-              }`}
-            >
-              {configPanelCollapsed && (
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex flex-wrap items-center gap-2 min-w-0">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      Scenario
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                      {configScenarioSummary}
-                    </span>
-                    {includeOperationalCost && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                        + ops FTE
-                      </span>
-                    )}
-                    {includeEgress && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                        + egress
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setConfigPanelCollapsed(false)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg shadow-sm transition-all"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Edit configuration
-                  </button>
-                </div>
-              )}
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up lg:col-span-8 xl:col-span-9">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <span className="w-1 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3" />
                 {activeTab === "metrics" && "Metric Volume Impact"}
@@ -1219,6 +1129,52 @@ export default function Home() {
                 </div>
               )}
 
+              {activeTab === "metrics" && metricsInputMode === "samples-poc" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 rounded-xl p-5 border border-indigo-200 dark:border-indigo-700/50 shadow-md">
+                    <div className="text-sm text-indigo-600 dark:text-indigo-400 font-semibold mb-2 uppercase tracking-wide">
+                      Bytes per Sample
+                    </div>
+                    <div className="text-3xl font-bold text-indigo-900 dark:text-indigo-100">
+                      {bytesPerSample}
+                    </div>
+                    <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                      post-dedup sample size
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md">
+                    <div className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">
+                      Samples per Second
+                    </div>
+                    <div className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                      <AnimatedNumber
+                        value={samplesPerSecond}
+                        format={formatMetricsPerSecond}
+                      />
+                    </div>
+                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      post-dedup
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
+                    <div className="text-sm text-green-600 dark:text-green-400 font-semibold mb-2 uppercase tracking-wide">
+                      Monthly Ingest
+                    </div>
+                    <div className="text-3xl font-bold text-green-900 dark:text-green-100">
+                      <AnimatedNumber
+                        value={samplesPerSecondToMonthlyIngestGbDecimal(samplesPerSecond, bytesPerSample)}
+                        format={(v) =>
+                          v >= 1000 ? `${(v / 1000).toFixed(1)} TB` : `${v.toFixed(1)} GB`
+                        }
+                      />
+                    </div>
+                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      {formatMonthlyMetrics(samplesPocMonthlyMetrics)} samples/mo
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === "tracing" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-5 border border-blue-200 dark:border-blue-700/50 shadow-md">
@@ -1317,40 +1273,8 @@ export default function Home() {
 
           <FederatedDataSourcesVisual />
 
-          {activeTab === "metrics" && metricsInputMode === "samples-poc" && (
-            <ElasticMetricsPocPanel
-              samplesPerSecond={samplesPerSecond}
-              onSamplesPerSecondChange={setSamplesPerSecond}
-              bytesPerSample={bytesPerSample}
-              onBytesPerSampleChange={setBytesPerSample}
-              retentionMonths={elasticRetentionMonths}
-              onRetentionMonthsChange={setElasticRetentionMonths}
-              tsdbStoredCompressionFactor={tsdbStoredCompressionFactor}
-              onTsdbStoredCompressionFactorChange={setTsdbStoredCompressionFactor}
-              supportTier={elasticSupportTier}
-              onSupportTierChange={setElasticSupportTier}
-            />
-          )}
-
           {/* Cost Comparison */}
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
-            {configPanelCollapsed && (
-              <div className="sticky top-2 z-10 -mx-2 px-2 mb-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-xl bg-slate-900/90 dark:bg-gray-950/90 text-white shadow-lg backdrop-blur-sm border border-white/10">
-                  <span className="text-sm truncate">
-                    <span className="text-slate-400 font-medium mr-2">Inputs</span>
-                    {configScenarioSummary}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setConfigPanelCollapsed(false)}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 transition-colors"
-                  >
-                    Configure
-                  </button>
-                </div>
-              </div>
-            )}
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
               <span className="w-1 h-8 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full mr-3" />
               TCO Comparison*

@@ -32,7 +32,7 @@ const ELASTIC_SECURITY = ["elastic-security-ech", "elastic-security"] as const;
 export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
   {
     id: "datadog",
-    label: "Currently using Datadog",
+    label: "Datadog",
     description: "Compare Elastic Cloud Hosted and Serverless with Datadog host and custom-metric pricing.",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "datadog"],
@@ -49,7 +49,7 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
   },
   {
     id: "grafana-stack",
-    label: "Currently using Grafana / Mimir / Loki / Tempo",
+    label: "Grafana / Mimir / Loki / Tempo",
     description:
       "Compare Elastic with Grafana Cloud and common self-managed options (Prometheus, Thanos, VictoriaMetrics, Cortex).",
     platformIds: {
@@ -59,13 +59,14 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
       security: [...ELASTIC_SECURITY],
     },
     presets: {
+      metricsInputMode: "samples-poc",
       primaryMetricType: "Prometheus",
       samplesPerSecond: 100_000,
     },
   },
   {
     id: "prometheus-native",
-    label: "Currently using Prometheus (self-managed)",
+    label: "Prometheus (self-managed)",
     description: "Compare Elastic with Prometheus, Thanos, VictoriaMetrics, and Cortex.",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "prometheus", "thanos", "victoria-metrics", "cortex"],
@@ -79,7 +80,7 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
   },
   {
     id: "dynatrace",
-    label: "Currently using Dynatrace",
+    label: "Dynatrace",
     description: "Compare Elastic Cloud Hosted and Serverless with Dynatrace pricing.",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "dynatrace"],
@@ -90,7 +91,7 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
   },
   {
     id: "observe-chronosphere",
-    label: "Currently using Observe / Chronosphere / Grafana Cloud",
+    label: "Observe / Chronosphere / Grafana Cloud",
     description: "Compare Elastic with cardinality-focused SaaS metrics platforms.",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "observe-inc", "chronosphere", "grafana-cloud"],
@@ -101,7 +102,7 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
   },
   {
     id: "splunk-newrelic",
-    label: "Currently using Splunk / New Relic",
+    label: "Splunk / New Relic",
     description: "Compare Elastic with Splunk Observability and New Relic metrics pricing.",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "splunk-o11y", "new-relic"],
@@ -124,6 +125,10 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
 ];
 
 export const DEFAULT_COMPETITOR_SCENARIO_ID: CompetitorScenarioId = "datadog";
+
+export function isCompetitorScenarioId(id: string): id is CompetitorScenarioId {
+  return COMPETITOR_SCENARIOS.some((s) => s.id === id);
+}
 
 export function getCompetitorScenario(id: CompetitorScenarioId): CompetitorScenario {
   return COMPETITOR_SCENARIOS.find((s) => s.id === id) ?? COMPETITOR_SCENARIOS[0];
