@@ -450,7 +450,7 @@ export const platforms: Platform[] = [
   },
   {
     id: "cortex",
-    name: "Cortex (Self-hosted)",
+    name: "Cortex / Mimir (Self-hosted)",
     color: "bg-amber-500",
     metricTypes: ["Prometheus"],
     pricing: {
@@ -465,7 +465,7 @@ export const platforms: Platform[] = [
       memory: 60,
       network: 30,
       other: 10, // Monitoring, operational overhead
-      notes: "Distributed architecture with multiple components",
+      notes: "Distributed architecture (Cortex or Grafana Mimir) with multiple components",
     },
     cardinalityNote: "Fixed infrastructure cost means cardinality doesn't directly impact monthly costs. However, high cardinality increases storage requirements in object storage and may require scaling the distributed components (Ingesters, Queriers) to handle increased load, potentially increasing infrastructure costs over time.",
   },

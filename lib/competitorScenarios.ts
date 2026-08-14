@@ -2,6 +2,7 @@ export type CompetitorScenarioId =
   | "datadog"
   | "grafana-stack"
   | "prometheus-native"
+  | "victoria-metrics"
   | "dynatrace"
   | "observe-chronosphere"
   | "splunk-newrelic"
@@ -51,7 +52,7 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
     id: "grafana-stack",
     label: "Grafana / Mimir / Loki / Tempo",
     description:
-      "Compare Elastic with Grafana Cloud and common self-managed options (Prometheus, Thanos, VictoriaMetrics, Cortex).",
+      "Compare Elastic with Grafana Cloud and common self-managed options (Prometheus, Thanos, VictoriaMetrics, Cortex/Mimir).",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "grafana-cloud", "prometheus", "thanos", "victoria-metrics", "cortex"],
       tracing: [...ELASTIC_TRACING, "grafana-tracing", "tempo-self-hosted"],
@@ -67,7 +68,7 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
   {
     id: "prometheus-native",
     label: "Prometheus (self-managed)",
-    description: "Compare Elastic with Prometheus, Thanos, VictoriaMetrics, and Cortex.",
+    description: "Compare Elastic with Prometheus, Thanos, VictoriaMetrics, and Cortex/Mimir.",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "prometheus", "thanos", "victoria-metrics", "cortex"],
       tracing: [...ELASTIC_TRACING, "tempo-self-hosted"],
@@ -76,6 +77,23 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
     },
     presets: {
       primaryMetricType: "Prometheus",
+    },
+  },
+  {
+    id: "victoria-metrics",
+    label: "VictoriaMetrics",
+    description:
+      "Compare Elastic Cloud Hosted and Serverless with self-hosted VictoriaMetrics.",
+    platformIds: {
+      metrics: [...ELASTIC_METRICS, "victoria-metrics"],
+      tracing: [...ELASTIC_TRACING],
+      logs: [...ELASTIC_LOGS],
+      security: [...ELASTIC_SECURITY],
+    },
+    presets: {
+      metricsInputMode: "samples-poc",
+      primaryMetricType: "Prometheus",
+      samplesPerSecond: 100_000,
     },
   },
   {
