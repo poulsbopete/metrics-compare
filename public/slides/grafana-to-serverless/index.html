@@ -21,34 +21,34 @@
     <section class="slide" data-slide="1">
       <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
       <h1>Your <em>PromQL</em> — paste it into Metrics.</h1>
-      <p class="value-outcome">Customer value: Prometheus / Grafana SREs keep their language; Elastic is the backend, not a rewrite.</p>
-      <p class="lede">Open <strong>Metrics</strong> (not Discover). Paste the same expressions as Grafana Explore: <code>sum by (service.name) (http.server.requests)</code>, <code>rate(...[5m])</code>, <code>service.errors</code>. Horizon services light up on <code>metrics-generic.otel-default</code>.</p>
+      <p class="value-outcome">Customer value: Keep PromQL — and stop babysitting Prometheus / Mimir scale-out.</p>
+      <p class="lede">Prometheus admins have lived on scrape-interval tweaks, multiple remote-write endpoints, and scaling the Prom/Mimir stack. Elastic Serverless is an <strong>automated, scalable Prom remote-write</strong> path — without that admin overhead (<a href="https://elastic.github.io/observability-team/collaterals/metrics-analysts-presentation/metrics-analyst.html#0" target="_blank" rel="noopener">Metrics Analyst briefing</a>). Then paste the same Explore expressions in <strong>Metrics</strong>.</p>
       <div class="slide-body">
         <div class="cards">
-          <div class="metric-card metric-card-solo">
+          <div class="metric-card">
             <div>
-              <div class="tag">GRAFANA TODAY</div>
-              <h3>PromQL you already run</h3>
-              <p><code>sum by (service.name) (http.server.requests)</code> · <code>rate(http.server.requests[5m])</code> · <code>service.errors</code></p>
+              <div class="tag">PAIN</div>
+              <h3>Prom / Mimir ops</h3>
+              <p>Scrape interval knobs · multi remote-write · scale the stack yourself.</p>
             </div>
           </div>
-          <div class="metric-card metric-card-solo">
+          <div class="metric-card">
             <div>
-              <div class="tag">ON ELASTIC</div>
-              <h3>Metrics app = Explore habit</h3>
-              <p>Paste bare PromQL — no ES|QL wrapper required for the customer demo.</p>
+              <div class="tag">ELASTIC</div>
+              <h3>Serverless remote-write</h3>
+              <p>Automated, scalable Prom remote-write — no sidecar TSDB to run.</p>
             </div>
           </div>
-          <div class="metric-card metric-card-solo">
+          <div class="metric-card">
             <div>
-              <div class="tag">YOU GET</div>
-              <h3>One ingest path</h3>
-              <p>OTel / Prom-style series → one Serverless project — not a second metrics silo.</p>
+              <div class="tag">DEMO</div>
+              <h3>Same PromQL</h3>
+              <p>Paste bare PromQL in Metrics — Explore habit, Elastic backend.</p>
             </div>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Metrics → Last 2 hours → paste A / B / C → name one expression you’d keep.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Metrics → Last 2 hours → paste A / B / C → name one expression + one admin pain you drop.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
