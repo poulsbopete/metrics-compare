@@ -882,12 +882,6 @@ export default function Home() {
                         >
                           8 mo
                         </span>
-                        <span
-                          className="absolute -translate-x-1/2"
-                          style={{ left: `${((13 - 1) / (15 - 1)) * 100}%` }}
-                        >
-                          13 mo
-                        </span>
                         <span className="absolute right-0">15 mo</span>
                       </div>
                     </div>
