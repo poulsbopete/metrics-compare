@@ -9,6 +9,7 @@ import {
   TCO_LIST_RATES_AS_OF,
 } from "@/lib/tcoDisclaimer";
 import { ECH_HOT_FROZEN_ARCHITECTURE } from "@/lib/elasticEchHotFrozenPricing";
+import { SERVERLESS_STREAMS_S3_ARCHITECTURE } from "@/lib/elasticServerlessStreamsS3Pricing";
 
 export default function TcoDisclaimerBanner() {
   return (
@@ -65,39 +66,23 @@ export default function TcoDisclaimerBanner() {
                 </h3>
                 <ul className="text-xs space-y-1.5 text-amber-950/90 dark:text-amber-50/90 list-disc pl-4">
                   <li>
-                    <strong>Observability Complete</strong> rates from{" "}
-                    <a
-                      href={ELASTIC_SERVERLESS_OBSERVABILITY_MARKETING_URL}
-                      className="underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      elastic.co/pricing/serverless-observability
-                    </a>
-                    : as low as $0.09/GB ingest · $0.019/GB-mo retention (logs/traces); volume tiers on the
-                    Cloud pricing table clamp to those floors.
+                    <strong>{SERVERLESS_STREAMS_S3_ARCHITECTURE.summary}:</strong> Observability Complete
+                    ingest + {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}-day hot retention at published floors;
+                    Streams moves aged data to S3 (object storage ~$0.023/GB-mo proxy). The retention slider sets
+                    total keep time (hot + S3).
                   </li>
                   <li>
                     <strong>Metrics (TSDS):</strong> published floors {ELASTIC_TSDS_METRICS_EFFECTIVE_LABEL}:
-                    $0.023/GB ingest, $0.005/GB-month retained (25% of Complete); logs, traces, and security
-                    use full Complete rates.
+                    $0.023/GB ingest, $0.005/GB-month retained (hot window); logs, traces, and security use full
+                    Complete rates for ingest/hot.
                   </li>
                   <li>
                     <strong>Logs:</strong> metered ingest uses ~1.66× raw GB (enriched size per
                     Elastic estimator).
                   </li>
                   <li>
-                    <strong>Data Blocks · Streams → S3:</strong> Complete ingest and short hot retention at
-                    published floors; older data estimated on S3 Standard-class object storage (~$0.023/GB-mo)
-                    until a dedicated Streams→S3 list rate is published.
-                  </li>
-                  <li>
-                    <strong>Elastic Streams TCO is always on:</strong> per-signal drop, aggregate,
-                    downsample, and retention (default Streams policies) — adjust in Configuration.
-                  </li>
-                  <li>
-                    Retention slider affects the unshaped baseline only; billed Serverless totals
-                    include Streams policies.
+                    <strong>Streams ingest shaping is always on:</strong> per-signal drop, aggregate, and
+                    downsample — adjust in Configuration.
                   </li>
                 </ul>
               </div>

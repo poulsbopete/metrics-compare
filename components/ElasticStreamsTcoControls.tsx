@@ -11,8 +11,11 @@ import {
   type ObservabilitySignal,
 } from "@/lib/elasticStreamsTco";
 import { ECH_HOT_FROZEN_ARCHITECTURE } from "@/lib/elasticEchHotFrozenPricing";
-import type { ElasticServerlessPricingOptions } from "@/lib/elasticServerlessPricing";
-import { elasticLogsMeteredMonthlyGB } from "@/lib/elasticServerlessPricing";
+import { SERVERLESS_STREAMS_S3_ARCHITECTURE } from "@/lib/elasticServerlessStreamsS3Pricing";
+import {
+  elasticLogsMeteredMonthlyGB,
+  type ElasticServerlessPricingOptions,
+} from "@/lib/elasticServerlessPricing";
 import { metricsToGB, BYTES_PER_DATAPOINT } from "@/lib/costCalculator";
 
 interface ElasticStreamsTcoControlsProps {
@@ -122,10 +125,11 @@ export default function ElasticStreamsTcoControls({
             Elastic Serverless · Streams TCO (always on)
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 max-w-2xl">
-            All <strong>Serverless</strong> Elastic pricing uses default Streams policies: drop (~
-            {ELASTIC_STREAMS_LOGS_INGEST_FILTER_PCT}% logs), aggregate (TSDS metrics), downsample, and per-signal
-            retention — plus Observability Complete ingest/retention tiers. Adjust levers below; ECH is not shaped by
-            Streams.
+            <strong>Serverless</strong> always keeps{" "}
+            <strong>{SERVERLESS_STREAMS_S3_ARCHITECTURE.summary}</strong> — Complete ingest,{" "}
+            {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}-day hot, then Streams → S3 for the rest (total retention from
+            the slider above). Default ingest shaping: drop (~{ELASTIC_STREAMS_LOGS_INGEST_FILTER_PCT}% logs),
+            aggregate (TSDS metrics), and downsample. Adjust levers below; ECH is not shaped by Streams.
           </p>
         </div>
         {illustrativeSavings.percent > 0 && (

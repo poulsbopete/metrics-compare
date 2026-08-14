@@ -23,7 +23,8 @@ export const S3_STANDARD_GB_MONTH_USD = 0.023;
 
 export const SERVERLESS_STREAMS_S3_ARCHITECTURE = {
   hotDays: 1,
-  s3Days: 25,
+  /** Default aged window when no total retention is provided (parity with ECH 25d blob). */
+  defaultS3Days: 25,
   summary: "1-day hot · Streams → S3",
   status: "roadmap" as const,
   dataPlane: ["Source", "Processors", "S3 exporter"] as const,
@@ -36,20 +37,30 @@ export const SERVERLESS_STREAMS_S3_ARCHITECTURE = {
 
 export interface ServerlessStreamsS3Options {
   hotDays?: number;
+  /** Days retained on customer S3 after the hot window. */
   s3Days?: number;
+  /** Total retention including hot; when set, s3Days = max(0, totalDays − hotDays). */
+  totalRetentionMonths?: number;
   /** Use Complete metrics TSDS floors instead of logs/traces floors. */
   metricsTsd?: boolean;
 }
 
 /**
- * Serverless Streams→S3: Complete ingest floor + hot-window Complete retention + S3 aged storage.
+ * Serverless Streams→S3: Complete ingest floor + 1-day hot Complete retention + S3 aged storage.
+ * Hot is always short (default 1 day); Streams moves the rest to object storage.
  */
 export function calculateServerlessStreamsS3VolumeCost(
   monthlyIngestGB: number,
   options: ServerlessStreamsS3Options = {}
 ): ElasticServerlessCostBreakdown {
   const hotDays = options.hotDays ?? SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays;
-  const s3Days = options.s3Days ?? SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days;
+  let s3Days = options.s3Days;
+  if (options.totalRetentionMonths != null && options.totalRetentionMonths >= 0) {
+    const totalDays = Math.round(options.totalRetentionMonths * ELASTIC_DAYS_PER_MONTH);
+    s3Days = Math.max(0, totalDays - hotDays);
+  }
+  s3Days = s3Days ?? SERVERLESS_STREAMS_S3_ARCHITECTURE.defaultS3Days;
+
   const pub = OBSERVABILITY_SERVERLESS_PUBLISHED.complete;
   const ingestRate = options.metricsTsd
     ? pub.ingestMetricsPerGB

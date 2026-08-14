@@ -29,6 +29,7 @@ import {
   type ElasticStreamsTcoPolicy,
 } from "@/lib/elasticStreamsTco";
 import { ECH_HOT_FROZEN_ARCHITECTURE } from "@/lib/elasticEchHotFrozenPricing";
+import { SERVERLESS_STREAMS_S3_ARCHITECTURE } from "@/lib/elasticServerlessStreamsS3Pricing";
 import { estimateMonitoredHosts } from "@/lib/hostEstimation";
 import {
   integrations,
@@ -798,12 +799,13 @@ export default function Home() {
                 {/* Elastic metrics + retention (Serverless TSDS; logs/traces use full Complete rates on their tabs) */}
                 <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Elastic Serverless retention (Complete tiers)
+                    Elastic Serverless retention
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    <strong>Serverless only:</strong> baseline comparison when Streams shaping is off. Billed Elastic
-                    Serverless costs always include Streams policies below. <strong>ECH</strong> ignores this slider — it
-                    uses fixed {ECH_HOT_FROZEN_ARCHITECTURE.summary} per{" "}
+                    <strong>Serverless always uses {SERVERLESS_STREAMS_S3_ARCHITECTURE.summary}:</strong>{" "}
+                    {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}-day hot on Observability Complete, then Streams
+                    sends the rest to object storage (S3). This slider sets <strong>total retention</strong> (hot +
+                    S3). <strong>ECH</strong> ignores it and uses fixed {ECH_HOT_FROZEN_ARCHITECTURE.summary} per{" "}
                     <a
                       href={ELASTIC_CLOUD_HOSTED_PRICING_URL}
                       className="underline"
@@ -817,9 +819,23 @@ export default function Home() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                        Retention: <span className="text-blue-600 dark:text-blue-400">{elasticRetentionMonths} month{elasticRetentionMonths === 1 ? "" : "s"}</span>
+                        Total retention:{" "}
+                        <span className="text-blue-600 dark:text-blue-400">
+                          {elasticRetentionMonths} month{elasticRetentionMonths === 1 ? "" : "s"}
+                        </span>
+                        <span className="ml-2 font-normal normal-case text-gray-400">
+                          ({SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}d hot +{" "}
+                          {Math.max(
+                            0,
+                            Math.round(elasticRetentionMonths * (365 / 12)) -
+                              SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays
+                          )}
+                          d on S3)
+                        </span>
                         {elasticRetentionMonths === 13 && (
-                          <span className="ml-2 font-normal normal-case text-gray-400">(~Grafana/Observe comparison window)</span>
+                          <span className="ml-2 font-normal normal-case text-gray-400">
+                            · ~Grafana/Observe comparison window
+                          </span>
                         )}
                       </label>
                       <input
@@ -831,10 +847,21 @@ export default function Home() {
                         onChange={(e) => setElasticRetentionMonths(Number(e.target.value))}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                       />
-                      <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>1 mo</span>
-                        <span>13 mo</span>
-                        <span>15 mo</span>
+                      <div className="relative mt-1 h-4 text-xs text-gray-400">
+                        <span className="absolute left-0">1 mo</span>
+                        <span
+                          className="absolute -translate-x-1/2"
+                          style={{ left: `${((8 - 1) / (15 - 1)) * 100}%` }}
+                        >
+                          8 mo
+                        </span>
+                        <span
+                          className="absolute -translate-x-1/2"
+                          style={{ left: `${((13 - 1) / (15 - 1)) * 100}%` }}
+                        >
+                          13 mo
+                        </span>
+                        <span className="absolute right-0">15 mo</span>
                       </div>
                     </div>
                     <label className="flex items-center cursor-pointer">
@@ -845,21 +872,13 @@ export default function Home() {
                         className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                       />
                       <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Use floor rates only (25% of $0.09/GB ingest + $0.019/GB retained/mo for metrics)
+                        Prefer published floor rates for POC worksheets (TSDS $0.023/$0.005)
                       </span>
                     </label>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Default: Observability Complete tier table from{" "}
-                      <a
-                        href="https://cloud.elastic.co/cloud-pricing-table?productType=serverless&project=observability"
-                        className="underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        cloud.elastic.co
-                      </a>{" "}
-                      — Complete tier table × <strong>25% for TSDS metrics</strong> on Serverless. ECH metrics bill
-                      1d hot + ILM blob on indexed volume (plus $200/mo cluster minimum).
+                      Serverless billed path: Complete ingest + {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}d hot
+                      retention + Streams → S3 (~${0.023}/GB-mo object storage). Metrics use TSDS floors where
+                      applicable. ECH metrics bill 1d hot + ILM blob (plus $200/mo cluster minimum).
                     </p>
                   </div>
                 </div>

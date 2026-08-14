@@ -125,7 +125,9 @@ export function quoteSchemalessBlock(
     monthlyIngestGb * rates.dataTransferIngestPct - rates.freeDataTransferGbMonth
   );
 
-  const streamsS3 = calculateServerlessStreamsS3VolumeCost(monthlyIngestGb);
+  const streamsS3 = calculateServerlessStreamsS3VolumeCost(monthlyIngestGb, {
+    totalRetentionMonths: retentionMonths,
+  });
   const s3Detail = streamsS3.echHotFrozen!;
   const hotRetentionCost = s3Detail.hotCapacityCost;
   const s3StorageCost = s3Detail.blobStorageCost;
@@ -173,13 +175,13 @@ export function quoteSchemalessBlock(
       hotRetentionCost,
       s3StorageCost,
       retentionCost: streamsS3.retentionCost,
-      hotStoredGb: s3Detail.rawGbPerDay * SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays,
-      s3StoredGb: s3Detail.rawGbPerDay * SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days,
+      hotStoredGb: s3Detail.rawGbPerDay * s3Detail.hotDays,
+      s3StoredGb: s3Detail.rawGbPerDay * s3Detail.ilmBlobDays,
       ingestPerGB: SERVERLESS_STREAMS_S3_ARCHITECTURE.ingestPerGB,
       hotRetentionPerGBMonth: SERVERLESS_STREAMS_S3_ARCHITECTURE.hotRetentionPerGBMonth,
       s3PerGBMonth: SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth,
-      hotDays: SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays,
-      s3Days: SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days,
+      hotDays: s3Detail.hotDays,
+      s3Days: s3Detail.ilmBlobDays,
     },
     serverlessCompleteRetention: {
       monthly: completeFloor.volumeCost,

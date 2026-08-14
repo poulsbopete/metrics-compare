@@ -1,11 +1,10 @@
+import { calculateEchHotFrozenVolumeCost } from "./elasticEchHotFrozenPricing";
+import { calculateServerlessStreamsS3VolumeCost } from "./elasticServerlessStreamsS3Pricing";
 import {
-  calculateElasticServerlessCost,
-  calculateElasticServerlessMetricsCost,
   type ElasticServerlessCostBreakdown,
   type ElasticServerlessPricingOptions,
   ELASTIC_DAYS_PER_MONTH,
 } from "./elasticServerlessPricing";
-import { calculateEchHotFrozenVolumeCost } from "./elasticEchHotFrozenPricing";
 
 export type ObservabilitySignal = "logs" | "metrics" | "tracing";
 
@@ -30,7 +29,7 @@ export const ELASTIC_STREAMS_TRACES_TAIL_SAMPLE_PCT = 15;
 export const ELASTIC_STREAMS_TRACES_KEEP_ERRORS_FRACTION = 0.08;
 export const ELASTIC_STREAMS_TRACES_SAMPLE_WEIGHT = 0.87;
 export const ELASTIC_STREAMS_METRICS_AGGREGATE_MULT = 0.72;
-export const ELASTIC_STREAMS_METRICS_HOT_RESOLUTION_DAYS = 14;
+export const ELASTIC_STREAMS_METRICS_HOT_RESOLUTION_DAYS = 1;
 export const ELASTIC_STREAMS_METRICS_DEFAULT_RETENTION_DAYS = 90;
 
 export const DEFAULT_ELASTIC_STREAMS_TCO: ElasticStreamsTcoPolicy = {
@@ -135,10 +134,19 @@ export function applyElasticStreamsVolume(
   }
 
   const retentionDays = controls.retentionDays;
-  const retentionMonths = retentionDaysToMonths(retentionDays);
+  // Serverless TCO always uses the global retention slider for aged (Streams → S3) storage.
+  // Per-signal Streams retentionDays still drives downsample math and the Streams policy UI.
+  const retentionMonths =
+    opts?.platformKind === "serverless"
+      ? globalRetentionMonths
+      : retentionDaysToMonths(retentionDays);
+  const effectiveRetentionDays =
+    opts?.platformKind === "serverless"
+      ? Math.round(globalRetentionMonths * ELASTIC_DAYS_PER_MONTH)
+      : retentionDays;
   let storedGBMultiplier = 1;
   if (signal === "metrics" && controls.downsample) {
-    storedGBMultiplier = metricsDownsampleStoredMultiplier(policy, retentionDays);
+    storedGBMultiplier = metricsDownsampleStoredMultiplier(policy, effectiveRetentionDays);
   }
 
   const billableMonthlyIngestGB = monthlyIngestGB * ingestMultiplier;
@@ -150,7 +158,7 @@ export function applyElasticStreamsVolume(
     retentionMonths,
     storedGBMultiplier,
     ingestReductionPercent,
-    retentionDays,
+    retentionDays: effectiveRetentionDays,
     applied: true,
   };
 }
@@ -174,9 +182,11 @@ function serverlessBreakdown(
   options: ElasticServerlessPricingOptions,
   metricsTsd: boolean
 ): ElasticServerlessCostBreakdown {
-  return metricsTsd
-    ? calculateElasticServerlessMetricsCost(monthlyIngestGB, options)
-    : calculateElasticServerlessCost(monthlyIngestGB, options);
+  // Always model 1-day hot on Complete + Streams → S3 for aged retention.
+  return calculateServerlessStreamsS3VolumeCost(monthlyIngestGB, {
+    metricsTsd,
+    totalRetentionMonths: options.retentionMonths,
+  });
 }
 
 function echBreakdown(

@@ -378,7 +378,7 @@ export default function ElasticSchemalessBlocksVisual({
                 {pub.retentionLogsTracesPerGBMonth.toFixed(3)}/GB-mo on Search AI Lake.
               </li>
               <li>
-                <strong>Older data ({SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days}d):</strong> Streams S3
+                <strong>Older data ({selected.serverless.s3Days}d):</strong> Streams S3
                 export estimated at ${SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth.toFixed(3)}/GB-mo
                 object storage, with workload identity (short-lived tokens; no static cloud keys in the
                 exporter).
@@ -543,7 +543,7 @@ export default function ElasticSchemalessBlocksVisual({
           {pub.ingestMetricsPerGB.toFixed(3)} / ${pub.retentionMetricsPerGBMonth.toFixed(3)}; egress{" "}
           {OBSERVABILITY_SERVERLESS_PUBLISHED.egressFreeGB} GB free then $
           {OBSERVABILITY_SERVERLESS_PUBLISHED.egressPerGB.toFixed(2)}/GB. Streams→S3 uses those ingest and
-          hot-window rates, then estimates {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3Days} days of older data at $
+          hot-window rates, then estimates aged data (total retention − {SERVERLESS_STREAMS_S3_ARCHITECTURE.hotDays}d hot) at $
           {SERVERLESS_STREAMS_S3_ARCHITECTURE.s3PerGBMonth.toFixed(3)}/GB-mo object storage. Elastic Cloud
           Hosted from the Cloud Hosted pricing table. Illustrative only — confirm with your Elastic account
           team before purchasing decisions.
