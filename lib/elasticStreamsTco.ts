@@ -61,9 +61,9 @@ const DEFAULT_METRICS_DOWNSAMPLE_PCT = 66;
 export const DEFAULT_ELASTIC_STREAMS_TCO: ElasticStreamsTcoPolicy = {
   enabled: true,
   logs: {
-    drop: true,
+    drop: false,
     dropPct: DEFAULT_LOGS_DROP_PCT,
-    aggregate: true,
+    aggregate: false,
     aggregatePct: 15,
     downsample: false,
     downsamplePct: 40,
@@ -72,14 +72,14 @@ export const DEFAULT_ELASTIC_STREAMS_TCO: ElasticStreamsTcoPolicy = {
   metrics: {
     drop: false,
     dropPct: 10,
-    aggregate: true,
+    aggregate: false,
     aggregatePct: DEFAULT_METRICS_AGGREGATE_PCT,
-    downsample: true,
+    downsample: false,
     downsamplePct: DEFAULT_METRICS_DOWNSAMPLE_PCT,
     retentionDays: 90,
   },
   traces: {
-    drop: true,
+    drop: false,
     dropPct: DEFAULT_TRACES_DROP_PCT,
     aggregate: false,
     aggregatePct: 10,
