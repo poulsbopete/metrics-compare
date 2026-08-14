@@ -20,43 +20,43 @@
 
     <section class="slide" data-slide="1">
       <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
-      <h1>See the <em>bill drivers</em> Datadog charges you for.</h1>
-      <p class="value-outcome">Customer value: Named cardinality and debug series — before the next custom-metrics invoice.</p>
-      <p class="lede">Datadog bills grow with hosts, <strong>custom metrics</strong>, and high-cardinality tags. On the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">TCO worksheet</a>, Datadog metrics alone can land near <strong>~$3.8K/mo</strong> while Elastic Serverless metrics are ~<strong>$0.9K</strong> — then the rest of the stack piles on. Audit the same noise live on Streams.</p>
+      <h1>Why <em>leave</em> Datadog — see the cost drivers on Elastic.</h1>
+      <p class="value-outcome">Customer value: Displacement to Elastic Serverless — not a Datadog true-up optimization.</p>
+      <p class="lede">This lab moves the backend to <strong>Elastic Serverless</strong>. On the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">TCO worksheet</a>, Datadog is ~<strong>$12.6K/mo</strong> (metrics alone ~<strong>$3.8K</strong>) vs Serverless ~<strong>$1.3K</strong> (metrics ~<strong>$0.9K</strong>). Audit the same cardinality and debug noise on Streams — then Drop it at ingest instead of paying Datadog to store it.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
             <div>
-              <div class="tag">DRIVER</div>
-              <h3>Custom metrics</h3>
-              <p>Series count is the invoice — high-cardinality tags explode the bill without improving MTTR.</p>
+              <div class="tag">LEAVE</div>
+              <h3>Custom metrics tax</h3>
+              <p>High-cardinality tags explode the Datadog invoice — Elastic drops them at ingest.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
-              <div class="tag">DRIVER</div>
-              <h3>Debug / scrape noise</h3>
-              <p><code>/debug/pprof</code>, scrape metadata, churn metrics that never page anyone — still billed.</p>
+              <div class="tag">LEAVE</div>
+              <h3>Pay-then-filter</h3>
+              <p>Datadog bills debug/scrape noise first. Serverless Streams never stores what you Drop.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
-              <div class="tag">DRIVER</div>
-              <h3>Stacked SKUs</h3>
-              <p>Metrics + APM + logs + security line items — TCO compounds fast vs one Elastic project.</p>
+              <div class="tag">MOVE TO</div>
+              <h3>Elastic Serverless</h3>
+              <p>One project, SaaS ops, ~11% of Datadog full-stack TCO on the same worksheet.</p>
             </div>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Streams → <code>metrics-generic.otel-default</code> → name two Datadog-style bill drivers you’d cut.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Streams → <code>metrics-generic.otel-default</code> → name two Datadog cost drivers you’d leave behind.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
     <section class="slide" data-slide="2">
       <div class="eyebrow">Competitive lab · Challenge 2 · ~15 min</div>
       <h1>Datadog TCO — Elastic is ~<em>11%</em> the cost.</h1>
-      <p class="value-outcome">Customer value: Drop + lifecycle at ingest, then prove list-rate TCO — Datadog is expensive, especially on metrics.</p>
-      <p class="lede">On the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">Datadog worksheet</a>, Datadog lands near <strong>~$12.6K/mo</strong> while Elastic Serverless is ~<strong>$1.3K</strong> (<strong>89% cheaper</strong>) and ECH ~<strong>$0.6K</strong>. <strong>Metrics alone:</strong> Datadog ~<strong>$3.8K</strong> vs Serverless ~<strong>$0.9K</strong> (~4×). In the lab: Drop <code>/debug/pprof</code>, open <strong>Horizon — Datadog displacement savings</strong>, then open the calc.</p>
+      <p class="value-outcome">Customer value: Prove why they should move to Elastic Serverless — Datadog TCO (esp. metrics) is the displacement case.</p>
+      <p class="lede">On the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">Datadog worksheet</a>, Datadog lands near <strong>~$12.6K/mo</strong> while Elastic Serverless is ~<strong>$1.3K</strong> (<strong>89% cheaper</strong>) and ECH ~<strong>$0.6K</strong>. <strong>Metrics alone:</strong> Datadog ~<strong>$3.8K</strong> vs Serverless ~<strong>$0.9K</strong> (~4×). In the lab: Drop <code>/debug/pprof</code> on Serverless, open <strong>Horizon — Datadog displacement savings</strong>, then open the calc — this is the move-off story.</p>
       <div class="slide-body tco-body">
         <div class="tco-bars" aria-label="Illustrative monthly TCO">
           <div class="tco-row">
