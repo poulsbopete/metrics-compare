@@ -279,7 +279,7 @@ export const platforms: Platform[] = [
   {
     id: "elastic-self-hosted",
     name: "Elastic (Self-hosted)",
-    color: "bg-slate-500",
+    color: "bg-blue-600",
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 600,
