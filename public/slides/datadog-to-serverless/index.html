@@ -54,9 +54,9 @@
 
     <section class="slide" data-slide="2">
       <div class="eyebrow">From Datadog · Challenge 2 · ~15 min</div>
-      <h1>Datadog TCO — Elastic is ~<em>11%</em> the cost.</h1>
-      <p class="value-outcome">Customer value: Show your savings on Elastic Serverless — Datadog TCO (esp. metrics) makes the case.</p>
-      <p class="lede">On the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">Datadog worksheet</a>, Datadog lands near <strong>~$12.6K/mo</strong> while Elastic Serverless is ~<strong>$1.3K</strong> (<strong>89% cheaper</strong>) and ECH ~<strong>$0.6K</strong>. <strong>Metrics alone:</strong> Datadog ~<strong>$3.8K</strong> vs Serverless ~<strong>$0.9K</strong> (~4×). In the lab: Drop <code>/debug/pprof</code> on Serverless, open <strong>Horizon — Your savings vs Datadog</strong>, then open the calc.</p>
+      <h1>Overrun control — Drop before the bill, not after.</h1>
+      <p class="value-outcome">On Datadog a cardinality spike is an invoice surprise. On Elastic, Streams Drop caps what you store first.</p>
+      <p class="lede">On the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">Datadog worksheet</a>, Datadog lands near <strong>~$12.6K/mo</strong> while Elastic Serverless is ~<strong>$1.3K</strong> (<strong>89% cheaper</strong>) and ECH ~<strong>$0.6K</strong>. <strong>Metrics alone:</strong> Datadog ~<strong>$3.8K</strong> vs Serverless ~<strong>$0.9K</strong> (~4×). In the lab: Drop <code>/debug/pprof</code>, open <strong>Horizon — Your savings vs Datadog</strong>, then open the calc.</p>
       <div class="slide-body tco-body">
         <div class="tco-bars" aria-label="Illustrative monthly TCO">
           <div class="tco-row">
@@ -79,21 +79,21 @@
         <div class="cards">
           <div class="metric-card metric-card-solo">
             <div>
-              <div class="tag">METRICS</div>
-              <h3>Where Datadog hurts</h3>
-              <p>Custom-metrics pricing makes the metrics SKU alone ~4× Elastic Serverless on the same worksheet.</p>
+              <div class="tag">OVERRUN</div>
+              <h3>Pay-then-filter</h3>
+              <p>Datadog custom-metrics pricing bills the spike first. Filtering later doesn’t undo the invoice.</p>
             </div>
           </div>
           <div class="metric-card metric-card-solo">
             <div>
-              <div class="tag">LEVER</div>
+              <div class="tag">CONTROL</div>
               <h3>Streams Drop</h3>
-              <p>Cut <code>/debug/pprof</code> and cardinality before ingest — noise Datadog would still bill as custom metrics.</p>
+              <p>Cut <code>/debug/pprof</code> and cardinality before ingest — noise never stored, bill stays predictable.</p>
             </div>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Drop + lifecycle → Your savings vs Datadog board → open the TCO calc → name the metrics line.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Drop + lifecycle → Your savings vs Datadog board → open the TCO calc → say “overrun control.”</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
@@ -128,6 +128,40 @@
         </div>
       </div>
       <footer class="slide-footer"><strong>In the lab:</strong> Services → Sample: Service Basics → Streams → one sentence with your savings vs Datadog.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="4">
+      <div class="eyebrow">From Datadog · Challenge 4 · ~15 min</div>
+      <h1>Agent Builder vs Bits — AI on the data you kept.</h1>
+      <p class="value-outcome">Bits investigates Datadog’s billed plane. Agent Builder investigates your Serverless project after Drop.</p>
+      <p class="lede">Open <strong>Agent Builder</strong>, ask about <code>horizon-playback</code> / <code>horizon-auth</code>, and leave with one clear contrast: AI that runs on <em>signal you chose to keep</em> — not on the invoice you’re trying to leave.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">BITS</div>
+              <h3>On Datadog’s bill</h3>
+              <p>Bits AI / Bits Agent Builder are strong — and still tied to data already stored across Datadog SKUs.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">AGENT BUILDER</div>
+              <h3>On your savings stack</h3>
+              <p>Same project as Streams Drop + Services — Observability agent + skills, live on Serverless today.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">TAKEAWAY</div>
+              <h3>One sentence</h3>
+              <p>“We Drop noise first, then Agent Builder investigates the cleaner, cheaper dataset in one project.”</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Agent Builder → Horizon prompt → name Bits vs Agent Builder contrast.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
