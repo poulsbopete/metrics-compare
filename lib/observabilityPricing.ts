@@ -1179,7 +1179,9 @@ export function calculateSecurityCostBreakdown(
       );
       volumeCost += streamsResult.volumeCost;
     } else if (platform.id === "elastic-security-ech") {
-      volumeCost += calculateEchHotFrozenVolumeCost(monthlyGB).volumeCost;
+      volumeCost += calculateEchHotFrozenVolumeCost(monthlyGB, {
+        totalRetentionMonths: elasticPricing.retentionMonths,
+      }).volumeCost;
     } else {
       volumeCost += monthlyGB * pricing.pricePerGB;
     }
