@@ -262,6 +262,11 @@ export default function Home() {
 
   const applyCompetitorScenario = (id: CompetitorScenarioId) => {
     setCompetitorScenarioId(id);
+    // Datadog samples/sec POCs need an explicit host count — auto-from-inventory is easy to miss.
+    if (id === "datadog") {
+      setDatadogHostsAuto(false);
+      setDatadogManualHosts((prev) => (prev < 100 ? 500 : prev));
+    }
     const presets = getCompetitorScenario(id).presets;
     if (!presets) return;
     if (presets.metricsInputMode) setMetricsInputMode(presets.metricsInputMode);
@@ -777,11 +782,8 @@ export default function Home() {
                         </p>
                       ) : (
                         <div>
-                          <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                            Monitored hosts (Infra Pro + APM Pro)
-                          </label>
                           <MetricSlider
-                            label=""
+                            label="Monitored hosts (Infra Pro + APM Pro)"
                             value={datadogManualHosts}
                             onChange={(v) => setDatadogManualHosts(Math.max(1, Math.round(v)))}
                             min={1}
@@ -927,54 +929,6 @@ export default function Home() {
                     }
                     gbPerDay={activeTab === "logs" ? gbPerDay : undefined}
                   />
-                )}
-
-                {/* Datadog host licensing — only when comparing Datadog */}
-                {scenarioShowsDatadog(competitorScenarioId) && (
-                <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    Datadog host licensing
-                  </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Infrastructure Pro ($15/host/mo) on Metrics and APM Pro ($31/host/mo) on Tracing. Host count comes from infrastructure inventory or log GB/day (10 GB/day ≈ 250 hosts) — not from metrics/sec volume.
-                  </p>
-                  <div className="space-y-4">
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={datadogHostsAuto}
-                        onChange={(e) => setDatadogHostsAuto(e.target.checked)}
-                        className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
-                      />
-                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Auto-estimate hosts from inventory / GB/day
-                      </span>
-                    </label>
-                    {datadogHostsAuto ? (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Estimated{" "}
-                        <span className="font-semibold text-purple-600 dark:text-purple-400">
-                          {estimatedDatadogHosts.toLocaleString()} hosts
-                        </span>{" "}
-                        (linux/windows/k8s-node inventory, or log GB/day ÷ 0.04 GB/host/day)
-                      </p>
-                    ) : (
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                          Monitored hosts (infra + APM)
-                        </label>
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          value={datadogManualHosts}
-                          onChange={(e) => setDatadogManualHosts(Math.max(1, Number(e.target.value) || 1))}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
                 )}
 
                 {/* Operational Cost Options */}
