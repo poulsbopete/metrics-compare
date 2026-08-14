@@ -592,7 +592,7 @@ export default function Home() {
           {activeTab !== "fullstack" && activeTab !== "datablocks" && (
           <><div className="grid gap-8 mb-8 grid-cols-1 lg:grid-cols-12">
             {/* Configuration Panel */}
-            <div className="lg:col-span-4 xl:col-span-3 min-w-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
+            <div className="lg:col-span-5 xl:col-span-5 min-w-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
               <div className="mb-6 min-w-0">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center min-w-0 truncate">
                   <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full mr-3 shrink-0" />
@@ -1018,7 +1018,7 @@ export default function Home() {
             </div>
 
             {/* Volume Summary */}
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up lg:col-span-8 xl:col-span-9">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up lg:col-span-7 xl:col-span-7">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <span className="w-1 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3" />
                 {activeTab === "metrics" && "Metric Volume Impact"}
