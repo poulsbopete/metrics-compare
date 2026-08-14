@@ -151,7 +151,8 @@ export function calculatePlatformCost(
   metricType?: MetricSourceType,
   includeEgress: boolean = false,
   usePrivateLink: boolean = false,
-  pricingContext: TcoPricingContext = DEFAULT_TCO_PRICING_CONTEXT
+  pricingContext: TcoPricingContext = DEFAULT_TCO_PRICING_CONTEXT,
+  bytesPerDatapointOverride?: number
 ): number {
   const { elastic: elasticPricing, streams: streamsPolicy } = pricingContext;
   const { pricing } = platform;
@@ -162,9 +163,11 @@ export function calculatePlatformCost(
   
   let monthlyGB = 0;
 
-  const bytesPerDatapoint = metricType
-    ? getBytesPerDatapoint(metricType)
-    : (pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
+  const bytesPerDatapoint =
+    bytesPerDatapointOverride ??
+    (metricType
+      ? getBytesPerDatapoint(metricType)
+      : pricing.bytesPerDatapoint || getBytesPerDatapoint("Mixed"));
 
   const usesGbMetricsPricing =
     platform.id === "elastic-serverless" ||

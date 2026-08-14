@@ -58,8 +58,21 @@ import {
   TCO_LIST_RATES_AS_OF,
   TCO_VALIDATION_FOOTNOTE,
 } from "@/lib/tcoDisclaimer";
+import CompetitorScenarioSelect from "@/components/CompetitorScenarioSelect";
+import ElasticMetricsPocPanel from "@/components/ElasticMetricsPocPanel";
+import {
+  DEFAULT_COMPETITOR_SCENARIO_ID,
+  getCompetitorScenario,
+  type CompetitorScenarioId,
+} from "@/lib/competitorScenarios";
+import {
+  samplesPerSecondToMonthlyIngestGbDecimal,
+  type ElasticSupportTierId,
+} from "@/lib/elasticMetricsPoc";
 import TcoDisclaimerBanner from "@/components/TcoDisclaimerBanner";
 import ElasticSchemalessBlocksVisual from "@/components/ElasticSchemalessBlocksVisual";
+
+type MetricsInputMode = "manual" | "infrastructure" | "samples-poc";
 
 const STORAGE_KEY = "observability-compare-state";
 
@@ -70,8 +83,13 @@ interface SavedState {
   tags: string[];
   tagValues: number;
   primaryMetricType?: MetricSourceType;
-  metricsInputMode?: "manual" | "infrastructure";
+  metricsInputMode?: MetricsInputMode;
   infraItems?: Record<string, number>;
+  competitorScenarioId?: CompetitorScenarioId;
+  samplesPerSecond?: number;
+  bytesPerSample?: number;
+  tsdbStoredCompressionFactor?: number;
+  elasticSupportTier?: ElasticSupportTierId;
   // Tracing
   spansPerSecond: number;
   // Logs
@@ -130,8 +148,15 @@ export default function Home() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagValues, setTagValues] = useState(10);
   const [primaryMetricType, setPrimaryMetricType] = useState<MetricSourceType>("Mixed");
-  const [metricsInputMode, setMetricsInputMode] = useState<"manual" | "infrastructure">("manual");
+  const [metricsInputMode, setMetricsInputMode] = useState<MetricsInputMode>("manual");
   const [infraItems, setInfraItems] = useState<Record<string, number>>({});
+  const [competitorScenarioId, setCompetitorScenarioId] = useState<CompetitorScenarioId>(
+    DEFAULT_COMPETITOR_SCENARIO_ID
+  );
+  const [samplesPerSecond, setSamplesPerSecond] = useState(400_000);
+  const [bytesPerSample, setBytesPerSample] = useState(1.5);
+  const [tsdbStoredCompressionFactor, setTsdbStoredCompressionFactor] = useState(3.12);
+  const [elasticSupportTier, setElasticSupportTier] = useState<ElasticSupportTierId>("platinum");
   
   // Tracing state
   const [spansPerSecond, setSpansPerSecond] = useState(100);
@@ -194,6 +219,13 @@ export default function Home() {
         setConfigPanelCollapsed(savedState.configPanelCollapsed);
       }
       if (savedState.metricsInputMode) setMetricsInputMode(savedState.metricsInputMode);
+      if (savedState.competitorScenarioId) setCompetitorScenarioId(savedState.competitorScenarioId);
+      if (savedState.samplesPerSecond !== undefined) setSamplesPerSecond(savedState.samplesPerSecond);
+      if (savedState.bytesPerSample !== undefined) setBytesPerSample(savedState.bytesPerSample);
+      if (savedState.tsdbStoredCompressionFactor !== undefined) {
+        setTsdbStoredCompressionFactor(savedState.tsdbStoredCompressionFactor);
+      }
+      if (savedState.elasticSupportTier) setElasticSupportTier(savedState.elasticSupportTier);
       if (savedState.infraItems) setInfraItems(savedState.infraItems);
     }
   }, []);
@@ -209,6 +241,11 @@ export default function Home() {
         primaryMetricType,
         metricsInputMode,
         infraItems,
+        competitorScenarioId,
+        samplesPerSecond,
+        bytesPerSample,
+        tsdbStoredCompressionFactor,
+        elasticSupportTier,
         spansPerSecond,
         gbPerDay,
         eventsPerSecond,
@@ -222,7 +259,19 @@ export default function Home() {
         configPanelCollapsed,
       });
     }
-  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, elasticStreamsTco, datadogHostsAuto, datadogManualHosts, configPanelCollapsed, isHydrated]);
+  }, [activeTab, baseVolume, tags, tagValues, primaryMetricType, metricsInputMode, infraItems, competitorScenarioId, samplesPerSecond, bytesPerSample, tsdbStoredCompressionFactor, elasticSupportTier, spansPerSecond, gbPerDay, eventsPerSecond, includeEgress, usePrivateLink, elasticRetentionMonths, elasticUseVolumeTiers, elasticStreamsTco, datadogHostsAuto, datadogManualHosts, configPanelCollapsed, isHydrated]);
+
+  const applyCompetitorScenario = (id: CompetitorScenarioId) => {
+    setCompetitorScenarioId(id);
+    const presets = getCompetitorScenario(id).presets;
+    if (!presets) return;
+    if (presets.metricsInputMode) setMetricsInputMode(presets.metricsInputMode);
+    if (presets.primaryMetricType) setPrimaryMetricType(presets.primaryMetricType);
+    if (presets.samplesPerSecond !== undefined) setSamplesPerSecond(presets.samplesPerSecond);
+    if (presets.elasticRetentionMonths !== undefined) {
+      setElasticRetentionMonths(presets.elasticRetentionMonths);
+    }
+  };
 
   const elasticPricing = useMemo(
     () => ({
@@ -268,10 +317,17 @@ export default function Home() {
     return gbPerDayToMonthlyMetrics(infraGbPerDay, BYTES_PER_DATAPOINT[primaryMetricType]);
   }, [infraGbPerDay, primaryMetricType]);
 
-  // Effective monthly metrics: infra-derived or manual
+  const samplesPocMonthlyMetrics = useMemo(
+    () => metricsPerSecondToMonthly(samplesPerSecond),
+    [samplesPerSecond]
+  );
+
+  // Effective monthly metrics: samples POC, infra-derived, or manual (with tags)
   const effectiveMonthlyMetrics = useMemo(() => {
-    return metricsInputMode === "infrastructure" ? infraMonthlyMetrics : monthlyMetrics;
-  }, [metricsInputMode, infraMonthlyMetrics, monthlyMetrics]);
+    if (metricsInputMode === "samples-poc") return samplesPocMonthlyMetrics;
+    if (metricsInputMode === "infrastructure") return infraMonthlyMetrics;
+    return monthlyMetrics;
+  }, [metricsInputMode, samplesPocMonthlyMetrics, infraMonthlyMetrics, monthlyMetrics]);
 
   const estimatedDatadogHosts = useMemo(
     () => estimateMonitoredHosts(infraItems, { logsGbPerDay: gbPerDay }),
@@ -298,6 +354,11 @@ export default function Home() {
   );
 
   // Metrics calculations
+  const metricsBytesPerDatapoint = useMemo(() => {
+    if (metricsInputMode === "samples-poc") return bytesPerSample;
+    return BYTES_PER_DATAPOINT[primaryMetricType];
+  }, [metricsInputMode, bytesPerSample, primaryMetricType]);
+
   const metricsCosts = useMemo(() => {
     const result: Record<string, number> = {};
     try {
@@ -308,14 +369,15 @@ export default function Home() {
           primaryMetricType,
           includeEgress,
           usePrivateLink,
-          pricingContext
+          pricingContext,
+          metricsInputMode === "samples-poc" ? bytesPerSample : undefined
         );
       });
     } catch (error) {
       console.error("Error calculating metrics costs:", error);
     }
     return result;
-  }, [effectiveMonthlyMetrics, primaryMetricType, includeEgress, usePrivateLink, pricingContext]);
+  }, [effectiveMonthlyMetrics, primaryMetricType, includeEgress, usePrivateLink, pricingContext, metricsInputMode, bytesPerSample]);
 
   // Tracing calculations
   const monthlySpans = useMemo(
@@ -472,6 +534,9 @@ export default function Home() {
   const configScenarioSummary = useMemo(() => {
     switch (activeTab) {
       case "metrics":
+        if (metricsInputMode === "samples-poc") {
+          return `${getCompetitorScenario(competitorScenarioId).label} · ${samplesPerSecond.toLocaleString()} samples/sec`;
+        }
         return metricsInputMode === "infrastructure"
           ? `${infraGbPerDay >= 1 ? `${infraGbPerDay.toFixed(1)} GB/day` : `${(infraGbPerDay * 1000).toFixed(0)} MB/day`} · ${formatMetricsPerSecond(infraMetricsPerSecond)}`
           : `${formatMetricsPerSecond(metricsPerSecond)} base · ${formatMonthlyMetrics(effectiveMonthlyMetrics)}/mo`;
@@ -487,6 +552,8 @@ export default function Home() {
   }, [
     activeTab,
     metricsInputMode,
+    competitorScenarioId,
+    samplesPerSecond,
     infraGbPerDay,
     infraMetricsPerSecond,
     metricsPerSecond,
@@ -577,6 +644,11 @@ export default function Home() {
                 </button>
               </div>
               <div className="space-y-6 min-w-0">
+                <CompetitorScenarioSelect
+                  value={competitorScenarioId}
+                  onChange={applyCompetitorScenario}
+                />
+
                 {activeTab === "metrics" && (
                   <div className="space-y-5">
                     {/* Input mode toggle */}
@@ -584,31 +656,42 @@ export default function Home() {
                       <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                         Input Mode
                       </label>
-                      <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-900 w-full">
+                      <div className="inline-flex flex-wrap rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-900 w-full gap-1">
                         <button
                           onClick={() => setMetricsInputMode("manual")}
-                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
+                          className={`flex-1 min-w-[5.5rem] px-2 py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
                             metricsInputMode === "manual"
                               ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                           }`}
                         >
-                          Manual
+                          Cardinality
+                        </button>
+                        <button
+                          onClick={() => setMetricsInputMode("samples-poc")}
+                          className={`flex-1 min-w-[5.5rem] px-2 py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
+                            metricsInputMode === "samples-poc"
+                              ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                          }`}
+                        >
+                          Samples/sec
                         </button>
                         <button
                           onClick={() => setMetricsInputMode("infrastructure")}
-                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
+                          className={`flex-1 min-w-[5.5rem] px-2 py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
                             metricsInputMode === "infrastructure"
                               ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                           }`}
                         >
-                          From Infrastructure
+                          Infrastructure
                         </button>
                       </div>
                     </div>
 
-                    {/* Metric source type (shown in both modes) */}
+                    {/* Metric source type (cardinality + infra modes) */}
+                    {metricsInputMode !== "samples-poc" && (
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                         Metric Source
@@ -629,8 +712,33 @@ export default function Home() {
                         ))}
                       </div>
                     </div>
+                    )}
 
-                    {/* Manual mode */}
+                    {metricsInputMode === "samples-poc" && (
+                      <MetricSlider
+                        label="Samples per Second (post-dedup)"
+                        value={samplesPerSecond}
+                        onChange={setSamplesPerSecond}
+                        min={1_000}
+                        max={2_000_000}
+                        step={1_000}
+                        logarithmic={true}
+                        formatValue={(v) => {
+                          if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M/sec`;
+                          if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K/sec`;
+                          return `${v}/sec`;
+                        }}
+                      />
+                    )}
+
+                    {metricsInputMode === "samples-poc" && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">
+                        Post-dedup samples/sec (no tag multiplication). Use the TSDS POC worksheet below the chart for
+                        ingest + retention + support line items.
+                      </p>
+                    )}
+
+                    {/* Manual cardinality mode */}
                     {metricsInputMode === "manual" && (
                       <>
                         <MetricSlider
@@ -1186,6 +1294,21 @@ export default function Home() {
 
           <FederatedDataSourcesVisual />
 
+          {activeTab === "metrics" && metricsInputMode === "samples-poc" && (
+            <ElasticMetricsPocPanel
+              samplesPerSecond={samplesPerSecond}
+              onSamplesPerSecondChange={setSamplesPerSecond}
+              bytesPerSample={bytesPerSample}
+              onBytesPerSampleChange={setBytesPerSample}
+              retentionMonths={elasticRetentionMonths}
+              onRetentionMonthsChange={setElasticRetentionMonths}
+              tsdbStoredCompressionFactor={tsdbStoredCompressionFactor}
+              onTsdbStoredCompressionFactorChange={setTsdbStoredCompressionFactor}
+              supportTier={elasticSupportTier}
+              onSupportTierChange={setElasticSupportTier}
+            />
+          )}
+
           {/* Cost Comparison */}
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up">
             {configPanelCollapsed && (
@@ -1214,6 +1337,7 @@ export default function Home() {
             </p>
             <ObservabilityComparison
               type={activeTab}
+              competitorScenarioId={competitorScenarioId}
               platforms={currentPlatforms}
               costs={currentCosts}
               operationalCosts={operationalCosts}
@@ -1223,13 +1347,17 @@ export default function Home() {
               calculationContext={
                 activeTab === "metrics"
                   ? (() => {
-                      const bpd = BYTES_PER_DATAPOINT[primaryMetricType];
+                      const bpd = metricsBytesPerDatapoint;
                       const metricsMonthlyGB = effectiveMonthlyMetrics
-                        ? (effectiveMonthlyMetrics * bpd) / (1024 * 1024 * 1024)
+                        ? metricsInputMode === "samples-poc"
+                          ? samplesPerSecondToMonthlyIngestGbDecimal(samplesPerSecond, bytesPerSample)
+                          : (effectiveMonthlyMetrics * bpd) / (1024 * 1024 * 1024)
                         : 0;
                       return {
                         monthlyMetrics: effectiveMonthlyMetrics,
-                        metricsPerSecond: metricsInputMode === "infrastructure"
+                        metricsPerSecond: metricsInputMode === "samples-poc"
+                          ? samplesPerSecond
+                          : metricsInputMode === "infrastructure"
                           ? infraMetricsPerSecond
                           : metricsPerSecond,
                         primaryMetricType,

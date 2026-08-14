@@ -2,20 +2,18 @@
 
 import { Platform } from "@/lib/costCalculator";
 import { ObservabilityPlatform } from "@/lib/observabilityPricing";
+import {
+  DEFAULT_COMPETITOR_SCENARIO_ID,
+  getCompetitorScenario,
+  getScenarioPlatformIds,
+  type CompetitorScenarioId,
+} from "@/lib/competitorScenarios";
 import { getOperationalFTE, getFTELabel } from "@/lib/operationalCosts";
 import { useState, useMemo, useEffect } from "react";
 import CostBarChart from "./CostBarChart";
 import PlatformRow from "./PlatformRow";
 
 type ObservabilityType = "metrics" | "tracing" | "logs" | "security" | "fullstack";
-
-// Default platforms shown per tab — ECH + Serverless + Datadog
-const DEFAULT_PLATFORM_IDS: Partial<Record<ObservabilityType, Set<string>>> = {
-  metrics: new Set(["elastic-ech", "elastic-serverless", "datadog"]),
-  tracing: new Set(["elastic-ech-tracing", "elastic-tracing", "datadog-tracing"]),
-  logs: new Set(["elastic-ech-logs", "elastic-logs", "datadog-logs"]),
-  security: new Set(["elastic-security-ech", "elastic-security", "datadog-security"]),
-};
 
 // Elastic-branded platform IDs — styled distinctively in the picker
 const ELASTIC_ID_PREFIXES = ["elastic-", "elasticsearch-"];
@@ -25,6 +23,7 @@ function isElasticPlatform(id: string) {
 
 interface ObservabilityComparisonProps {
   type: ObservabilityType;
+  competitorScenarioId?: CompetitorScenarioId;
   platforms: Platform[] | ObservabilityPlatform[];
   costs: Record<string, number>;
   operationalCosts?: Record<string, number>;
@@ -60,6 +59,7 @@ interface ObservabilityComparisonProps {
 
 export default function ObservabilityComparison({
   type,
+  competitorScenarioId = DEFAULT_COMPETITOR_SCENARIO_ID,
   platforms,
   costs,
   operationalCosts = {},
@@ -70,18 +70,25 @@ export default function ObservabilityComparison({
 }: ObservabilityComparisonProps) {
   const [viewMode, setViewMode] = useState<"table" | "chart">("chart");
 
-  // Platform picker state — default to ECH + Serverless + Datadog for this tab
-  const [activePlatformIds, setActivePlatformIds] = useState<Set<string>>(
-    () => new Set(DEFAULT_PLATFORM_IDS[type] ?? platforms.map((p) => p.id))
+  const scenario = getCompetitorScenario(competitorScenarioId);
+  const scenarioPlatformIds = useMemo(
+    () =>
+      type === "fullstack"
+        ? new Set(platforms.map((p) => p.id))
+        : getScenarioPlatformIds(
+            competitorScenarioId,
+            type,
+            platforms.map((p) => p.id)
+          ),
+    [competitorScenarioId, type, platforms]
   );
 
-  // Reset defaults whenever the active tab (type) changes
+  // Platform picker — defaults from customer incumbent scenario
+  const [activePlatformIds, setActivePlatformIds] = useState<Set<string>>(() => scenarioPlatformIds);
+
   useEffect(() => {
-    const defaults = DEFAULT_PLATFORM_IDS[type];
-    setActivePlatformIds(
-      defaults ? new Set(defaults) : new Set(platforms.map((p) => p.id))
-    );
-  }, [type]); // eslint-disable-line react-hooks/exhaustive-deps
+    setActivePlatformIds(new Set(scenarioPlatformIds));
+  }, [scenarioPlatformIds]);
 
   const togglePlatform = (id: string) => {
     setActivePlatformIds((prev) => {
@@ -163,7 +170,8 @@ export default function ObservabilityComparison({
       {/* Platform picker */}
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2.5">
-          Compare platforms — ECH, Serverless &amp; Datadog shown by default
+          Compare platforms — <span className="normal-case">{scenario.label}</span>
+          {scenario.id === "all" ? " (pick vendors below)" : " shown by default"}
         </div>
         <div className="flex flex-wrap gap-2">
           {pickerPlatforms.map((p) => {
