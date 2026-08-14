@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import CollapsibleExample from "@/components/CollapsibleExample";
 import DataBlocksCostChart from "@/components/DataBlocksCostChart";
 import {
   formatBlockCurrency,
@@ -65,15 +66,25 @@ export default function ElasticSchemalessBlocksVisual({
   const pub = OBSERVABILITY_SERVERLESS_PUBLISHED.complete;
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-200/60 dark:border-emerald-800/40 p-6">
+    <CollapsibleExample
+      storageKey="example-schemaless-blocks-collapsed"
+      title="Schemaless observability · data blocks"
+      collapsedHint="TiB block quotes & Streams → S3 math — collapsed"
+      accentClassName="from-emerald-500 to-teal-500"
+      description={
+        <>
+          Elastic Observability is <strong>schemaless</strong>: OpenTelemetry, Elastic Agent, and Beats land{" "}
+          <strong>logs, metrics, and traces</strong> in the same project without a separate SKU per signal. Billable
+          path is <strong>ingested GB</strong> (and retention).
+        </>
+      }
+    >
+    <div className="space-y-6">
+      <section className="rounded-xl border border-emerald-200/60 dark:border-emerald-800/40 bg-emerald-50/30 dark:bg-emerald-950/10 p-5">
         <div className="mb-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300 mb-2">
-            Schemaless observability · data blocks
-          </p>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Schemaless ingest — no custom-metric SKUs
-          </h2>
+          </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-3xl leading-relaxed">
             Elastic Observability is <strong>schemaless</strong>: OpenTelemetry, Elastic Agent, and Beats
             land <strong>logs, metrics, and traces</strong> in the same project without picking a separate
@@ -550,5 +561,6 @@ export default function ElasticSchemalessBlocksVisual({
         </p>
       </section>
     </div>
+    </CollapsibleExample>
   );
 }

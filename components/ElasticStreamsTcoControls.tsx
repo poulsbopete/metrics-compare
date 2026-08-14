@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import CollapsibleExample from "@/components/CollapsibleExample";
 import {
   EXAMPLE_WIRED_STREAMS,
   calculateElasticVolumeCostWithStreams,
@@ -307,35 +308,44 @@ export default function ElasticStreamsTcoControls({
         </a>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-              <th className="pb-2 pr-4 font-semibold uppercase tracking-wide">Example wired stream</th>
-              <th className="pb-2 pr-4 font-semibold uppercase tracking-wide">Signal</th>
-              <th className="pb-2 pr-4 font-semibold uppercase tracking-wide">Processing</th>
-              <th className="pb-2 font-semibold uppercase tracking-wide">Retention</th>
-            </tr>
-          </thead>
-          <tbody>
-            {EXAMPLE_WIRED_STREAMS.filter((row) => {
-              if (activeSignal === "metrics") return row.signal === "metrics";
-              if (activeSignal === "tracing") return row.signal === "traces";
-              return row.signal === "logs";
-            }).map((row) => (
-              <tr
-                key={row.stream}
-                className="border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300"
-              >
-                <td className="py-2 pr-4 font-mono text-[11px]">{row.stream}</td>
-                <td className="py-2 pr-4 capitalize">{row.signal}</td>
-                <td className="py-2 pr-4">{row.actions}</td>
-                <td className="py-2">{row.retentionDays}d</td>
+      <CollapsibleExample
+        storageKey="example-wired-streams-collapsed"
+        title="Example wired streams"
+        collapsedHint="Sample stream policies for this signal — collapsed"
+        accentClassName="from-violet-500 to-fuchsia-500"
+        defaultCollapsed
+        description="Illustrative stream names and processing — not your live Streams config."
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                <th className="pb-2 pr-4 font-semibold uppercase tracking-wide">Stream</th>
+                <th className="pb-2 pr-4 font-semibold uppercase tracking-wide">Signal</th>
+                <th className="pb-2 pr-4 font-semibold uppercase tracking-wide">Processing</th>
+                <th className="pb-2 font-semibold uppercase tracking-wide">Retention</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {EXAMPLE_WIRED_STREAMS.filter((row) => {
+                if (activeSignal === "metrics") return row.signal === "metrics";
+                if (activeSignal === "tracing") return row.signal === "traces";
+                return row.signal === "logs";
+              }).map((row) => (
+                <tr
+                  key={row.stream}
+                  className="border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300"
+                >
+                  <td className="py-2 pr-4 font-mono text-[11px]">{row.stream}</td>
+                  <td className="py-2 pr-4 capitalize">{row.signal}</td>
+                  <td className="py-2 pr-4">{row.actions}</td>
+                  <td className="py-2">{row.retentionDays}d</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CollapsibleExample>
     </div>
   );
 }

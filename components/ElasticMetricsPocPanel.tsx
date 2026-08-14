@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import CollapsibleExample from "@/components/CollapsibleExample";
 import {
   calculateElasticMetricsPoc,
   ELASTIC_SUPPORT_TIERS,
@@ -61,17 +62,20 @@ export default function ElasticMetricsPocPanel({
   const supportLabel = ELASTIC_SUPPORT_TIERS.find((t) => t.id === supportTier)?.label ?? supportTier;
 
   return (
-    <section className="mb-6 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-violet-50/40 dark:bg-violet-950/20 p-5">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-        Elastic Serverless · metrics-only POC (TSDS)
-      </h3>
-      <p className="text-xs text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-        Sample/sec worksheet for TSDS list floors (
-        {ELASTIC_TSDS_METRICS_PUBLISHED_INGEST_FLOOR_PER_GB}/GB ingest,{" "}
-        {ELASTIC_TSDS_METRICS_PUBLISHED_RETENTION_FLOOR_PER_GB}/GB-month retention). Use the bar chart below for
-        side-by-side vendor totals.
-      </p>
-
+    <CollapsibleExample
+      storageKey="example-metrics-poc-collapsed"
+      title="Elastic Serverless · metrics-only POC (TSDS)"
+      collapsedHint={`${fmtNum(samplesPerSecond)}/sec · ~${fmtUsd(breakdown.totalMonthly)}/mo — collapsed`}
+      accentClassName="from-violet-500 to-purple-500"
+      description={
+        <>
+          Sample/sec worksheet for TSDS list floors ($
+          {ELASTIC_TSDS_METRICS_PUBLISHED_INGEST_FLOOR_PER_GB}/GB ingest, $
+          {ELASTIC_TSDS_METRICS_PUBLISHED_RETENTION_FLOOR_PER_GB}/GB-month retention). Use the bar chart below for
+          side-by-side vendor totals.
+        </>
+      }
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
@@ -179,6 +183,6 @@ export default function ElasticMetricsPocPanel({
           Total: {fmtUsd(breakdown.totalMonthly)}/mo ≈ {fmtUsd(breakdown.totalAnnual)}/yr (metrics only)
         </div>
       </div>
-    </section>
+    </CollapsibleExample>
   );
 }
