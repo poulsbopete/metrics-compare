@@ -181,7 +181,7 @@ export default function Home() {
   const [datadogManualHosts, setDatadogManualHosts] = useState(10);
 
   // Operational cost state
-  const [includeOperationalCost, setIncludeOperationalCost] = useState(true);
+  const [includeOperationalCost, setIncludeOperationalCost] = useState(false);
   const [engineerHourlyRate, setEngineerHourlyRate] = useState(DEFAULT_ENGINEER_HOURLY_RATE);
   
   const [isHydrated, setIsHydrated] = useState(false);
@@ -912,7 +912,9 @@ export default function Home() {
                     Human / Operational Costs
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Self-hosted platforms require engineering time to operate. Enable to see true TCO.
+                    Self-hosted platforms need engineering time to run. Fully managed SaaS
+                    (Elastic Serverless, Grafana Cloud, Datadog, etc.) is <strong>$0 platform ops</strong>.
+                    Enable only when comparing DIY Prom/Mimir/Thanos-style stacks.
                   </p>
                   <div className="space-y-4">
                     <label className="flex items-center cursor-pointer">

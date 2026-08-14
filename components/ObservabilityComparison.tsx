@@ -257,7 +257,8 @@ export default function ObservabilityComparison({
             </p>
             {hasOperationalCosts && (
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                🧑‍💻 <strong>Operational costs included</strong> at <strong>{engineerHourlyRate ? `$${engineerHourlyRate}/hr` : ""}</strong> fully-loaded rate. Self-hosted solutions require significantly more engineering time. Adjust in Configuration panel.
+                🧑‍💻 <strong>Operational costs included</strong> at <strong>{engineerHourlyRate ? `$${engineerHourlyRate}/hr` : ""}</strong> for platforms that need ops.
+                Fully managed SaaS (including Elastic Serverless) stays <strong>$0 platform ops FTE</strong>. Adjust in Configuration.
               </p>
             )}
           </div>

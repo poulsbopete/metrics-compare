@@ -1,13 +1,13 @@
 // Operational cost estimates for each platform.
 //
 // Expressed as FTE (fraction of a full-time engineer) per month required to
-// operate, maintain, patch, scale, and troubleshoot the platform.
+// operate, maintain, patch, scale, and troubleshoot the *platform* itself.
 //
 // Default fully-loaded engineer rate: $120/hr × 160 hrs/month = $19,200/FTE/month
 // ($120/hr ≈ $250k/year fully-loaded including salary, benefits, overhead)
 //
-// SaaS (fully managed): 0.05 FTE — dashboards, integrations, alert tuning
-// Managed cloud (ECH): 0.10 FTE — some cluster oversight, upgrades
+// Fully managed SaaS:  0 FTE — vendor runs the service; no platform ops burden
+// Managed cloud (ECH): 0.05 FTE — light cluster oversight / upgrades
 // Self-hosted light:   0.20 FTE — ops, patching, basic scaling
 // Self-hosted medium:  0.30 FTE — distributed system ops, capacity planning
 // Self-hosted heavy:   0.50 FTE — complex multi-component infra, expertise required
@@ -17,13 +17,13 @@ export const HOURS_PER_MONTH = 160;
 
 // FTE per month per platform ID
 export const OPERATIONAL_FTE: Record<string, number> = {
-  // ── Elastic Serverless (fully managed, minimal ops) ──────────────────────
-  "elastic-serverless":       0.05,
-  "elastic-tracing":          0.05,
-  "elastic-logs":             0.05,
-  "elastic-security":         0.05,
+  // ── Elastic Serverless (fully managed SaaS — no platform ops burden) ─────
+  "elastic-serverless":       0,
+  "elastic-tracing":          0,
+  "elastic-logs":             0,
+  "elastic-security":         0,
 
-  // ── Elastic Cloud Hosted (managed — similar touch to Serverless; not self-hosted 0.3 FTE) ──
+  // ── Elastic Cloud Hosted (managed — light cluster oversight) ─────────────
   "elastic-ech":              0.05,
   "elastic-ech-tracing":      0.05,
   "elastic-ech-logs":         0.05,
@@ -35,28 +35,25 @@ export const OPERATIONAL_FTE: Record<string, number> = {
   "elasticsearch-logs":           0.30,
   "elastic-security-self-hosted": 0.35,
 
-  // ── Datadog (SaaS, fully managed) ─────────────────────────────────────────
-  "datadog":           0.05,
-  "datadog-tracing":   0.05,
-  "datadog-logs":      0.05,
-  "datadog-security":  0.05,
+  // ── Datadog / New Relic / Dynatrace / Splunk O11y (SaaS) ──────────────────
+  "datadog":           0,
+  "datadog-tracing":   0,
+  "datadog-logs":      0,
+  "datadog-security":  0,
 
-  // ── New Relic (SaaS) ──────────────────────────────────────────────────────
-  "new-relic":         0.05,
-  "new-relic-tracing": 0.05,
-  "new-relic-logs":    0.05,
+  "new-relic":         0,
+  "new-relic-tracing": 0,
+  "new-relic-logs":    0,
 
-  // ── Dynatrace (SaaS) ──────────────────────────────────────────────────────
-  "dynatrace":         0.05,
-  "dynatrace-tracing": 0.05,
-  "dynatrace-logs":    0.05,
-  "dynatrace-security": 0.05,
+  "dynatrace":         0,
+  "dynatrace-tracing": 0,
+  "dynatrace-logs":    0,
+  "dynatrace-security": 0,
 
-  // ── Splunk SaaS (Observability Cloud) ─────────────────────────────────────
-  "splunk-o11y":   0.05,
-  "splunk-tracing": 0.05,
-  "splunk-logs":   0.05,
-  "splunk-security": 0.05,
+  "splunk-o11y":   0,
+  "splunk-tracing": 0,
+  "splunk-logs":   0,
+  "splunk-security": 0,
 
   // ── Splunk Cloud (managed but complex configuration) ──────────────────────
   "splunk-cloud-logs":     0.15,
@@ -66,16 +63,19 @@ export const OPERATIONAL_FTE: Record<string, number> = {
   "splunk-core-logs":     0.50,
   "splunk-core-security": 0.50,
 
-  // ── Grafana Cloud (SaaS) ──────────────────────────────────────────────────
-  "grafana-cloud":   0.05,
-  "grafana-tracing": 0.05,
-  "grafana-logs":    0.05,
+  // ── Grafana Cloud & other SaaS ────────────────────────────────────────────
+  "grafana-cloud":   0,
+  "grafana-tracing": 0,
+  "grafana-logs":    0,
 
-  // ── Other SaaS ────────────────────────────────────────────────────────────
-  "honeycomb-tracing": 0.05,
-  "chronosphere":      0.05,
-  "observe-inc":       0.05,
-  "observe-logs":      0.05,
+  "honeycomb-tracing": 0,
+  "chronosphere":      0,
+  "observe-inc":       0,
+  "observe-logs":      0,
+
+  "clickstack-managed":  0,
+  "clickstack-tracing":  0,
+  "clickstack-logs":     0,
 
   // ── Self-hosted light (single binary, minimal ops) ────────────────────────
   "victoria-metrics":  0.20,
@@ -95,14 +95,9 @@ export const OPERATIONAL_FTE: Record<string, number> = {
   "wazuh-self-hosted":  0.40,
   "security-onion":     0.50,
 
-  // ── Managed security SaaS ─────────────────────────────────────────────────
+  // ── Managed security (some platform touch) ────────────────────────────────
   "microsoft-sentinel": 0.10,
   "google-secops":      0.10,
-
-  // ── ClickStack Managed (SaaS, Feb 2026 beta) ──────────────────────────────
-  "clickstack-managed":  0.05,
-  "clickstack-tracing":  0.05,
-  "clickstack-logs":     0.05,
 };
 
 export function getOperationalFTE(platformId: string): number {
@@ -114,7 +109,8 @@ export function getOperationalCost(platformId: string, engineerHourlyRate: numbe
 }
 
 export function getFTELabel(fte: number): string {
-  if (fte <= 0.05) return "~0.05 FTE — minimal config & dashboards";
+  if (fte <= 0) return "0 FTE — fully managed SaaS (no platform ops)";
+  if (fte <= 0.05) return "~0.05 FTE — light managed-cloud oversight";
   if (fte <= 0.10) return "~0.1 FTE — cluster oversight & upgrades";
   if (fte <= 0.20) return "~0.2 FTE — ops, patching, basic scaling";
   if (fte <= 0.30) return "~0.3 FTE — distributed system ops & capacity";
