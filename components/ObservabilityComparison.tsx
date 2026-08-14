@@ -83,7 +83,7 @@ export default function ObservabilityComparison({
     [competitorScenarioId, type, platforms]
   );
 
-  // Platform picker — defaults from customer incumbent scenario
+  // Platform picker — defaults from "your current solution" scenario
   const [activePlatformIds, setActivePlatformIds] = useState<Set<string>>(() => scenarioPlatformIds);
 
   useEffect(() => {
@@ -171,7 +171,7 @@ export default function ObservabilityComparison({
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2.5">
           Compare platforms — <span className="normal-case">{scenario.label}</span>
-          {scenario.id === "all" ? " (pick vendors below)" : " shown by default"}
+          {scenario.id === "all" ? " (choose below)" : " — platforms shown for this comparison"}
         </div>
         <div className="flex flex-wrap gap-2">
           {pickerPlatforms.map((p) => {

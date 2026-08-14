@@ -20,7 +20,7 @@ export default function CompetitorScenarioSelect({ value, onChange }: Competitor
         htmlFor="competitor-scenario"
         className="block text-xs font-semibold text-indigo-900 dark:text-indigo-200 uppercase tracking-wide mb-2"
       >
-        Customer incumbent
+        Your current solution
       </label>
       <select
         id="competitor-scenario"
@@ -35,7 +35,7 @@ export default function CompetitorScenarioSelect({ value, onChange }: Competitor
         ))}
       </select>
       <p className="text-xs text-indigo-900/80 dark:text-indigo-200/80 mt-2 leading-relaxed">
-        {scenario.description} Comparison chart and platform toggles update to match.
+        {scenario.description} The comparison chart and platform list update to match.
       </p>
     </div>
   );
