@@ -93,15 +93,13 @@ export default function TcoDisclaimerBanner() {
                 </h3>
                 <ul className="text-xs space-y-1.5 text-amber-950/90 dark:text-amber-50/90 list-disc pl-4">
                   <li>
-                    <strong>{ECH_HOT_FROZEN_ARCHITECTURE.summary}</strong> —{" "}
-                    {ECH_HOT_FROZEN_ARCHITECTURE.hotDays}-day data hot (RAM-hour) plus{" "}
-                    {ECH_HOT_FROZEN_ARCHITECTURE.ilmBlobDays}-day ILM on blob (writable frozen,
-                    queryable in Kibana).
+                    <strong>$0.05/GB ingest/compute</strong> (Observability list proxy, same as ECH
+                    logs/APM) plus <strong>{ECH_HOT_FROZEN_ARCHITECTURE.summary}</strong> for the
+                    configured retention window (hot RAM-hour + ILM writable-frozen blob).
                   </li>
                   <li>
                     Applies to <strong>metrics, logs, traces, and security</strong> variable
-                    backbone — not the legacy “flat $/GB ingest + Complete retention months” workbook
-                    model.
+                    backbone — not the legacy “flat Complete retention months only” workbook model.
                   </li>
                   <li>
                     <strong>Full-fidelity ingest</strong> on ECH; Streams sampling is not applied to

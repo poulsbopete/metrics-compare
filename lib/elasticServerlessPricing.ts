@@ -250,6 +250,8 @@ export interface ElasticServerlessCostBreakdown {
     dataTransferCost: number;
     indexedGbPerDay: number;
     rawGbPerDay: number;
+    /** Optional ingest/compute proxy line ($/GB). */
+    ingestComputeCost?: number;
   };
 }
 

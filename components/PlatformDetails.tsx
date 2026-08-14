@@ -381,15 +381,33 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                   </>
                 ) : metricsBreakdown.echBreakdown ? (
                   <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 dark:text-gray-400">TSDS metrics ingest + retention:</span>
-                      <span className="font-semibold text-green-600 dark:text-green-400">
-                        Included (no additional charge)
-                      </span>
-                    </div>
+                    {(metricsBreakdown.echBreakdown.echHotFrozen?.ingestComputeCost ?? 0) > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">Ingest / compute:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {formatCurrency(metricsBreakdown.echBreakdown.echHotFrozen!.ingestComputeCost!)}/month
+                        </span>
+                      </div>
+                    )}
+                    {metricsBreakdown.echBreakdown.echHotFrozen && (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 dark:text-gray-400">Hot tier (1d RAM-hour):</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {formatCurrency(metricsBreakdown.echBreakdown.echHotFrozen.hotCapacityCost)}/month
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 dark:text-gray-400">ILM blob (writable frozen):</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {formatCurrency(metricsBreakdown.echBreakdown.echHotFrozen.blobStorageCost)}/month
+                          </span>
+                        </div>
+                      </>
+                    )}
                     <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                      Metrics in TSDS index mode on ECH are included at no additional ingest/retention cost at this
-                      time. This tab models the cluster minimum only.
+                      {metricsBreakdown.echBreakdown.ingestRateLabel};{" "}
+                      {metricsBreakdown.echBreakdown.retentionRateLabel}. Plus cluster minimum above.
                     </p>
                   </>
                 ) : (

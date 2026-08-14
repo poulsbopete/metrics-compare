@@ -315,10 +315,12 @@ function serverlessBreakdown(
 
 function echBreakdown(
   monthlyIngestGB: number,
-  options: ElasticServerlessPricingOptions
+  options: ElasticServerlessPricingOptions,
+  ingestPricePerGB?: number
 ): ElasticServerlessCostBreakdown {
   return calculateEchHotFrozenVolumeCost(monthlyIngestGB, {
     totalRetentionMonths: options.retentionMonths,
+    ingestPricePerGB,
   });
 }
 
@@ -358,7 +360,7 @@ function costWithPolicy(
           ...elasticOptions,
           retentionMonths: adjustment.retentionMonths,
           productTier: opts.productTier ?? elasticOptions.productTier,
-        });
+        }, opts.pricePerIngestGB);
 
   breakdown = scaleBreakdownRetention(breakdown, adjustment.storedGBMultiplier);
   return { cost: breakdown.volumeCost, adjustment };
@@ -460,7 +462,7 @@ export function calculateElasticVolumeCostWithStreams(
           ...elasticOptions,
           retentionMonths: optimizedAdjustment.retentionMonths,
           productTier: opts.productTier ?? elasticOptions.productTier,
-        });
+        }, opts.pricePerIngestGB);
   optimizedBreakdown = scaleBreakdownRetention(
     optimizedBreakdown,
     optimizedAdjustment.storedGBMultiplier

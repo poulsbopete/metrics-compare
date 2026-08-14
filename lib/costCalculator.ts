@@ -191,7 +191,14 @@ export function calculatePlatformCost(
         elasticPricing,
         streamsPolicy,
         "metrics",
-        { platformKind: "ech", metricsTsd: true, pricePerIngestGB: pricing.pricePerGB ?? 0 }
+        {
+          platformKind: "ech",
+          metricsTsd: true,
+          // Same Observability ingest proxy as ECH logs/APM ($0.05/GB list).
+          pricePerIngestGB: pricing.pricePerGB && pricing.pricePerGB > 0
+            ? pricing.pricePerGB
+            : 0.05,
+        }
       ).volumeCost;
     } else if (pricing.pricePerGB) {
       cost += monthlyGB * pricing.pricePerGB;
@@ -265,16 +272,16 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "ElasticAgent", "Custom"],
     pricing: {
       basePrice: 200, // Minimum 2-node hot cluster (compute/RAM-hours)
-      pricePerGB: 0, // TSDS metrics: no additional ingest/retention charge at this time
+      pricePerGB: 0.05, // Observability ingest/compute proxy + hot/blob capacity
       bytesPerDatapoint: 320,
       freeTier: 0,
-      unit: "cluster minimum (TSDS metrics included)",
+      unit: "cluster min + ingest $/GB + hot/blob",
       egressPricePerGB: 0.09,
       egressFreeTier: 100,
       egressPricePerGBWithPrivateLink: 0.001,
     },
     cardinalityNote:
-      "Metrics in **TSDS index mode** on Elastic Cloud Hosted have **no additional ingest or retention charge** at this time — model the cluster minimum only on this tab. Logs and traces use variable pricing on their tabs. No custom-metric penalties; cardinality affects cost via data volume when variable pricing applies.",
+      "Elastic Cloud Hosted metrics: **~$200/mo cluster minimum** plus **$0.05/GB ingest/compute** (same Observability list proxy as ECH logs/APM) and **1-day hot RAM + ILM blob** for the retention window. Cardinality affects cost via total GB only — no custom-metric penalties.",
   },
   {
     id: "elastic-self-hosted",
