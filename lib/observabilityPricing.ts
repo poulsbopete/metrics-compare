@@ -236,7 +236,7 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
   {
     id: "grafana-tracing",
     name: "Grafana Cloud Traces",
-    color: "bg-indigo-500",
+    color: "bg-orange-400",
     pricing: {
       tracing: {
         basePrice: 0,
@@ -290,7 +290,7 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
   {
     id: "elastic-apm-self-hosted",
     name: "Elastic APM (Self-hosted)",
-    color: "bg-slate-600",
+    color: "bg-blue-600",
     pricing: {
       tracing: {
         basePrice: 700, // 2-node Elasticsearch cluster + lightweight APM Server + Kibana
@@ -355,7 +355,7 @@ export const tracingPlatforms: ObservabilityPlatform[] = [
   {
     id: "tempo-self-hosted",
     name: "Grafana Tempo (Self-hosted)",
-    color: "bg-indigo-500",
+    color: "bg-rose-500",
     pricing: {
       tracing: {
         basePrice: 350,
@@ -518,7 +518,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
   {
     id: "grafana-logs",
     name: "Grafana Cloud Logs",
-    color: "bg-indigo-500",
+    color: "bg-orange-400",
     pricing: {
       logs: {
         basePrice: 0,
@@ -534,7 +534,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
   {
     id: "observe-logs",
     name: "Observe Inc Logs",
-    color: "bg-sky-600",
+    color: "bg-violet-500",
     pricing: {
       logs: {
         basePrice: 0,
@@ -569,7 +569,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
   {
     id: "loki-self-hosted",
     name: "Grafana Loki (Self-hosted)",
-    color: "bg-indigo-600",
+    color: "bg-rose-600",
     pricing: {
       logs: {
         basePrice: 300, // Minimum cluster: distributor, ingester, querier nodes
@@ -613,7 +613,7 @@ export const logsPlatforms: ObservabilityPlatform[] = [
   {
     id: "elasticsearch-logs",
     name: "Elasticsearch (Self-hosted)",
-    color: "bg-slate-600",
+    color: "bg-blue-600",
     pricing: {
       logs: {
         basePrice: 500, // Minimum cluster: 2 data nodes + master
@@ -938,7 +938,7 @@ export const securityPlatforms: ObservabilityPlatform[] = [
   {
     id: "elastic-security-self-hosted",
     name: "Elastic Security (Self-hosted)",
-    color: "bg-slate-600",
+    color: "bg-blue-600",
     pricing: {
       security: {
         basePrice: 600,
@@ -1055,7 +1055,7 @@ export const securityPlatforms: ObservabilityPlatform[] = [
   {
     id: "microsoft-sentinel",
     name: "Microsoft Sentinel",
-    color: "bg-blue-600",
+    color: "bg-teal-600",
     pricing: {
       security: {
         basePrice: 0,

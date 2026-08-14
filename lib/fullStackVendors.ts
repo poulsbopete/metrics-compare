@@ -153,7 +153,7 @@ export const FULL_STACK_VENDORS: FullStackVendor[] = [
   {
     id: "grafana-cloud",
     name: "Grafana Cloud",
-    color: "bg-indigo-500",
+    color: "bg-orange-400",
     badge: "SaaS",
     badgeColor: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
     metricsPlatformId: "grafana-cloud",

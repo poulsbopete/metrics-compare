@@ -380,7 +380,7 @@ export const platforms: Platform[] = [
   {
     id: "grafana-cloud",
     name: "Grafana Cloud",
-    color: "bg-indigo-500",
+    color: "bg-orange-400",
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 0,
@@ -472,7 +472,7 @@ export const platforms: Platform[] = [
   {
     id: "observe-inc",
     name: "Observe Inc",
-    color: "bg-sky-600",
+    color: "bg-violet-500",
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 0,

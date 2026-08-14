@@ -10,27 +10,33 @@ interface CostBarChartProps {
 
 const colorMap: Record<string, string> = {
   "bg-blue-500": "#3b82f6",
+  "bg-blue-600": "#2563eb",
+  "bg-blue-700": "#1d4ed8",
   "bg-slate-500": "#64748b",
+  "bg-slate-600": "#475569",
   "bg-purple-500": "#a855f7",
+  "bg-violet-500": "#8b5cf6",
   "bg-green-500": "#22c55e",
+  "bg-green-600": "#16a34a",
+  "bg-green-700": "#15803d",
+  "bg-orange-400": "#fb923c",
   "bg-orange-500": "#f97316",
+  "bg-orange-600": "#ea580c",
+  "bg-orange-700": "#c2410c",
   "bg-cyan-500": "#06b6d4",
   "bg-red-500": "#ef4444",
+  "bg-rose-500": "#f43f5e",
+  "bg-rose-600": "#e11d48",
   "bg-indigo-500": "#6366f1",
+  "bg-indigo-600": "#4f46e5",
   "bg-pink-500": "#ec4899",
   "bg-emerald-500": "#10b981",
   "bg-amber-500": "#f59e0b",
   "bg-teal-500": "#14b8a6",
+  "bg-teal-600": "#0d9488",
   "bg-sky-600": "#0284c7",
+  "bg-yellow-500": "#eab308",
   "bg-yellow-600": "#ca8a04",
-  "bg-orange-600": "#ea580c",
-  "bg-orange-700": "#c2410c",
-  "bg-indigo-600": "#4f46e5",
-  "bg-slate-600": "#475569",
-  "bg-blue-600": "#2563eb",
-  "bg-green-600": "#16a34a",
-  "bg-green-700": "#15803d",
-  "bg-blue-700": "#1d4ed8",
 };
 
 /** Use log scale when the cheapest and most expensive differ by more than this factor. */
@@ -101,7 +107,7 @@ export default function CostBarChart({ platforms, costs }: CostBarChartProps) {
     );
   }
 
-  const getColor = (colorClass: string) => colorMap[colorClass] || "#3b82f6";
+  const getColor = (colorClass: string) => colorMap[colorClass] || "#64748b";
 
   return (
     <div className="space-y-5">
