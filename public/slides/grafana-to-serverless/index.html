@@ -22,7 +22,7 @@
       <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
       <h1>Your <em>PromQL</em> — run it in ES|QL on Serverless.</h1>
       <p class="value-outcome">Customer value: Prometheus / Grafana SREs keep their language; Elastic is the backend, not a rewrite.</p>
-      <p class="lede">Start in Discover with ES|QL. Paste the same <code>sum by (service.name) (http.server.requests)</code> and <code>rate(...[5m])</code> you use in Grafana — wrapped in the <code>PROMQL</code> command on <code>metrics-generic.otel-default</code>.</p>
+      <p class="lede">Start in Discover. Paste full <code>promql index=metrics-generic.otel-default …</code> lines — same expressions as Grafana (<code>sum by (service.name) (http.server.requests)</code>, <code>rate(...[5m])</code>). Bare PromQL without the <code>promql</code> keyword will not parse.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card metric-card-solo">
