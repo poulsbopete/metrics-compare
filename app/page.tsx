@@ -26,6 +26,7 @@ import {
 } from "@/lib/costCalculator";
 import {
   DEFAULT_ELASTIC_STREAMS_TCO,
+  normalizeElasticStreamsTcoPolicy,
   type ElasticStreamsTcoPolicy,
 } from "@/lib/elasticStreamsTco";
 import { ECH_HOT_FROZEN_ARCHITECTURE } from "@/lib/elasticEchHotFrozenPricing";
@@ -212,7 +213,7 @@ export default function Home() {
       }
       setElasticUseVolumeTiers(savedState.elasticUseVolumeTiers ?? true);
       if (savedState.elasticStreamsTco) {
-        setElasticStreamsTco(savedState.elasticStreamsTco);
+        setElasticStreamsTco(normalizeElasticStreamsTcoPolicy(savedState.elasticStreamsTco));
       }
       if (savedState.datadogHostsAuto !== undefined) setDatadogHostsAuto(savedState.datadogHostsAuto);
       if (savedState.datadogManualHosts !== undefined) setDatadogManualHosts(savedState.datadogManualHosts);
