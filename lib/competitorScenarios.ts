@@ -19,7 +19,7 @@ export interface CompetitorScenario {
   /** Optional metrics-tab defaults when this scenario is selected. */
   presets?: {
     metricsInputMode?: "manual" | "infrastructure" | "samples-poc";
-    primaryMetricType?: "OpenTelemetry" | "Prometheus" | "ElasticAgent" | "Mixed";
+    primaryMetricType?: "OpenTelemetry" | "Prometheus" | "Mixed";
     samplesPerSecond?: number;
     /** Samples-POC bytes/sample. Prometheus parity uses 296 (not the 1.5 TSDB POC default). */
     bytesPerSample?: number;
@@ -64,8 +64,8 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
     presets: {
       metricsInputMode: "samples-poc",
       primaryMetricType: "Prometheus",
-      // 23.52B monthly datapoints on the 30-day meter — Grafana Cloud ~$3,089 vs Serverless ~$641 vs ECH ~$698.
-      samplesPerSecond: 9_074,
+      // 100k samples/sec Prometheus payload (296 B) — Grafana Cloud ~$33,094 vs Serverless ~$3,822 vs ECH ~$5,736.
+      samplesPerSecond: 100_000,
       bytesPerSample: 296,
     },
   },
