@@ -101,7 +101,7 @@
       <div class="eyebrow">From Datadog · Challenge 3 · ~15 min</div>
       <h1>Investigate on <em>metrics</em> — savings board + migrated sample.</h1>
       <p class="value-outcome">Same Streams pipeline behind both boards — no APM/traces required in this lab.</p>
-      <p class="lede">You already saw Datadog at ~<strong>$12.6K/mo</strong> vs Elastic Serverless ~<strong>$1.3K</strong> on the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">TCO worksheet</a> (metrics alone ~<strong>$3.8K</strong> vs ~<strong>$0.9K</strong>). Now open <strong>Horizon — Your savings vs Datadog</strong> and <strong>Sample: Service Basics</strong>, then the stream behind them.</p>
+      <p class="lede">You already saw Datadog at ~<strong>$12.6K/mo</strong> vs Elastic Serverless ~<strong>$1.3K</strong> on the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">TCO worksheet</a> (metrics alone ~<strong>$3.8K</strong> vs ~<strong>$0.9K</strong>). Now open <strong>Horizon — Your savings vs Datadog</strong>, <strong>Sample: Service Basics</strong>, and <strong>Horizon — Dashboard sprawl</strong> (hundreds of Datadog boards; custom metrics billed even if unused).</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
@@ -125,9 +125,16 @@
               <p><code>metrics-generic.otel-default</code> — one stream, overrun control from Challenge 2.</p>
             </div>
           </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">SPRAWL</div>
+              <h3>Boards → indexes</h3>
+              <p>Datadog dashboard sprawl: Elastic shows which boards query which indexes, and alerts if a schema change would blank a widget.</p>
+            </div>
+          </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Dashboards → Sample: Service Basics → Streams → one metrics savings sentence.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Dashboards → Sample: Service Basics → <strong>Horizon — Dashboard sprawl</strong> → Streams → one metrics savings sentence.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 

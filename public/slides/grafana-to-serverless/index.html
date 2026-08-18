@@ -56,7 +56,7 @@
       <div class="eyebrow">Competitive lab · Challenge 2 · ~15 min</div>
       <h1>Grafana continuity — <em>panels map</em>, plus easy migration.</h1>
       <p class="value-outcome">Customer value: Familiar boards on Kibana — and a path to migrate a few real Grafana exports without a rewrite project.</p>
-      <p class="lede">Open <strong>Horizon — Grafana continuity</strong>, then the sample board migrated with <strong>obs-migrate</strong> — Request rate, Total requests, and Requests by service on live Horizon metrics.</p>
+      <p class="lede">Open <strong>Horizon — Grafana continuity</strong>, the sample board migrated with <strong>obs-migrate</strong>, then <strong>Horizon — Dashboard sprawl</strong> — which boards still query which indexes (Grafana folder sprawl).</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
@@ -80,9 +80,16 @@
               <p>Keep PromQL in Kibana rules (ES|QL <code>PROMQL</code>) — one project, no Alertmanager sidecar.</p>
             </div>
           </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">SPRAWL</div>
+              <h3>Boards → indexes</h3>
+              <p>Grafana folder sprawl: Elastic inventories which dashboards still query which indexes, and alerts if a schema change would blank a widget.</p>
+            </div>
+          </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Continuity board → Sample: Prometheus Basics → Streams <code>metrics-generic.otel-default</code>.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Continuity board → Sample: Prometheus Basics → <strong>Horizon — Dashboard sprawl</strong> → Streams <code>metrics-generic.otel-default</code>.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
