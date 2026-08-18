@@ -145,6 +145,8 @@ export default function TcoDisclaimerBanner() {
               <strong>Not included:</strong> Datadog/Splunk/etc. use approximate public list pricing;
               Grafana Cloud Metrics uses Pro <strong>billable series</strong> (samples/sec × 60 DPM ÷ 1
               included DPM, $6.50/$5.90/$5.50 per 1k after 10k included) — not per million datapoints.
+              Elastic is GB volume; Grafana/Datadog are unique-series meters, so high cardinality can
+              favor Elastic and fat/low-cardinality samples can favor them.
               Operational FTE is optional. Excludes synthetics, LLM observability, Agent Builder,
               support ECUs, Cross-project Search mounted-GB charges, Adaptive Metrics, and negotiated discounts.
             </p>

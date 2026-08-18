@@ -11,9 +11,16 @@ import {
   type CompetitorScenarioId,
 } from "@/lib/competitorScenarios";
 import { getOperationalFTE, getFTELabel } from "@/lib/operationalCosts";
+import { calculateGrafanaCloudMetricsCost } from "@/lib/grafanaCloudPricing";
 import { useState, useMemo, useEffect } from "react";
 import CostBarChart from "./CostBarChart";
 import PlatformRow from "./PlatformRow";
+
+function formatCompactCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
+  return Math.round(n).toLocaleString();
+}
 
 type ObservabilityType = "metrics" | "tracing" | "logs" | "security" | "fullstack";
 
@@ -207,6 +214,19 @@ export default function ObservabilityComparison({
         </div>
       </div>
 
+      {/* Volume (GB) vs unique timeseries — visible when Grafana/Datadog series meters are in the comparison */}
+      {type === "metrics" &&
+        (activePlatformIds.has("grafana-cloud") ||
+          [...activePlatformIds].some((id) => id.startsWith("datadog"))) && (
+          <VolumeVsSeriesNote
+            grafanaSelected={activePlatformIds.has("grafana-cloud")}
+            datadogSelected={[...activePlatformIds].some((id) => id.startsWith("datadog"))}
+            metricsPerSecond={calculationContext?.metricsPerSecond}
+            monthlyGB={calculationContext?.monthlyGB}
+            bytesPerDatapoint={calculationContext?.bytesPerDatapoint}
+          />
+        )}
+
       {/* View Toggle */}
       <div className="flex justify-end">
         <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-900">
@@ -323,6 +343,60 @@ export default function ObservabilityComparison({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function VolumeVsSeriesNote({
+  grafanaSelected,
+  datadogSelected,
+  metricsPerSecond,
+  monthlyGB,
+  bytesPerDatapoint,
+}: {
+  grafanaSelected: boolean;
+  datadogSelected: boolean;
+  metricsPerSecond?: number;
+  monthlyGB?: number;
+  bytesPerDatapoint?: number;
+}) {
+  const sps = metricsPerSecond ?? 0;
+  const grafana = grafanaSelected ? calculateGrafanaCloudMetricsCost(sps) : null;
+  const gb = monthlyGB ?? 0;
+  const bytes = bytesPerDatapoint ?? 0;
+
+  return (
+    <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/80 dark:bg-amber-950/30 px-4 py-3">
+      <div className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1">
+        Volume (GB) vs unique time series
+      </div>
+      <p className="text-xs text-amber-900/85 dark:text-amber-100/85 leading-relaxed">
+        Elastic bills <strong>total ingested volume</strong>
+        {gb > 0 ? (
+          <>
+            {" "}
+            (~{gb >= 1_000 ? `${(gb / 1_000).toFixed(1)} TB` : `${gb.toFixed(1)} GB`}/mo
+            {bytes > 0 ? ` at ${bytes} B/sample` : ""})
+          </>
+        ) : null}
+        .{" "}
+        {grafanaSelected && grafana ? (
+          <>
+            Grafana Cloud Metrics bills <strong>unique billable series</strong> (~
+            {formatCompactCount(grafana.billableSeries)} series at 1 DPM from {formatCompactCount(sps)}{" "}
+            samples/sec) — not GB and not raw datapoints.
+          </>
+        ) : null}
+        {datadogSelected ? (
+          <>
+            {grafanaSelected ? " " : ""}
+            Datadog custom metrics are also a <strong>unique series</strong> meter (plus hosts), not GB.
+          </>
+        ) : null}{" "}
+        High cardinality or faster scrapes inflate series bills while Elastic stays on GB — often a
+        large Elastic advantage. Fat samples / few series can flip it the other way. Move samples/sec
+        and bytes/sample to see both sides.
+      </p>
     </div>
   );
 }
