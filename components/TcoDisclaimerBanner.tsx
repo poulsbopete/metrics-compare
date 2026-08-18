@@ -143,8 +143,10 @@ export default function TcoDisclaimerBanner() {
 
             <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
               <strong>Not included:</strong> Datadog/Splunk/etc. use approximate public list pricing;
-              operational FTE is optional. Excludes synthetics, LLM observability, Agent Builder,
-              support ECUs, Cross-project Search mounted-GB charges, and negotiated discounts.
+              Grafana Cloud Metrics uses Pro <strong>billable series</strong> (samples/sec × 60 DPM ÷ 1
+              included DPM, $6.50/$5.90/$5.50 per 1k after 10k included) — not per million datapoints.
+              Operational FTE is optional. Excludes synthetics, LLM observability, Agent Builder,
+              support ECUs, Cross-project Search mounted-GB charges, Adaptive Metrics, and negotiated discounts.
             </p>
           </div>
         </div>
