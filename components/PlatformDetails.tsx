@@ -2,7 +2,8 @@
 
 import {
   ELASTIC_PRICE_PER_GB,
-  MetricSourceType,
+  metricSourceLabel,
+  normalizeMetricSourceType,
   Platform,
   monthlyDatapointsToUniqueCustomMetrics,
 } from "@/lib/costCalculator";
@@ -73,7 +74,7 @@ function getEffectiveMetricsPricePerGB(
 ): number {
   let pricePerGB = platform.pricing.pricePerGB ?? 0;
   if (platform.id === "elastic-serverless" && primaryMetricType) {
-    const mt = primaryMetricType as MetricSourceType;
+    const mt = normalizeMetricSourceType(primaryMetricType);
     if (ELASTIC_PRICE_PER_GB[mt] != null) {
       pricePerGB = ELASTIC_PRICE_PER_GB[mt];
     }
@@ -254,7 +255,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                 key={type}
                 className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-md"
               >
-                {type}
+                {type === "OpenTelemetry" ? "OTel / EDOT" : type}
               </span>
             ))}
           </div>
@@ -354,7 +355,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
                 {calculationContext.bytesPerDatapoint && (
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">
-                      Bytes per Datapoint ({calculationContext.primaryMetricType ?? "Mixed"}):
+                      Bytes per Datapoint ({metricSourceLabel(normalizeMetricSourceType(calculationContext.primaryMetricType))}):
                     </span>
                     <span className="font-semibold text-gray-900 dark:text-white">
                       {calculationContext.bytesPerDatapoint} B

@@ -56,24 +56,43 @@ export interface Platform {
   cardinalityNote?: string; // Explanation of how cardinality impacts pricing
 }
 
-export type MetricSourceType = "OpenTelemetry" | "Prometheus" | "ElasticAgent" | "Mixed";
+export type MetricSourceType = "OpenTelemetry" | "Prometheus" | "Mixed";
+
+/** Display label — EDOT is Elastic's OTel distro (merging into contrib). */
+export function metricSourceLabel(type: MetricSourceType): string {
+  switch (type) {
+    case "OpenTelemetry":
+      return "OTel / EDOT";
+    case "Prometheus":
+      return "Prometheus";
+    case "Mixed":
+      return "Mixed";
+  }
+}
+
+/** Map saved/legacy values (Elastic Agent) onto OTel/EDOT. */
+export function normalizeMetricSourceType(value: unknown): MetricSourceType {
+  if (value === "Prometheus" || value === "Mixed" || value === "OpenTelemetry") {
+    return value;
+  }
+  // Legacy Elastic Agent path — assume EDOT / contrib OTel.
+  if (value === "ElasticAgent") return "OpenTelemetry";
+  return "Mixed";
+}
 
 // Bytes per datapoint based on actual Elastic data:
-// OTel: 998.17 bytes/doc / 2.04 datapoints/doc = 489 bytes/datapoint
+// OTel/EDOT: 998.17 bytes/doc / 2.04 datapoints/doc = 489 bytes/datapoint
 // Prometheus: 853.49 bytes/doc / 3.73 datapoints/doc = 229 bytes/datapoint
-// E.Agent/Beats: 883.75 bytes/doc / 7.62 datapoints/doc = 116 bytes/datapoint
 export const BYTES_PER_DATAPOINT: Record<MetricSourceType, number> = {
   OpenTelemetry: 488, // Updated from slide: 488B (was 489)
   Prometheus: 296, // Updated from slide: 296B (was 229)
-  ElasticAgent: 200, // Updated from slide: 200B (was 116)
-  Mixed: 320, // Weighted average for mixed sources
+  Mixed: 320, // Weighted OTel/EDOT + Prometheus mix
 };
 
 /** Effective $/GB for 1-month retention at TSDS metrics rate (25% of Complete floor). */
 export const ELASTIC_PRICE_PER_GB: Record<MetricSourceType, number> = {
   OpenTelemetry: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
   Prometheus: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
-  ElasticAgent: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
   Mixed: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
 };
 
@@ -263,7 +282,7 @@ export const platforms: Platform[] = [
     pricing: {
       basePrice: 0,
       pricePerGB: ELASTIC_TSDS_METRICS_FLOOR_PER_GB_ONE_MONTH,
-      bytesPerDatapoint: 320, // Weighted average. Actual: OTel 488B, Prometheus 296B, Elastic Agent 200B
+      bytesPerDatapoint: 320, // Weighted average. Actual: OTel/EDOT 488B, Prometheus 296B
       freeTier: 0,
       unit: "TSDS metrics: 25% of Complete ingest + retention (GB)",
       egressPricePerGB: 0.05,
@@ -277,7 +296,7 @@ export const platforms: Platform[] = [
     id: "elastic-ech",
     name: "Elastic Cloud Hosted (ECH)",
     color: "bg-blue-700",
-    metricTypes: ["Prometheus", "OpenTelemetry", "ElasticAgent", "Custom"],
+    metricTypes: ["Prometheus", "OpenTelemetry", "Custom"],
     pricing: {
       basePrice: 200, // Minimum 2-node hot cluster (compute/RAM-hours)
       pricePerGB: 0.05, // Observability ingest/compute proxy + hot/blob capacity

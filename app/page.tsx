@@ -19,6 +19,8 @@ import {
   metricsPerSecondToMonthly,
   calculatePlatformCost,
   BYTES_PER_DATAPOINT,
+  metricSourceLabel,
+  normalizeMetricSourceType,
   type MetricConfig,
   type MetricSourceType,
   DEFAULT_TCO_PRICING_CONTEXT,
@@ -118,7 +120,7 @@ function loadState(): SavedState | null {
         baseVolume: parsed.baseVolume ?? 100,
         tags: Array.isArray(parsed.tags) ? parsed.tags : [],
         tagValues: parsed.tagValues ?? 10,
-        primaryMetricType: parsed.primaryMetricType ?? "Mixed",
+        primaryMetricType: normalizeMetricSourceType(parsed.primaryMetricType),
         spansPerSecond: parsed.spansPerSecond ?? 100,
         gbPerDay: parsed.gbPerDay ?? 10,
         eventsPerSecond: parsed.eventsPerSecond ?? 100,
@@ -196,7 +198,7 @@ export default function Home() {
       setTags(savedState.tags);
       setTagValues(savedState.tagValues);
       if (savedState.primaryMetricType) {
-        setPrimaryMetricType(savedState.primaryMetricType);
+        setPrimaryMetricType(normalizeMetricSourceType(savedState.primaryMetricType));
       }
       if (savedState.spansPerSecond) setSpansPerSecond(savedState.spansPerSecond);
       if (savedState.gbPerDay) setGbPerDay(savedState.gbPerDay);
@@ -654,8 +656,8 @@ export default function Home() {
                       <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                         Metric Source
                       </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(["OpenTelemetry", "Prometheus", "ElasticAgent", "Mixed"] as MetricSourceType[]).map((type) => (
+                      <div className="grid grid-cols-3 gap-2">
+                        {(["OpenTelemetry", "Prometheus", "Mixed"] as MetricSourceType[]).map((type) => (
                           <button
                             key={type}
                             onClick={() => setPrimaryMetricType(type)}
@@ -665,10 +667,13 @@ export default function Home() {
                                 : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                             }`}
                           >
-                            {type === "ElasticAgent" ? "Elastic Agent" : type}
+                            {metricSourceLabel(type)}
                           </button>
                         ))}
                       </div>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-snug">
+                        EDOT is Elastic&apos;s OTel distribution (merging into contrib). Agent/Beats metrics use the OTel/EDOT size.
+                      </p>
                     </div>
                     )}
 
@@ -1054,7 +1059,7 @@ export default function Home() {
                         />
                       </div>
                       <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                        {BYTES_PER_DATAPOINT[primaryMetricType]}B/datapoint ({primaryMetricType === "ElasticAgent" ? "Elastic Agent" : primaryMetricType})
+                        {BYTES_PER_DATAPOINT[primaryMetricType]}B/datapoint ({metricSourceLabel(primaryMetricType)})
                       </div>
                     </div>
                     <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-5 border border-green-200 dark:border-green-700/50 shadow-md">
@@ -1116,7 +1121,7 @@ export default function Home() {
                       Metric Source
                     </div>
                     <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">
-                      {primaryMetricType === "ElasticAgent" ? "Elastic Agent" : primaryMetricType}
+                      {metricSourceLabel(primaryMetricType)}
                     </div>
                     <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
                       {BYTES_PER_DATAPOINT[primaryMetricType]} bytes/datapoint

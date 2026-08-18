@@ -73,7 +73,7 @@ export default function ElasticSchemalessBlocksVisual({
       accentClassName="from-emerald-500 to-teal-500"
       description={
         <>
-          Elastic Observability is <strong>schemaless</strong>: OpenTelemetry, Elastic Agent, and Beats land{" "}
+          Elastic Observability is <strong>schemaless</strong>: OpenTelemetry (including EDOT) and Prometheus land{" "}
           <strong>logs, metrics, and traces</strong> in the same project without a separate SKU per signal. Billable
           path is <strong>ingested GB</strong> (and retention).
         </>
@@ -86,7 +86,7 @@ export default function ElasticSchemalessBlocksVisual({
             Schemaless ingest — no custom-metric SKUs
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-3xl leading-relaxed">
-            Elastic Observability is <strong>schemaless</strong>: OpenTelemetry, Elastic Agent, and Beats
+            Elastic Observability is <strong>schemaless</strong>: OpenTelemetry (including EDOT) and Prometheus
             land <strong>logs, metrics, and traces</strong> in the same project without picking a separate
             SKU per signal or per custom metric. <strong>Streams</strong> uses AI to identify patterns in
             that data — so you are not charged for custom-metric series; the billable path is{" "}
