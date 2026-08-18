@@ -226,6 +226,7 @@ export default function Home() {
       if (presets?.metricsInputMode) setMetricsInputMode(presets.metricsInputMode);
       if (presets?.primaryMetricType) setPrimaryMetricType(presets.primaryMetricType);
       if (presets?.samplesPerSecond !== undefined) setSamplesPerSecond(presets.samplesPerSecond);
+      if (presets?.bytesPerSample !== undefined) setBytesPerSample(presets.bytesPerSample);
       if (presets?.elasticRetentionMonths !== undefined) {
         setElasticRetentionMonths(presets.elasticRetentionMonths);
       }
@@ -272,6 +273,7 @@ export default function Home() {
     if (presets.metricsInputMode) setMetricsInputMode(presets.metricsInputMode);
     if (presets.primaryMetricType) setPrimaryMetricType(presets.primaryMetricType);
     if (presets.samplesPerSecond !== undefined) setSamplesPerSecond(presets.samplesPerSecond);
+    if (presets.bytesPerSample !== undefined) setBytesPerSample(presets.bytesPerSample);
     if (presets.elasticRetentionMonths !== undefined) {
       setElasticRetentionMonths(presets.elasticRetentionMonths);
     }
