@@ -21,34 +21,34 @@
     <section class="slide" data-slide="1">
       <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
       <h1>Your <em>PromQL</em> — paste it into Metrics.</h1>
-      <p class="value-outcome">Customer value: Keep PromQL — and stop babysitting Prometheus / Mimir scale-out.</p>
-      <p class="lede">Prometheus admins have lived on scrape-interval tweaks, multiple remote-write endpoints, and scaling the Prom/Mimir stack. Elastic Serverless is an <strong>automated, scalable Prom remote-write</strong> path — without that admin overhead (<a href="https://elastic.github.io/observability-team/collaterals/metrics-analysts-presentation/metrics-analyst.html#0" target="_blank" rel="noopener">Metrics Analyst briefing</a>). Then paste the same Explore expressions in <strong>Metrics</strong>.</p>
+      <p class="value-outcome">Customer value: Keep PromQL — and stop using scrape intervals and remote-write fan-out as your cost controls.</p>
+      <p class="lede">Prometheus admins save money by stretching <strong>scrape intervals</strong>, standing up <strong>multiple remote-write endpoints</strong>, relabeling on every job, recording-rule farms, HA Prom + Thanos/Mimir compactors, and sharding by team. Elastic Serverless is one <strong>managed Prom remote-write</strong> path: keep resolution, <strong>Drop noise at ingest</strong>, no sidecar TSDB (<a href="https://elastic.github.io/observability-team/collaterals/metrics-analysts-presentation/metrics-analyst.html#0" target="_blank" rel="noopener">Metrics Analyst briefing</a>). Then paste the same Explore expressions.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
             <div>
-              <div class="tag">PAIN</div>
-              <h3>Prom / Mimir ops</h3>
-              <p>Scrape interval knobs · multi remote-write · scale the stack yourself.</p>
+              <div class="tag">PROM COST LEVERS</div>
+              <h3>Starve the scrape</h3>
+              <p>15s → 60s scrapes · extra remote-write paths · relabel YAML · recording rules · shard the TSDB.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
               <div class="tag">ELASTIC</div>
-              <h3>Serverless remote-write</h3>
-              <p>Automated, scalable Prom remote-write — no sidecar TSDB to run.</p>
+              <h3>Drop, don’t starve</h3>
+              <p>One remote-write / OTLP endpoint · Streams Drop · lifecycle — no Prom/Mimir compactors to run.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
               <div class="tag">DEMO</div>
               <h3>Same PromQL</h3>
-              <p>Paste bare PromQL in Metrics — Explore habit, Elastic backend.</p>
+              <p>Paste bare PromQL in Metrics — Explore habit, Elastic backend, resolution you actually want.</p>
             </div>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Metrics → Last 2 hours → paste A / B / C → name one expression + one admin pain you drop.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Metrics → Last 2 hours → paste A / B / C → name one Prom cost lever you no longer need.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
