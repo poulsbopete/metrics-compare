@@ -13,6 +13,7 @@ import {
   DATADOG_CUSTOM_METRICS_INCLUDED_PER_HOST,
   DATADOG_INFRA_HOST_PRO_USD_PER_MONTH,
 } from "./datadogPricing";
+import { calculateGrafanaCloudMetricsCost } from "./grafanaCloudPricing";
 import {
   DEFAULT_TCO_PRICING_CONTEXT,
   type TcoPricingContext,
@@ -203,6 +204,13 @@ export function calculatePlatformCost(
     } else if (pricing.pricePerGB) {
       cost += monthlyGB * pricing.pricePerGB;
     }
+  } else if (platform.id === "grafana-cloud") {
+    // Grafana Cloud Metrics: billable series from samples/sec × DPM, not $/million datapoints.
+    const samplesPerSecond = monthlyDatapointsToUniqueCustomMetrics(monthlyMetrics);
+    cost += calculateGrafanaCloudMetricsCost(samplesPerSecond).monthlyCost;
+    if (includeEgress && pricing.egressPricePerGB) {
+      monthlyGB = metricsToGB(billableMetrics, bytesPerDatapoint);
+    }
   } else if (pricing.pricePerCustomMetricPerMonth !== undefined) {
     const uniqueCustomMetrics = monthlyDatapointsToUniqueCustomMetrics(billableMetrics);
     const ddBreakdown = calculateDatadogMetricsCostBreakdown(
@@ -391,14 +399,15 @@ export const platforms: Platform[] = [
     metricTypes: ["Prometheus", "OpenTelemetry", "StatsD", "Custom"],
     pricing: {
       basePrice: 0,
-      pricePerMillionMetrics: 0.30, // $0.30 per million metrics (STARTING TIER pricing)
+      pricePerMillionMetrics: 0,
       freeTier: 0,
-      unit: "per million metrics/month",
-      egressPricePerGB: 0.12, // Estimated: GCP egress pricing
+      unit: "billable series (active series × DPM)",
+      egressPricePerGB: 0.12,
       egressFreeTier: 0,
-      egressPricePerGBWithPrivateLink: 0.001, // Near-zero with private link
+      egressPricePerGBWithPrivateLink: 0.001,
     },
-    cardinalityNote: "Charges per metric, so high cardinality directly increases costs. Each unique metric series (including all tag combinations) is counted separately. High-cardinality tags cause exponential cost growth as metric volume multiplies. Pricing shown: $0.30 per million metrics for STARTING TIER. Grafana offers volume discounts and can go 'as low as' $3/GB for Enterprise tier (approximately $0.15 per million metrics at typical conversion rates). Contact Grafana for Enterprise tier pricing based on your volume.",
+    cardinalityNote:
+      "Grafana Cloud Metrics bills **billable series**, not datapoints: max(active series, total DPM ÷ included DPM). Pro includes **1 DPM/series** (60s scrape) and **10k series** in a **$19/mo** platform fee, then **$6.50 / $5.90 / $5.50 per 1k** paid series (10–100k / 100–200k / 200k+). Faster scrapes increase billable series. **13-month retention** is included. Adaptive Metrics reductions are not applied. Enterprise commits can go as low as $3/1k — this model uses Pro list.",
   },
   {
     id: "chronosphere",

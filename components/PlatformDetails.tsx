@@ -21,6 +21,10 @@ import {
   DATADOG_APM_HOST_PRO_USD_PER_MONTH,
 } from "@/lib/datadogPricing";
 import {
+  calculateGrafanaCloudMetricsCost,
+  GRAFANA_CLOUD_PRICING_URL,
+} from "@/lib/grafanaCloudPricing";
+import {
   ObservabilityPlatform,
   calculateLogsCostBreakdown,
   calculateSecurityCostBreakdown,
@@ -125,6 +129,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
         datadogHostCoveredSeries?: number;
         datadogIncludedCustomMetrics?: number;
         datadogBillableCustomMetrics?: number;
+        grafanaBreakdown?: ReturnType<typeof calculateGrafanaCloudMetricsCost>;
         elasticBreakdown?: ReturnType<typeof calculateElasticServerlessCost>;
         echBreakdown?: ReturnType<typeof calculateEchHotFrozenVolumeCost>;
       }
@@ -184,14 +189,26 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
               platform.pricing.pricePerInfraHostPerMonth ?? DATADOG_INFRA_HOST_PRO_USD_PER_MONTH,
           }, pcm)
         : undefined;
+    const grafanaBreakdown =
+      platform.id === "grafana-cloud"
+        ? calculateGrafanaCloudMetricsCost(
+            monthlyDatapointsToUniqueCustomMetrics(calculationContext.monthlyMetrics)
+          )
+        : undefined;
     const customMetricsVolumeCharge = datadogBreakdown?.customMetricsCost ?? (pcm > 0 ? uniqueCustomMetrics * pcm : 0);
     const datadogInfraHostCost = datadogBreakdown?.infraHostCost ?? 0;
     const metricsVolumeCharge =
-      ppm > 0 ? (billableMetrics / 1_000_000) * ppm : 0;
+      grafanaBreakdown
+        ? grafanaBreakdown.monthlyCost
+        : ppm > 0
+        ? (billableMetrics / 1_000_000) * ppm
+        : 0;
     const infraSubtotalFromMetrics =
       pcm > 0
         ? calculationContext.infraCost ??
           datadogInfraHostCost + customMetricsVolumeCharge
+        : grafanaBreakdown
+        ? calculationContext.infraCost ?? grafanaBreakdown.monthlyCost
         : ppm > 0
         ? calculationContext.infraCost ?? metricsVolumeCharge
         : 0;
@@ -217,6 +234,7 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
       datadogHostCoveredSeries: datadogBreakdown?.hostCoveredSeries,
       datadogIncludedCustomMetrics: datadogBreakdown?.includedCustomMetrics,
       datadogBillableCustomMetrics: datadogBreakdown?.billableCustomMetrics,
+      grafanaBreakdown,
       elasticBreakdown,
       echBreakdown,
     };
@@ -523,9 +541,72 @@ export default function PlatformDetails({ platform, calculationContext }: Platfo
               </>
             )}
 
-            {/* Per-million-metrics pricing (New Relic, Grafana, etc.) */}
+            {/* Grafana Cloud Metrics — billable series (active series × DPM) */}
+            {metricsBreakdown?.grafanaBreakdown && (
+              <>
+                <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Samples / sec (input):</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {metricsBreakdown.grafanaBreakdown.samplesPerSecond.toLocaleString()}/sec
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Total DPM:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {Math.round(metricsBreakdown.grafanaBreakdown.totalDpm).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Billable series (DPM ÷ {metricsBreakdown.grafanaBreakdown.includedDpm} included):</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {Math.round(metricsBreakdown.grafanaBreakdown.billableSeries).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                  <span>Included in Pro platform fee:</span>
+                  <span className="font-semibold">
+                    {metricsBreakdown.grafanaBreakdown.includedSeries.toLocaleString()} series
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Pro platform fee:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(metricsBreakdown.grafanaBreakdown.platformFee)}/month
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Paid series ({Math.round(metricsBreakdown.grafanaBreakdown.paidSeries).toLocaleString()}):</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(metricsBreakdown.grafanaBreakdown.seriesCost)}/month
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">Infrastructure subtotal:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatCurrency(metricsBreakdown.grafanaBreakdown.monthlyCost)}/month
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  Grafana Cloud Pro list: billable series = max(active series, total DPM ÷ included DPM).
+                  This worksheet uses samples/sec × 60 as total DPM (1 DPM included). Volume tiers $6.50 /
+                  $5.90 / $5.50 per 1k paid series. 13-month retention included. Adaptive Metrics not applied.{" "}
+                  <a
+                    href={GRAFANA_CLOUD_PRICING_URL}
+                    className="underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    grafana.com/pricing
+                  </a>
+                </p>
+              </>
+            )}
+
+            {/* Per-million-metrics pricing (New Relic, etc.) */}
             {platform.pricing.pricePerMillionMetrics !== undefined &&
              platform.pricing.pricePerMillionMetrics > 0 &&
+             !metricsBreakdown?.grafanaBreakdown &&
              metricsBreakdown && (
               <>
                 <div className="pt-1 border-t border-blue-100 dark:border-blue-800/50" />
