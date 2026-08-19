@@ -20,35 +20,35 @@
 
     <section class="slide" data-slide="1">
       <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
-      <h1>Your <em>PromQL</em> — paste it into Metrics.</h1>
-      <p class="value-outcome">Customer value: Keep PromQL — and stop using scrape intervals and remote-write fan-out as your cost controls.</p>
-      <p class="lede">Prometheus admins save money by stretching <strong>scrape intervals</strong>, standing up <strong>multiple remote-write endpoints</strong>, relabeling on every job, recording-rule farms, HA Prom + Thanos/Mimir compactors, and sharding by team. Elastic Serverless is one <strong>managed Prom remote-write</strong> path: keep resolution, <strong>Drop noise at ingest</strong>, no sidecar TSDB (<a href="https://elastic.github.io/observability-team/collaterals/metrics-analysts-presentation/metrics-analyst.html#0" target="_blank" rel="noopener">Metrics Analyst briefing</a>). Then paste the same Explore expressions.</p>
+      <h1>Grafana stack sprawl — <em>three stores</em>, three queries.</h1>
+      <p class="value-outcome">Customer value: One Elastic project instead of Prometheus + Loki + Tempo — faster for humans and AI, and ~33% lower than Grafana Cloud on modeled workloads.</p>
+      <p class="lede">Most Grafana shops run <strong>Prometheus/Mimir, Loki, and Tempo</strong> — three databases, three query languages, and manual joins between charts. That friction burns incident time and breaks AI agents that have to copy host lists and trace IDs between tools. Keep <strong>PromQL</strong> on Elastic for dashboards; investigate across signals in <strong>one ES|QL query</strong> when dashboards are not enough. Modeled pricing: Elastic Serverless is <strong>~33% lower than Grafana Cloud</strong> — see the <a href="https://tco-calc.o11ybot.app/?scenario=grafana-stack" target="_blank" rel="noopener">Grafana stack worksheet</a> (e.g. 100k samples/sec @ 296B → Grafana Cloud ~$33K/mo; smaller footprint → ~$3.1K/mo).</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
             <div>
-              <div class="tag">PROM COST LEVERS</div>
-              <h3>Starve the scrape</h3>
-              <p>15s → 60s scrapes · extra remote-write paths · relabel YAML · recording rules · shard the TSDB.</p>
+              <div class="tag">GRAFANA STACK</div>
+              <h3>Three hops</h3>
+              <p>PromQL chart → LogQL → TraceQL. Stale cohorts, joins in one engineer’s head, negative checks skipped.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
               <div class="tag">ELASTIC</div>
-              <h3>Drop, don’t starve</h3>
-              <p>One remote-write / OTLP endpoint · Streams Drop · lifecycle — no Prom/Mimir compactors to run.</p>
+              <h3>One store</h3>
+              <p>Logs, metrics, traces behind one query engine — ES|QL subqueries keep the cohort in-cluster for people and agents.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
-              <div class="tag">DEMO</div>
+              <div class="tag">PROMQL</div>
               <h3>Same PromQL</h3>
-              <p>Paste bare PromQL in Metrics — Explore habit, Elastic backend, resolution you actually want.</p>
+              <p>Paste bare PromQL in Metrics — keep Explore habit, one managed remote-write path, Drop noise at ingest.</p>
             </div>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Metrics → Last 2 hours → paste A / B / C → name one Prom cost lever you no longer need.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Metrics → paste PromQL A / B / C → name one cross-signal question that should not take three tools.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
@@ -95,11 +95,11 @@
 
     <section class="slide" data-slide="3">
       <div class="eyebrow">Competitive lab · Challenge 3 · ~15 min</div>
-      <h1>Serverless TCO — model it on the <em>Grafana stack worksheet</em>.</h1>
-      <p class="value-outcome">Customer value: Same PromQL workloads on Serverless — compare list-rate TCO on the worksheet, then drop noise first.</p>
-      <p class="lede">On the <a href="https://tco-calc.o11ybot.app/?scenario=grafana-stack" target="_blank" rel="noopener">Grafana stack worksheet</a>, Grafana Cloud lands near <strong>$33K/mo</strong> while Elastic Serverless is ~<strong>$3.8K/mo</strong> for the same sample workload. ECH ~<strong>$5.7K/mo</strong>. In the lab: Drop <code>/debug/pprof</code>, open <strong>Horizon — Streams savings</strong>, then leave with one worksheet-backed sentence.</p>
+      <h1>Serverless TCO — ~33% lower on <em>Grafana Cloud</em>.</h1>
+      <p class="value-outcome">Customer value: Same PromQL workloads — modeled ~33% lower than Grafana Cloud, plus one store instead of three.</p>
+      <p class="lede">On the <a href="https://tco-calc.o11ybot.app/?scenario=grafana-stack" target="_blank" rel="noopener">Grafana stack worksheet</a>, two reference points: <strong>100k samples/sec @ 296B</strong> → Grafana Cloud ~<strong>$33K/mo</strong> (Elastic ~<strong>$22K/mo</strong>, ~33% lower); <strong>smaller Prometheus footprint</strong> → Grafana Cloud ~<strong>$3.1K/mo</strong> (Elastic ~<strong>$2.1K/mo</strong>, ~33% lower). In the lab: Drop <code>/debug/pprof</code>, open <strong>Horizon — Streams savings</strong>, then open the sheet with your samples/sec.</p>
       <div class="slide-body tco-body">
-        <div class="tco-bars" aria-label="Illustrative monthly TCO">
+        <div class="tco-bars" aria-label="Illustrative monthly TCO — 100k samples/sec example">
           <div class="tco-row">
             <span class="tco-name">Grafana Cloud</span>
             <div class="tco-track"><span class="tco-fill tco-fill-max" style="width:100%"></span></div>
@@ -107,29 +107,29 @@
           </div>
           <div class="tco-row">
             <span class="tco-name">Elastic Serverless</span>
-            <div class="tco-track"><span class="tco-fill tco-fill-win" style="width:12%"></span></div>
-            <span class="tco-amt tco-amt-win">~$3.8K · sample sheet</span>
+            <div class="tco-track"><span class="tco-fill tco-fill-win" style="width:67%"></span></div>
+            <span class="tco-amt tco-amt-win">~$22K · ~33% lower</span>
           </div>
           <div class="tco-row">
-            <span class="tco-name">Elastic Cloud Hosted</span>
-            <div class="tco-track"><span class="tco-fill tco-fill-alt" style="width:17%"></span></div>
-            <span class="tco-amt">~$5.7K</span>
+            <span class="tco-name">Smaller footprint (GC)</span>
+            <div class="tco-track"><span class="tco-fill tco-fill-alt" style="width:9%"></span></div>
+            <span class="tco-amt">~$3.1K → Elastic ~$2.1K</span>
           </div>
-          <p class="tco-footnote">List-rate worksheet · Elastic Serverless is SaaS ($0 platform ops) · <a href="https://tco-calc.o11ybot.app/?scenario=grafana-stack" target="_blank" rel="noopener">tco-calc.o11ybot.app/?scenario=grafana-stack</a> · confirm with measured usage</p>
+          <p class="tco-footnote">Modeled list-rate · ~33% lower than Grafana Cloud in pricing analysis · <a href="https://tco-calc.o11ybot.app/?scenario=grafana-stack" target="_blank" rel="noopener">tco-calc.o11ybot.app/?scenario=grafana-stack</a> · confirm with measured usage</p>
         </div>
         <div class="cards">
           <div class="metric-card metric-card-solo">
             <div>
               <div class="tag">LEVER</div>
               <h3>Streams Drop</h3>
-              <p>Cut scrape/debug noise before it hits Grafana Cloud–style series pricing — or your Prom TSDB.</p>
+              <p>Cut scrape/debug noise before ingest — keep resolution without starving scrapes to control Grafana Cloud billable series.</p>
             </div>
           </div>
           <div class="metric-card metric-card-solo">
             <div>
               <div class="tag">TAKEAWAY</div>
               <h3>Leadership line</h3>
-              <p>Keep PromQL; move the backend to Elastic — on the Grafana stack worksheet, Serverless is ~$3.8K/mo vs Grafana Cloud ~$33K/mo for the same modeled workload.</p>
+              <p>One observability store, one investigation query language, PromQL preserved — and ~33% lower than Grafana Cloud on modeled workloads.</p>
             </div>
           </div>
         </div>

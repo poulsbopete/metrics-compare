@@ -20,35 +20,35 @@
 
     <section class="slide" data-slide="1">
       <div class="eyebrow">From Datadog · Challenge 1 · ~15 min</div>
-      <h1>Why <em>leave</em> Datadog — see the cost drivers on Elastic.</h1>
-      <p class="value-outcome">Customer value: Your savings on Elastic Serverless — not a Datadog true-up optimization.</p>
-      <p class="lede">This lab moves the backend to <strong>Elastic Serverless</strong>. On the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">TCO worksheet</a>, Datadog is ~<strong>$12.6K/mo</strong> (metrics alone ~<strong>$3.8K</strong>) vs Serverless ~<strong>$1.3K</strong> (metrics ~<strong>$0.9K</strong>). Audit the same cardinality and debug noise on Streams — then Drop it at ingest instead of paying Datadog to store it.</p>
+      <h1>Datadog’s price forces <em>coverage gaps</em>.</h1>
+      <p class="value-outcome">Customer value: Stop paying Datadog to store metrics you had to drop — move to Elastic Serverless with full coverage at a lower bill.</p>
+      <p class="lede">Datadog bills custom metrics aggressively, so teams <strong>drop series, sample metrics, and exclude environments</strong> just to keep the invoice down — then miss production blind spots. On the <a href="https://tco-calc.o11ybot.app/?scenario=datadog" target="_blank" rel="noopener">TCO worksheet</a>, Datadog is ~<strong>$12.6K/mo</strong> (metrics alone ~<strong>$3.8K</strong>) vs Elastic Serverless ~<strong>$1.3K</strong> (metrics ~<strong>$0.9K</strong>). This lab moves the backend: audit what you are <em>not</em> sending to Datadog anymore, then Drop noise at ingest on Elastic instead of paying to store it.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
             <div>
-              <div class="tag">LEAVE</div>
+              <div class="tag">PRICE</div>
               <h3>Custom metrics tax</h3>
-              <p>High-cardinality tags explode the Datadog invoice — Elastic drops them at ingest.</p>
+              <p>High-cardinality tags and debug routes inflate the bill — every series you keep is a SKU.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
-              <div class="tag">LEAVE</div>
-              <h3>Pay-then-filter</h3>
-              <p>Datadog bills debug/scrape noise first. Serverless Streams never stores what you Drop.</p>
+              <div class="tag">COVERAGE</div>
+              <h3>Pay to shrink observability</h3>
+              <p>Teams drop labels, shorten retention, and exclude services to control Datadog spend — gaps follow.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
               <div class="tag">MOVE TO</div>
               <h3>Elastic Serverless</h3>
-              <p>One project, SaaS ops, ~11% of Datadog full-stack TCO on the same worksheet.</p>
+              <p>Drop at ingest, keep the signals you need — one project, worksheet-backed savings.</p>
             </div>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Streams → <code>metrics-generic.otel-default</code> → name two Datadog cost drivers you’d leave behind.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Streams → <code>metrics-generic.otel-default</code> → name one metric you stopped sending to Datadog to save money.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
