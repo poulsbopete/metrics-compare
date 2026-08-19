@@ -138,6 +138,40 @@
       <span class="elastic-mark">elastic</span>
     </section>
 
+    <section class="slide" data-slide="4">
+      <div class="eyebrow">Beyond PromQL · investigation</div>
+      <h1>One <em>ES|QL query</em> across logs, metrics, and traces.</h1>
+      <p class="value-outcome">Customer value: Keep PromQL for dashboards — but stop exporting host lists and trace IDs between Loki, Prometheus, and Tempo.</p>
+      <p class="lede">In a typical Grafana stack, logs, metrics, and traces sit in <strong>three stores</strong> with <strong>three query languages</strong>. ES|QL subqueries (<code>WHERE field IN (subquery)</code>) keep the intermediate cohort inside Elasticsearch — saturated hosts, erroring hosts, or 500 slow trace IDs never land in a clipboard. One query answers questions like “what did the saturated hosts log?” or “470 of 500 slow traces share the same lock wait.” (<a href="https://www.elastic.co/observability-labs/blog/esql-subqueries-correlate-logs-metrics-traces" target="_blank" rel="noopener">Observability Labs · Aug 2026</a>)</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">GRAFANA STACK</div>
+              <h3>Three hops</h3>
+              <p>PromQL chart → copy host names → LogQL → copy trace IDs → Tempo. Stale lists, manual joins, negative checks skipped.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">ELASTIC</div>
+              <h3>One store</h3>
+              <p>Metrics → logs, logs → metrics, traces → logs, or all three nested — OTel fields kept on ingest, one time picker.</p>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">REPRODUCIBLE</div>
+              <h3>Saved correlation</h3>
+              <p>One ES|QL string anyone can re-run in Discover — not a join that lives in one engineer’s head during the incident.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>Talk track:</strong> PromQL stays for metrics boards; Elastic wins when the question crosses signals — and when Agent Builder needs one query, not three tool calls.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
   </div>
 </div>
 <script src="slides/deck.js"></script>
