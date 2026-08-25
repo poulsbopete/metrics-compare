@@ -14,11 +14,6 @@ export interface CompetitorScenario {
   id: CompetitorScenarioId;
   label: string;
   description: string;
-  /**
-   * Optional sales / workshop talk track shown under the scenario picker.
-   * Keep short — price + product wedge, not a full pitch.
-   */
-  talkTrack?: string;
   /** Platform IDs pre-selected per signal tab (always includes ECH, Serverless, and Self-hosted on metrics). */
   platformIds: Record<ObservabilityTabSignal, string[]>;
   /** Optional metrics-tab defaults when this scenario is selected. */
@@ -42,8 +37,6 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
     id: "datadog",
     label: "Datadog",
     description: "Compare Elastic Cloud Hosted and Serverless with Datadog host and custom-metric pricing.",
-    talkTrack:
-      "Lead with price, then coverage: Datadog custom-metric bills push teams to drop series, sample, and exclude environments just to keep spend down — so they pay more and still miss production blind spots. Elastic is GB volume (no custom-metric SKU), so you keep coverage and cut the bill.",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "datadog"],
       tracing: [...ELASTIC_TRACING, "datadog-tracing"],
@@ -62,8 +55,6 @@ export const COMPETITOR_SCENARIOS: CompetitorScenario[] = [
     label: "Grafana / Mimir / Loki / Tempo",
     description:
       "Compare Elastic with Grafana Cloud and common self-managed options (Prometheus, Thanos, VictoriaMetrics, Cortex/Mimir).",
-    talkTrack:
-      "Lead with architecture pain, then price: Grafana stacks mean multiple databases and multiple query languages — inefficient for humans and AI. On modeled Prometheus workloads at ~12-month retention, Elastic Serverless is ~33% lower than Grafana Cloud (e.g. 100k samples/sec @ 296B → ~$22K vs ~$33K/mo). One store, one investigation path — and cheaper.",
     platformIds: {
       metrics: [...ELASTIC_METRICS, "grafana-cloud", "prometheus", "thanos", "victoria-metrics", "cortex"],
       tracing: [...ELASTIC_TRACING, "grafana-tracing", "tempo-self-hosted"],
