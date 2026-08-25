@@ -19,36 +19,36 @@
   <div class="slide-viewport">
 
     <section class="slide" data-slide="1">
-      <div class="eyebrow">Competitive lab · Challenge 1 · ~15 min</div>
-      <h1>Grafana stack sprawl — <em>three stores</em>, three queries.</h1>
-      <p class="value-outcome">Customer value: One Elastic project instead of Prometheus + Loki + Tempo — faster for humans and AI, and ~33% lower than Grafana Cloud on modeled workloads.</p>
-      <p class="lede">Most Grafana shops run <strong>Prometheus/Mimir, Loki, and Tempo</strong> — three databases, three query languages, and manual joins between charts. That friction burns incident time and breaks AI agents that have to copy host lists and trace IDs between tools. Keep <strong>PromQL</strong> on Elastic for dashboards; investigate across signals in <strong>one ES|QL query</strong> when dashboards are not enough. Modeled pricing: Elastic Serverless is <strong>~33% lower than Grafana Cloud</strong> — see the <a href="https://tco-calc.o11ybot.app/?scenario=grafana-stack" target="_blank" rel="noopener">Grafana stack worksheet</a> (e.g. 100k samples/sec @ 296B → Grafana Cloud ~$33K/mo; smaller footprint → ~$3.1K/mo).</p>
+      <div class="eyebrow">Competitive lab · Challenge 1 · ~10 min</div>
+      <h1>Stop scaling <em>Prom</em> just to cut cost.</h1>
+      <p class="value-outcome">Customer value: Keep PromQL — and stop using scrape intervals and remote-write fan-out as your cost controls.</p>
+      <p class="lede">Prometheus admins stretch <strong>scrape intervals</strong>, stand up <strong>multiple remote-write endpoints</strong>, relabel every job, farm recording rules, run HA Prom + Thanos/Mimir, and shard by team — high ops tax, coarser data in incidents. Elastic Serverless is <strong>one managed remote-write / OTLP path</strong>: keep resolution, <strong>Drop noise at ingest</strong>, no sidecar TSDB. Then paste the same Explore expressions. (Bonus: one project instead of Prometheus + Loki + Tempo.)</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
             <div>
-              <div class="tag">GRAFANA STACK</div>
-              <h3>Three hops</h3>
-              <p>PromQL chart → LogQL → TraceQL. Stale cohorts, joins in one engineer’s head, negative checks skipped.</p>
+              <div class="tag">PROM COST LEVERS</div>
+              <h3>Starve the scrape</h3>
+              <p>15s → 60s scrapes · extra remote-write paths · relabel YAML · recording rules · shard the TSDB.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
               <div class="tag">ELASTIC</div>
-              <h3>One store</h3>
-              <p>Logs, metrics, traces behind one query engine — ES|QL subqueries keep the cohort in-cluster for people and agents.</p>
+              <h3>Drop, don’t starve</h3>
+              <p>One remote-write / OTLP endpoint · Streams Drop · lifecycle — no Prom/Mimir compactors to run.</p>
             </div>
           </div>
           <div class="metric-card">
             <div>
               <div class="tag">PROMQL</div>
               <h3>Same PromQL</h3>
-              <p>Paste bare PromQL in Metrics — keep Explore habit, one managed remote-write path, Drop noise at ingest.</p>
+              <p>Paste into Discover / Metrics — Explore habit, Elastic backend, resolution you actually want.</p>
             </div>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Metrics → paste PromQL A / B / C → name one cross-signal question that should not take three tools.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Last 2 hours → paste PromQL A / B / C → name one Prom cost lever you no longer need.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
