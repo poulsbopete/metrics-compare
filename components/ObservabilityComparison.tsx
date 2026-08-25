@@ -394,8 +394,22 @@ function VolumeVsSeriesNote({
           </>
         ) : null}{" "}
         High cardinality or faster scrapes inflate series bills while Elastic stays on GB — often a
-        large Elastic advantage. Fat samples / few series can flip it the other way. Move samples/sec
-        and bytes/sample to see both sides.
+        large Elastic advantage. Fat samples / few series can flip it the other way.
+        {datadogSelected ? (
+          <>
+            {" "}
+            <strong>Talk track:</strong> lead with price, then lack of coverage from cutting series to keep
+            Datadog spend down.
+          </>
+        ) : null}
+        {grafanaSelected ? (
+          <>
+            {" "}
+            <strong>Talk track:</strong> multi-DB / multi-query inefficiency for humans and AI — and ~33%
+            lower than Grafana Cloud on modeled Prom workloads at ~12-mo retention.
+          </>
+        ) : null}{" "}
+        Move samples/sec and bytes/sample to see both sides.
       </p>
     </div>
   );

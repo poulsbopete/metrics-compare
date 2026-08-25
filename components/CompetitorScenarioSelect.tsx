@@ -37,6 +37,16 @@ export default function CompetitorScenarioSelect({ value, onChange }: Competitor
       <p className="text-xs text-indigo-900/80 dark:text-indigo-200/80 mt-2 leading-relaxed">
         {scenario.description} The comparison chart and platform list update to match.
       </p>
+      {scenario.talkTrack && (
+        <div className="mt-3 rounded-lg border border-indigo-200/80 dark:border-indigo-700/50 bg-white/70 dark:bg-gray-900/50 px-3 py-2.5">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300 mb-1">
+            Talk track
+          </div>
+          <p className="text-xs text-indigo-950/90 dark:text-indigo-100/90 leading-relaxed">
+            {scenario.talkTrack}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
