@@ -87,29 +87,10 @@ export default function ServerlessEstimator() {
 
   const setSolution = (solution: ElasticServerlessSolution) => patch({ solution });
 
-  const maxCompetitor = Math.max(
-    result.monthlyTotal,
-    ...result.competitors.map((c) => c.monthlyTotal),
-    1
-  );
-
-  const comparisonRows = [
-    {
-      id: "elastic-serverless",
-      name: `Elastic ${result.productLabel}`,
-      color: "bg-blue-500",
-      monthlyTotal: result.monthlyTotal,
-      signals: {
-        metrics: result.lines.find((l) => l.signal === "metrics")?.volumeCost ?? 0,
-        logs: result.lines.find((l) => l.signal === "logs")?.volumeCost ?? 0,
-        traces: result.lines.find((l) => l.signal === "traces")?.volumeCost ?? 0,
-        security: result.lines.find((l) => l.signal === "security")?.volumeCost ?? 0,
-      },
-      assumptions: result.productLabel,
-      isElastic: true as const,
-    },
-    ...result.competitors.map((c) => ({ ...c, isElastic: false as const })),
-  ].sort((a, b) => a.monthlyTotal - b.monthlyTotal);
+  const echRow = result.competitors.find((c) => c.id === "elastic-ech");
+  const highlightCompetitors = result.competitors
+    .filter((c) => !c.isElastic)
+    .slice(0, 4);
 
   const pricingDocsHref =
     inputs.solution === "search"
@@ -117,6 +98,20 @@ export default function ServerlessEstimator() {
       : inputs.solution === "security"
         ? ELASTIC_SERVERLESS_SECURITY_PRICING_URL
         : ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL;
+
+  const formatSignalCell = (covered: boolean, cost: number | null) => {
+    if (!covered) {
+      return <span className="text-gray-300 dark:text-gray-600">—</span>;
+    }
+    if (cost == null) {
+      return (
+        <span className="text-emerald-600 dark:text-emerald-400 font-medium" title="Covered (not metered in this worksheet)">
+          ✓
+        </span>
+      );
+    }
+    return <span className="tabular-nums">{formatUsd(cost)}</span>;
+  };
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -463,7 +458,7 @@ export default function ServerlessEstimator() {
         )}
       </div>
 
-      {/* Totals */}
+      {/* Totals + coverage table */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-4 rounded-2xl border border-sky-200 dark:border-sky-800 bg-gradient-to-br from-sky-50 to-blue-100 dark:from-sky-950/40 dark:to-blue-950/30 p-6 shadow-lg">
           <div className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300 mb-1">
@@ -475,43 +470,45 @@ export default function ServerlessEstimator() {
           <div className="text-sm text-sky-800/80 dark:text-sky-200/80 mt-1">
             {formatUsd(result.annualTotal)} / year
           </div>
-          {result.competitors.length > 0 && (
-            <div className="mt-5 space-y-2">
-              {result.competitors.map((c) => {
-                const cheaper = c.monthlyTotal > result.monthlyTotal;
-                const pct =
-                  c.monthlyTotal > 0
-                    ? Math.abs(
-                        Math.round(
-                          ((c.monthlyTotal - result.monthlyTotal) / c.monthlyTotal) * 100
-                        )
-                      )
-                    : null;
-                return (
-                  <div
-                    key={c.id}
-                    className="flex items-baseline justify-between gap-2 text-sm border-t border-sky-200/60 dark:border-sky-800/40 pt-2"
-                  >
-                    <span className="text-sky-900/80 dark:text-sky-100/80">{c.name}</span>
-                    <span className="tabular-nums font-semibold text-sky-950 dark:text-sky-50 text-right">
-                      {formatUsd(c.monthlyTotal)}
-                      {pct != null && cheaper && (
-                        <span className="block text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                          Elastic ~{pct}% lower
-                        </span>
-                      )}
+          {echRow && (
+            <div className="mt-4 rounded-lg bg-white/60 dark:bg-gray-900/40 border border-sky-200/80 dark:border-sky-800 px-3 py-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                ECH (same volumes)
+              </div>
+              <div className="text-lg font-bold tabular-nums text-sky-950 dark:text-sky-50">
+                {formatUsd(echRow.monthlyTotal)}
+                <span className="text-xs font-normal text-sky-700/80 dark:text-sky-300/80 ml-1">
+                  /mo
+                </span>
+              </div>
+              <p className="text-[11px] text-sky-800/70 dark:text-sky-200/70 mt-0.5 leading-snug">
+                {echRow.assumptions}
+              </p>
+            </div>
+          )}
+          {highlightCompetitors.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {highlightCompetitors.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-baseline justify-between gap-2 text-sm border-t border-sky-200/60 dark:border-sky-800/40 pt-2"
+                >
+                  <span className="text-sky-900/80 dark:text-sky-100/80">
+                    {c.name}
+                    <span className="block text-[10px] text-sky-700/60 dark:text-sky-300/60">
+                      {c.coverageLabel}
                     </span>
-                  </div>
-                );
-              })}
+                  </span>
+                  <span className="tabular-nums font-semibold text-sky-950 dark:text-sky-50">
+                    {formatUsd(c.monthlyTotal)}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
           <p className="text-[11px] text-sky-900/70 dark:text-sky-100/70 mt-4 leading-relaxed">
-            Illustrative list-rate estimate ·{" "}
-            <a href={pricingDocsHref} className="underline" target="_blank" rel="noopener noreferrer">
-              published pricing
-            </a>
-            .
+            Totals sum only the signals each vendor covers. Metrics-only stacks (e.g. VictoriaMetrics)
+            look cheap until you add logs/traces/security. Full table →
           </p>
         </div>
 
@@ -519,66 +516,95 @@ export default function ServerlessEstimator() {
           <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-700">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white">
               {result.competitors.length > 0
-                ? "Vendor comparison"
+                ? "Vendor coverage & estimated monthly cost"
                 : "Cost breakdown"}
             </h3>
+            {result.competitors.length > 0 && (
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                ✓ / $ = covered in this estimate · — = not in product scope · Security ✓ without $ means
+                capability exists but is not metered on the Observability worksheet
+              </p>
+            )}
           </div>
           {result.competitors.length > 0 ? (
-            <div className="p-5 space-y-4">
-              {comparisonRows.map((row) => {
-                const width = Math.max(4, (row.monthlyTotal / maxCompetitor) * 100);
-                return (
-                  <div key={row.id}>
-                    <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${row.color}`} />
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {row.name}
-                        </span>
-                        {row.isElastic && (
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">
-                            This estimate
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm font-bold tabular-nums text-gray-900 dark:text-white">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-900/50 text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <tr>
+                    <th className="px-3 py-2.5 text-left font-semibold">Vendor</th>
+                    <th className="px-2 py-2.5 text-center font-semibold">Metrics</th>
+                    <th className="px-2 py-2.5 text-center font-semibold">Traces</th>
+                    <th className="px-2 py-2.5 text-center font-semibold">Logs</th>
+                    <th className="px-2 py-2.5 text-center font-semibold">Security</th>
+                    <th className="px-3 py-2.5 text-right font-semibold">Total / mo</th>
+                    <th className="px-3 py-2.5 text-left font-semibold">Covers</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {result.competitors.map((row) => (
+                    <tr
+                      key={row.id}
+                      className={
+                        row.isElastic
+                          ? "bg-blue-50/60 dark:bg-blue-950/20"
+                          : "hover:bg-gray-50/80 dark:hover:bg-gray-900/30"
+                      }
+                    >
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${row.color}`} />
+                          <div>
+                            <div className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm">
+                              {row.name}
+                            </div>
+                            {row.isElastic && (
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                                Elastic
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-2 py-2.5 text-center text-xs">
+                        {formatSignalCell(row.coverage.metrics, row.signals.metrics)}
+                      </td>
+                      <td className="px-2 py-2.5 text-center text-xs">
+                        {formatSignalCell(row.coverage.traces, row.signals.traces)}
+                      </td>
+                      <td className="px-2 py-2.5 text-center text-xs">
+                        {formatSignalCell(row.coverage.logs, row.signals.logs)}
+                      </td>
+                      <td className="px-2 py-2.5 text-center text-xs">
+                        {formatSignalCell(row.coverage.security, row.signals.security)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-bold tabular-nums text-gray-900 dark:text-white text-xs sm:text-sm">
                         {formatUsd(row.monthlyTotal)}
-                        <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">
-                          /mo
-                        </span>
-                      </span>
-                    </div>
-                    <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-900 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${row.color} opacity-90`}
-                        style={{ width: `${width}%` }}
-                      />
-                    </div>
-                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-gray-500 dark:text-gray-400 tabular-nums">
-                      {inputs.solution === "observability" && (
-                        <>
-                          <span>Logs {formatUsd(row.signals.logs)}</span>
-                          <span>Metrics {formatUsd(row.signals.metrics)}</span>
-                          <span>Traces {formatUsd(row.signals.traces)}</span>
-                        </>
-                      )}
-                      {inputs.solution === "security" && (
-                        <span>Security {formatUsd(row.signals.security ?? 0)}</span>
-                      )}
-                    </div>
-                    {!row.isElastic && (
-                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 leading-snug">
-                        {row.assumptions}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
+                      </td>
+                      <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-gray-400 max-w-[10rem]">
+                        <div className="font-medium text-gray-700 dark:text-gray-300">
+                          {row.coverageLabel}
+                        </div>
+                        <div className="leading-snug mt-0.5 line-clamp-2" title={row.assumptions}>
+                          {row.assumptions}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="p-5 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
               Elasticsearch Serverless uses VCU + storage meters. Side-by-side competitor estimates are
               not shown for Search — use the line-item table below.
+            </div>
+          )}
+          {result.competitors.length > 0 && (
+            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+              VictoriaMetrics / Prometheus / Thanos / Cortex are metrics-only — their totals exclude
+              logs, traces, and security you still need elsewhere.{" "}
+              <strong>ECH</strong> uses the same volumes with Cloud Hosted list rates (~$200 cluster
+              minimum + $0.05/GB ingest + hot/blob retention). Illustrative list rates — not a quote.
             </div>
           )}
         </div>

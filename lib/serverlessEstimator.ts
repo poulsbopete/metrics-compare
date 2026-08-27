@@ -173,21 +173,34 @@ export interface ServerlessEstimatorSignalLine {
 }
 
 export interface ServerlessCompetitorSignalCosts {
-  metrics: number;
-  logs: number;
-  traces: number;
-  security?: number;
+  metrics: number | null;
+  logs: number | null;
+  traces: number | null;
+  security: number | null;
+}
+
+export interface ServerlessCompetitorCoverage {
+  metrics: boolean;
+  logs: boolean;
+  traces: boolean;
+  security: boolean;
 }
 
 export interface ServerlessCompetitorEstimate {
   id: string;
   name: string;
   color: string;
+  isElastic?: boolean;
+  coverage: ServerlessCompetitorCoverage;
   signals: ServerlessCompetitorSignalCosts;
+  /** Sum of priced (non-null) signal costs only. */
   monthlyTotal: number;
   annualTotal: number;
-  vsElasticPct: number | null;
+  pricedSignalCount: number;
+  /** Short label e.g. "Metrics only" or "Full stack". */
+  coverageLabel: string;
   assumptions: string;
+  vsElasticPct: number | null;
 }
 
 export interface ServerlessEstimatorResult {
@@ -322,12 +335,6 @@ function toLine(
   };
 }
 
-function requirePlatform<T extends { id: string }>(list: T[], id: string): T {
-  const p = list.find((x) => x.id === id);
-  if (!p) throw new Error(`Missing platform ${id}`);
-  return p;
-}
-
 function competitorPricingContext(hosts: number, retentionMonths: number): TcoPricingContext {
   return {
     ...DEFAULT_TCO_PRICING_CONTEXT,
@@ -355,115 +362,385 @@ function emptyVolumes(): ServerlessEstimatorResult["competitorVolumes"] {
   };
 }
 
+function coverageLabel(c: ServerlessCompetitorCoverage): string {
+  const parts: string[] = [];
+  if (c.metrics) parts.push("Metrics");
+  if (c.traces) parts.push("Traces");
+  if (c.logs) parts.push("Logs");
+  if (c.security) parts.push("Security");
+  if (parts.length === 4) return "Full stack";
+  if (parts.length === 0) return "None";
+  if (parts.length === 1) return `${parts[0]} only`;
+  return parts.join(" · ");
+}
+
+function sumPriced(signals: ServerlessCompetitorSignalCosts): {
+  monthlyTotal: number;
+  pricedSignalCount: number;
+} {
+  let monthlyTotal = 0;
+  let pricedSignalCount = 0;
+  for (const v of [signals.metrics, signals.logs, signals.traces, signals.security]) {
+    if (v != null) {
+      monthlyTotal += v;
+      pricedSignalCount += 1;
+    }
+  }
+  return { monthlyTotal, pricedSignalCount };
+}
+
+function makeVendorRow(
+  id: string,
+  name: string,
+  color: string,
+  coverage: ServerlessCompetitorCoverage,
+  signals: ServerlessCompetitorSignalCosts,
+  assumptions: string,
+  elasticMonthly: number | null,
+  isElastic?: boolean
+): ServerlessCompetitorEstimate {
+  const { monthlyTotal, pricedSignalCount } = sumPriced(signals);
+  return {
+    id,
+    name,
+    color,
+    isElastic,
+    coverage,
+    signals,
+    monthlyTotal,
+    annualTotal: monthlyTotal * 12,
+    pricedSignalCount,
+    coverageLabel: coverageLabel(coverage),
+    assumptions,
+    vsElasticPct:
+      elasticMonthly != null && elasticMonthly > 0 && !isElastic
+        ? ((monthlyTotal - elasticMonthly) / elasticMonthly) * 100
+        : null,
+  };
+}
+
+type EstimatorVendorDef = {
+  id: string;
+  name: string;
+  color: string;
+  isElastic?: boolean;
+  coverage: ServerlessCompetitorCoverage;
+  metricsId?: string;
+  tracingId?: string;
+  logsId?: string;
+  securityId?: string;
+  note: string;
+};
+
+/** Vendors shown on Observability estimator — coverage columns make metrics-only stacks explicit. */
+const OBSERVABILITY_ESTIMATOR_VENDORS: EstimatorVendorDef[] = [
+  {
+    id: "elastic-serverless",
+    name: "Elastic Serverless",
+    color: "bg-blue-500",
+    isElastic: true,
+    coverage: { metrics: true, traces: true, logs: true, security: true },
+    note: "Observability Complete (this worksheet) · Security priced on Security product",
+  },
+  {
+    id: "elastic-ech",
+    name: "Elastic Cloud Hosted (ECH)",
+    color: "bg-blue-700",
+    isElastic: true,
+    coverage: { metrics: true, traces: true, logs: true, security: true },
+    metricsId: "elastic-ech",
+    tracingId: "elastic-ech-tracing",
+    logsId: "elastic-ech-logs",
+    note: "~$200/mo cluster min on metrics · $0.05/GB ingest + 1d hot + ILM blob retention",
+  },
+  {
+    id: "datadog",
+    name: "Datadog",
+    color: "bg-purple-500",
+    coverage: { metrics: true, traces: true, logs: true, security: true },
+    metricsId: "datadog",
+    tracingId: "datadog-tracing",
+    logsId: "datadog-logs",
+    note: "Infra+APM hosts · custom metrics · logs ingest+index · Security separate SKU",
+  },
+  {
+    id: "grafana-cloud",
+    name: "Grafana Cloud",
+    color: "bg-orange-400",
+    coverage: { metrics: true, traces: true, logs: true, security: false },
+    metricsId: "grafana-cloud",
+    tracingId: "grafana-tracing",
+    logsId: "grafana-logs",
+    note: "Mimir/Loki/Tempo · no native SIEM",
+  },
+  {
+    id: "dynatrace",
+    name: "Dynatrace",
+    color: "bg-cyan-500",
+    coverage: { metrics: true, traces: true, logs: true, security: true },
+    metricsId: "dynatrace",
+    tracingId: "dynatrace-tracing",
+    logsId: "dynatrace-logs",
+    note: "Grail logs · AppSec is runtime (not full SIEM) — security cost not in this O11y sheet",
+  },
+  {
+    id: "new-relic",
+    name: "New Relic",
+    color: "bg-green-500",
+    coverage: { metrics: true, traces: true, logs: true, security: false },
+    metricsId: "new-relic",
+    tracingId: "new-relic-tracing",
+    logsId: "new-relic-logs",
+    note: "No native SIEM",
+  },
+  {
+    id: "splunk",
+    name: "Splunk Observability",
+    color: "bg-orange-500",
+    coverage: { metrics: true, traces: true, logs: true, security: true },
+    metricsId: "splunk-o11y",
+    tracingId: "splunk-tracing",
+    logsId: "splunk-logs",
+    note: "O11y + Enterprise Security are separate products — security not in this sheet",
+  },
+  {
+    id: "clickstack",
+    name: "ClickStack (Managed)",
+    color: "bg-yellow-500",
+    coverage: { metrics: true, traces: true, logs: true, security: false },
+    metricsId: "clickstack-managed",
+    tracingId: "clickstack-tracing",
+    logsId: "clickstack-logs",
+    note: "Observability only — no SIEM",
+  },
+  {
+    id: "victoria-metrics",
+    name: "VictoriaMetrics",
+    color: "bg-emerald-500",
+    coverage: { metrics: true, traces: false, logs: false, security: false },
+    metricsId: "victoria-metrics",
+    note: "Metrics-only self-hosted · pair with Loki/Tempo (or Elastic) for logs/traces",
+  },
+  {
+    id: "prometheus",
+    name: "Prometheus (self-hosted)",
+    color: "bg-red-500",
+    coverage: { metrics: true, traces: false, logs: false, security: false },
+    metricsId: "prometheus",
+    note: "Metrics-only",
+  },
+  {
+    id: "thanos",
+    name: "Thanos (self-hosted)",
+    color: "bg-pink-500",
+    coverage: { metrics: true, traces: false, logs: false, security: false },
+    metricsId: "thanos",
+    note: "Long-term metrics with Prometheus",
+  },
+  {
+    id: "cortex",
+    name: "Cortex / Mimir (self-hosted)",
+    color: "bg-amber-500",
+    coverage: { metrics: true, traces: false, logs: false, security: false },
+    metricsId: "cortex",
+    note: "Metrics-only · often paired with Loki + Tempo",
+  },
+  {
+    id: "loki-self-hosted",
+    name: "Grafana Loki (self-hosted)",
+    color: "bg-rose-600",
+    coverage: { metrics: false, traces: false, logs: true, security: false },
+    logsId: "loki-self-hosted",
+    note: "Logs-only",
+  },
+  {
+    id: "tempo-self-hosted",
+    name: "Grafana Tempo (self-hosted)",
+    color: "bg-rose-500",
+    coverage: { metrics: false, traces: true, logs: false, security: false },
+    tracingId: "tempo-self-hosted",
+    note: "Traces-only",
+  },
+  {
+    id: "chronosphere",
+    name: "Chronosphere",
+    color: "bg-teal-500",
+    coverage: { metrics: true, traces: false, logs: false, security: false },
+    metricsId: "chronosphere",
+    note: "Metrics-focused SaaS",
+  },
+  {
+    id: "observe-inc",
+    name: "Observe Inc",
+    color: "bg-violet-500",
+    coverage: { metrics: true, traces: false, logs: true, security: false },
+    metricsId: "observe-inc",
+    logsId: "observe-logs",
+    note: "Metrics + logs (Snowflake) · no SIEM in this model",
+  },
+];
+
 function buildObservabilityCompetitors(
   inputs: ServerlessEstimatorInputs,
-  elasticMonthly: number,
+  elasticServerless: {
+    metrics: number;
+    logs: number;
+    traces: number;
+  },
   volumes: ServerlessEstimatorResult["competitorVolumes"]
 ): ServerlessCompetitorEstimate[] {
-  const ctx = competitorPricingContext(
-    volumes.datadogHosts,
-    Math.max(
-      inputs.logsRetentionMonths,
-      inputs.metricsRetentionMonths,
-      inputs.tracesRetentionMonths
-    )
+  const retentionMonths = Math.max(
+    inputs.logsRetentionMonths,
+    inputs.metricsRetentionMonths,
+    inputs.tracesRetentionMonths
   );
+  const ctx = competitorPricingContext(volumes.datadogHosts, retentionMonths);
+  const elasticMonthly =
+    elasticServerless.metrics + elasticServerless.logs + elasticServerless.traces;
 
-  const datadogMetrics = requirePlatform(platforms, "datadog");
-  const grafanaMetrics = requirePlatform(platforms, "grafana-cloud");
-  const datadogLogs = requirePlatform(logsPlatforms, "datadog-logs");
-  const grafanaLogs = requirePlatform(logsPlatforms, "grafana-logs");
-  const datadogTracing = requirePlatform(tracingPlatforms, "datadog-tracing");
-  const grafanaTracing = requirePlatform(tracingPlatforms, "grafana-tracing");
-
-  const dd = {
-    metrics: calculatePlatformCost(
-      datadogMetrics,
+  const costMetrics = (id: string | undefined): number | null => {
+    if (!id) return null;
+    const p = platforms.find((x) => x.id === id);
+    if (!p) return null;
+    return calculatePlatformCost(
+      p,
       volumes.metricsMonthlyDatapoints,
       "Prometheus",
       false,
       false,
       ctx,
       volumes.metricsBytesPerDatapoint
-    ),
-    logs: calculateLogsCost(datadogLogs, volumes.logsMonthlyGB, false, false, ctx),
-    traces: calculateTracingCost(datadogTracing, volumes.monthlySpans, false, false, ctx),
+    );
   };
-  const gf = {
-    metrics: calculatePlatformCost(
-      grafanaMetrics,
-      volumes.metricsMonthlyDatapoints,
-      "Prometheus",
-      false,
-      false,
-      ctx,
-      volumes.metricsBytesPerDatapoint
-    ),
-    logs: calculateLogsCost(grafanaLogs, volumes.logsMonthlyGB, false, false, ctx),
-    traces: calculateTracingCost(grafanaTracing, volumes.monthlySpans, false, false, ctx),
+  const costLogs = (id: string | undefined): number | null => {
+    if (!id) return null;
+    const p = logsPlatforms.find((x) => x.id === id);
+    if (!p) return null;
+    // ECH uses raw GB; Serverless path is already in elasticServerless.logs
+    return calculateLogsCost(p, volumes.logsMonthlyGB, false, false, ctx);
+  };
+  const costTraces = (id: string | undefined): number | null => {
+    if (!id) return null;
+    const p = tracingPlatforms.find((x) => x.id === id);
+    if (!p) return null;
+    return calculateTracingCost(p, volumes.monthlySpans, false, false, ctx);
   };
 
-  const make = (
-    id: string,
-    name: string,
-    color: string,
-    signals: ServerlessCompetitorSignalCosts,
-    assumptions: string
-  ): ServerlessCompetitorEstimate => {
-    const monthlyTotal = signals.metrics + signals.logs + signals.traces + (signals.security ?? 0);
-    return {
-      id,
-      name,
-      color,
-      signals,
-      monthlyTotal,
-      annualTotal: monthlyTotal * 12,
-      vsElasticPct:
-        elasticMonthly > 0 ? ((monthlyTotal - elasticMonthly) / elasticMonthly) * 100 : null,
-      assumptions,
+  return OBSERVABILITY_ESTIMATOR_VENDORS.map((v) => {
+    if (v.id === "elastic-serverless") {
+      return makeVendorRow(
+        v.id,
+        v.name,
+        v.color,
+        v.coverage,
+        {
+          metrics: elasticServerless.metrics,
+          logs: elasticServerless.logs,
+          traces: elasticServerless.traces,
+          security: null,
+        },
+        v.note,
+        elasticMonthly,
+        true
+      );
+    }
+
+    const signals: ServerlessCompetitorSignalCosts = {
+      metrics: v.coverage.metrics ? costMetrics(v.metricsId) : null,
+      logs: v.coverage.logs ? costLogs(v.logsId) : null,
+      traces: v.coverage.traces ? costTraces(v.tracingId) : null,
+      // Security not metered on Observability worksheet inputs
+      security: null,
     };
-  };
 
-  return [
-    make(
-      "datadog",
-      "Datadog",
-      "bg-purple-500",
-      dd,
-      `${volumes.datadogHosts.toLocaleString()} Infra+APM hosts · metrics GB→samples @ ${volumes.metricsBytesPerDatapoint}B · logs indexed · APM hosts`
-    ),
-    make(
-      "grafana-cloud",
-      "Grafana Cloud",
-      "bg-orange-400",
-      gf,
-      `Metrics billable series from ~${Math.round(volumes.metricsSamplesPerSecond).toLocaleString()} samples/sec · logs $/GB · traces $/M spans`
-    ),
-  ].sort((a, b) => a.monthlyTotal - b.monthlyTotal);
+    let assumptions = v.note;
+    if (v.id === "datadog") {
+      assumptions = `${volumes.datadogHosts.toLocaleString()} hosts · ${v.note}`;
+    } else if (v.id === "grafana-cloud") {
+      assumptions = `~${Math.round(volumes.metricsSamplesPerSecond).toLocaleString()} samples/sec · ${v.note}`;
+    }
+
+    return makeVendorRow(
+      v.id,
+      v.name,
+      v.color,
+      v.coverage,
+      signals,
+      assumptions,
+      elasticMonthly,
+      v.isElastic
+    );
+  }).sort((a, b) => {
+    // Elastic first, then by monthly total among priced rows
+    if (a.isElastic && !b.isElastic) return -1;
+    if (!a.isElastic && b.isElastic) return 1;
+    if (a.isElastic && b.isElastic) {
+      if (a.id === "elastic-serverless") return -1;
+      if (b.id === "elastic-serverless") return 1;
+    }
+    return a.monthlyTotal - b.monthlyTotal;
+  });
 }
 
 function buildSecurityCompetitors(
   elasticMonthly: number,
   securityMonthlyGB: number,
-  retentionMonths: number
+  retentionMonths: number,
+  elasticLabel: string
 ): ServerlessCompetitorEstimate[] {
   const ctx = competitorPricingContext(10, retentionMonths);
-  const datadog = requirePlatform(securityPlatforms, "datadog-security");
   const events = (securityMonthlyGB * GIB) / BYTES_PER_SECURITY_EVENT;
-  const ddCost = calculateSecurityCost(datadog, events, false, false, ctx);
-  return [
-    {
-      id: "datadog-security",
-      name: "Datadog Security",
-      color: "bg-purple-500",
-      signals: { metrics: 0, logs: 0, traces: 0, security: ddCost },
-      monthlyTotal: ddCost,
-      annualTotal: ddCost * 12,
-      vsElasticPct:
-        elasticMonthly > 0 ? ((ddCost - elasticMonthly) / elasticMonthly) * 100 : null,
-      assumptions: `~${Math.round(securityMonthlyGB).toLocaleString()} GB/mo ingest @ $0.10/GB list (5 GB free)`,
-    },
+
+  const rows: ServerlessCompetitorEstimate[] = [
+    makeVendorRow(
+      "elastic-security",
+      elasticLabel,
+      "bg-blue-500",
+      { metrics: false, traces: false, logs: false, security: true },
+      { metrics: null, logs: null, traces: null, security: elasticMonthly },
+      "Security Analytics Serverless (this worksheet)",
+      elasticMonthly,
+      true
+    ),
   ];
+
+  const dd = securityPlatforms.find((p) => p.id === "datadog-security");
+  if (dd) {
+    const ddCost = calculateSecurityCost(dd, events, false, false, ctx);
+    rows.push(
+      makeVendorRow(
+        "datadog-security",
+        "Datadog Security",
+        "bg-purple-500",
+        { metrics: false, traces: false, logs: false, security: true },
+        { metrics: null, logs: null, traces: null, security: ddCost },
+        `~${Math.round(securityMonthlyGB).toLocaleString()} GB/mo @ $0.10/GB list`,
+        elasticMonthly
+      )
+    );
+  }
+
+  const splunk = securityPlatforms.find((p) => p.id === "splunk-security");
+  if (splunk) {
+    const cost = calculateSecurityCost(splunk, events, false, false, ctx);
+    rows.push(
+      makeVendorRow(
+        "splunk-security",
+        "Splunk Security",
+        "bg-orange-500",
+        { metrics: false, traces: false, logs: false, security: true },
+        { metrics: null, logs: null, traces: null, security: cost },
+        "SIEM / security analytics list proxy",
+        elasticMonthly
+      )
+    );
+  }
+
+  return rows.sort((a, b) => {
+    if (a.isElastic && !b.isElastic) return -1;
+    if (!a.isElastic && b.isElastic) return 1;
+    return a.monthlyTotal - b.monthlyTotal;
+  });
 }
 
 function calculateObservability(inputs: ServerlessEstimatorInputs): ServerlessEstimatorResult {
@@ -534,6 +811,12 @@ function calculateObservability(inputs: ServerlessEstimatorInputs): ServerlessEs
     securityMonthlyGB: 0,
   };
 
+  const elasticServerlessSignals = {
+    metrics: metricsBd.volumeCost,
+    logs: logsBd.volumeCost,
+    traces: tracesBd.volumeCost,
+  };
+
   return {
     solution: "observability",
     daysPerMonth: ELASTIC_DAYS_PER_MONTH,
@@ -543,7 +826,11 @@ function calculateObservability(inputs: ServerlessEstimatorInputs): ServerlessEs
     annualTotal: monthlyTotal * 12,
     pricingMode: mode,
     competitorVolumes,
-    competitors: buildObservabilityCompetitors(inputs, monthlyTotal, competitorVolumes),
+    competitors: buildObservabilityCompetitors(
+      inputs,
+      elasticServerlessSignals,
+      competitorVolumes
+    ),
     productLabel: "Observability Complete",
   };
 }
@@ -582,7 +869,8 @@ function calculateSecurity(inputs: ServerlessEstimatorInputs): ServerlessEstimat
     competitors: buildSecurityCompetitors(
       monthlyTotal,
       monthlyGB,
-      inputs.securityRetentionMonths
+      inputs.securityRetentionMonths,
+      rates.label
     ),
     productLabel: rates.label,
   };
