@@ -76,6 +76,7 @@ import {
 } from "@/lib/elasticMetricsPoc";
 import TcoDisclaimerBanner from "@/components/TcoDisclaimerBanner";
 import ElasticSchemalessBlocksVisual from "@/components/ElasticSchemalessBlocksVisual";
+import ServerlessEstimator from "@/components/ServerlessEstimator";
 
 type MetricsInputMode = "manual" | "infrastructure" | "samples-poc";
 
@@ -564,8 +565,8 @@ export default function Home() {
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Compare true total cost of ownership — infrastructure <em>and</em> human operational costs —
-            across observability platforms. Or open <strong>Data Blocks</strong> for Elastic schemaless
-            ingest and retention estimates.
+            across observability platforms. Or open <strong>Serverless Estimator</strong> for Elastic
+            Observability Complete (logs, metrics, traces) like the Cloud pricing form.
           </p>
         </div>
 
@@ -593,7 +594,10 @@ export default function Home() {
             <ElasticSchemalessBlocksVisual elasticRetentionMonths={elasticRetentionMonths} />
           )}
 
-          {activeTab !== "fullstack" && activeTab !== "datablocks" && (
+          {/* Serverless Estimator — Elastic-only logs/metrics/traces worksheet */}
+          {activeTab === "serverless" && <ServerlessEstimator />}
+
+          {activeTab !== "fullstack" && activeTab !== "datablocks" && activeTab !== "serverless" && (
           <><div className="grid gap-8 mb-8 grid-cols-1 lg:grid-cols-12">
             {/* Configuration Panel */}
             <div className="lg:col-span-5 xl:col-span-5 min-w-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-fade-in-up lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
@@ -1424,7 +1428,7 @@ export default function Home() {
               </a>
             </div>
           )}
-          </> )} {/* end per-signal tabs (not fullstack / datablocks) */}
+          </> )} {/* end per-signal tabs (not fullstack / datablocks / serverless) */}
         </ObservabilityTabs>
 
         {/* Footer */}
