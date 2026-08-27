@@ -51,7 +51,38 @@ export const ELASTIC_SERVERLESS_DATA_OUT_PRICE_PER_GB =
 export type ElasticServerlessProductTier =
   | "observability-complete"
   | "observability-logs-essentials"
-  | "security-analytics-complete";
+  | "security-analytics-complete"
+  | "security-analytics-essentials";
+
+/** Cloud Serverless solution selector (mirrors cloud.elastic.co/pricing/serverless). */
+export type ElasticServerlessSolution = "observability" | "security" | "search";
+
+/** Elasticsearch Serverless published floors (elastic.co/pricing/serverless-search). */
+export const ELASTICSEARCH_SERVERLESS_PUBLISHED = {
+  ingestVcuPerHour: 0.14,
+  searchVcuPerHour: 0.09,
+  mlVcuPerHour: 0.07,
+  storagePerGBMonth: 0.047,
+  egressFreeGB: 50,
+  egressPerGB: 0.05,
+  hoursPerMonth: 730,
+} as const;
+
+export const ELASTIC_SERVERLESS_SEARCH_PRICING_URL =
+  "https://www.elastic.co/pricing/serverless-search";
+export const ELASTIC_SERVERLESS_SECURITY_PRICING_URL =
+  "https://www.elastic.co/pricing/serverless-security";
+
+export const SECURITY_SERVERLESS_PUBLISHED = {
+  essentials: {
+    ingestPerGB: 0.09,
+    retentionPerGBMonth: 0.017,
+  },
+  complete: {
+    ingestPerGB: 0.11,
+    retentionPerGBMonth: 0.019,
+  },
+} as const;
 
 export interface VolumeTier {
   min: number;
@@ -179,8 +210,40 @@ const SECURITY_ANALYTICS_COMPLETE_INGEST_TIERS: VolumeTier[] = [
   { min: 15_000, max: 30_000, pricePerGB: 0.126 },
   { min: 30_000, max: 60_000, pricePerGB: 0.12 },
   { min: 60_000, max: 150_000, pricePerGB: 0.114 },
-  { min: 150_000, pricePerGB: 0.111 },
+  {
+    min: 150_000,
+    pricePerGB: SECURITY_SERVERLESS_PUBLISHED.complete.ingestPerGB,
+  },
 ];
+
+/** Essentials ingest ≈ Complete × (0.09/0.11). */
+const SECURITY_ANALYTICS_ESSENTIALS_INGEST_TIERS: VolumeTier[] =
+  SECURITY_ANALYTICS_COMPLETE_INGEST_TIERS.map((t) => ({
+    ...t,
+    pricePerGB:
+      t.min >= 150_000
+        ? SECURITY_SERVERLESS_PUBLISHED.essentials.ingestPerGB
+        : Number((t.pricePerGB * (0.09 / 0.11)).toFixed(4)),
+  }));
+
+const SECURITY_ANALYTICS_ESSENTIALS_RETENTION_TIERS: VolumeTier[] =
+  OBSERVABILITY_COMPLETE_RETENTION_TIERS.map((t) => ({
+    ...t,
+    pricePerGB:
+      t.min >= 2_500_000
+        ? SECURITY_SERVERLESS_PUBLISHED.essentials.retentionPerGBMonth
+        : Number((t.pricePerGB * (0.017 / 0.019)).toFixed(4)),
+  }));
+
+const SECURITY_ANALYTICS_COMPLETE_RETENTION_TIERS: VolumeTier[] =
+  OBSERVABILITY_COMPLETE_RETENTION_TIERS.map((t) =>
+    t.min >= 2_500_000
+      ? {
+          ...t,
+          pricePerGB: SECURITY_SERVERLESS_PUBLISHED.complete.retentionPerGBMonth,
+        }
+      : t
+  );
 
 function buildRates(
   productTier: ElasticServerlessProductTier,
@@ -226,10 +289,18 @@ export const ELASTIC_SERVERLESS_RATES: Record<
   "security-analytics-complete": buildRates(
     "security-analytics-complete",
     "Security Analytics Complete",
-    0.11,
-    OBSERVABILITY_SERVERLESS_PUBLISHED.complete.retentionLogsTracesPerGBMonth,
+    SECURITY_SERVERLESS_PUBLISHED.complete.ingestPerGB,
+    SECURITY_SERVERLESS_PUBLISHED.complete.retentionPerGBMonth,
     SECURITY_ANALYTICS_COMPLETE_INGEST_TIERS,
-    OBSERVABILITY_COMPLETE_RETENTION_TIERS
+    SECURITY_ANALYTICS_COMPLETE_RETENTION_TIERS
+  ),
+  "security-analytics-essentials": buildRates(
+    "security-analytics-essentials",
+    "Security Analytics Essentials",
+    SECURITY_SERVERLESS_PUBLISHED.essentials.ingestPerGB,
+    SECURITY_SERVERLESS_PUBLISHED.essentials.retentionPerGBMonth,
+    SECURITY_ANALYTICS_ESSENTIALS_INGEST_TIERS,
+    SECURITY_ANALYTICS_ESSENTIALS_RETENTION_TIERS
   ),
 };
 
@@ -379,6 +450,85 @@ export function calculateElasticServerlessMetricsCost(
     retentionRateLabel:
       effectiveRate(retentionCost, base.storedGB) +
       " retained/mo (TSDS 25% of Complete tiers)",
+  };
+}
+
+export interface ElasticsearchServerlessSearchInputs {
+  /** Average ingest VCUs provisioned. */
+  ingestVcus: number;
+  /** Average search VCUs provisioned. */
+  searchVcus: number;
+  /** Average ML VCUs provisioned. */
+  mlVcus: number;
+  /** Searchable data retained in Search AI Lake (GB). */
+  storedGB: number;
+  /** Hours in the billing month (default 730). */
+  hoursPerMonth?: number;
+}
+
+export interface ElasticsearchServerlessSearchBreakdown {
+  ingestVcuHours: number;
+  searchVcuHours: number;
+  mlVcuHours: number;
+  storedGB: number;
+  ingestCost: number;
+  searchCost: number;
+  mlCost: number;
+  storageCost: number;
+  volumeCost: number;
+  rates: typeof ELASTICSEARCH_SERVERLESS_PUBLISHED;
+}
+
+/** Elasticsearch Serverless (Search) — published floor VCU + storage rates. */
+export function calculateElasticsearchServerlessCost(
+  inputs: ElasticsearchServerlessSearchInputs
+): ElasticsearchServerlessSearchBreakdown {
+  const rates = ELASTICSEARCH_SERVERLESS_PUBLISHED;
+  const hours = Math.max(0, inputs.hoursPerMonth ?? rates.hoursPerMonth);
+  const ingestVcuHours = Math.max(0, inputs.ingestVcus) * hours;
+  const searchVcuHours = Math.max(0, inputs.searchVcus) * hours;
+  const mlVcuHours = Math.max(0, inputs.mlVcus) * hours;
+  const storedGB = Math.max(0, inputs.storedGB);
+  const ingestCost = ingestVcuHours * rates.ingestVcuPerHour;
+  const searchCost = searchVcuHours * rates.searchVcuPerHour;
+  const mlCost = mlVcuHours * rates.mlVcuPerHour;
+  const storageCost = storedGB * rates.storagePerGBMonth;
+  return {
+    ingestVcuHours,
+    searchVcuHours,
+    mlVcuHours,
+    storedGB,
+    ingestCost,
+    searchCost,
+    mlCost,
+    storageCost,
+    volumeCost: ingestCost + searchCost + mlCost + storageCost,
+    rates,
+  };
+}
+
+/** Security Analytics floor cost (Essentials or Complete published rates). */
+export function calculateSecurityServerlessFloorCost(
+  monthlyIngestGB: number,
+  retentionMonths: number,
+  tier: "security-analytics-complete" | "security-analytics-essentials" = "security-analytics-complete"
+): ElasticServerlessCostBreakdown {
+  const pub =
+    tier === "security-analytics-essentials"
+      ? SECURITY_SERVERLESS_PUBLISHED.essentials
+      : SECURITY_SERVERLESS_PUBLISHED.complete;
+  const months = Math.max(0, retentionMonths);
+  const storedGB = monthlyIngestGB * months;
+  const ingestCost = monthlyIngestGB * pub.ingestPerGB;
+  const retentionCost = storedGB * pub.retentionPerGBMonth;
+  return {
+    monthlyIngestGB,
+    storedGB,
+    ingestCost,
+    retentionCost,
+    volumeCost: ingestCost + retentionCost,
+    ingestRateLabel: `$${pub.ingestPerGB.toFixed(3)}/GB ingest (published floor)`,
+    retentionRateLabel: `$${pub.retentionPerGBMonth.toFixed(3)}/GB retained/mo (published floor)`,
   };
 }
 

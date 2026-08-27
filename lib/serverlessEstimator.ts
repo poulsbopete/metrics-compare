@@ -1,28 +1,38 @@
 /**
- * Elastic Observability Serverless Complete estimator.
+ * Elastic Cloud Serverless estimator — Observability, Security, and Search.
  *
- * Mirrors cloud.elastic.co/pricing/serverless?s=observability field shape:
- * logs GB/day, metrics GB/day, traces TPM + sampling, per-signal retention (fractional OK).
- *
- * Pricing: Complete volume tiers (or published floors); metrics TSDS = 25% of Complete.
- * Also estimates Datadog + Grafana Cloud from the same volumes (list-rate, approximate).
+ * Product selector mirrors cloud.elastic.co/pricing/serverless.
+ * Observability: logs GB/day + metrics GB/day + traces TPM (per-signal retention).
+ * Security: security data GB/day + retention (Analytics Complete / Essentials).
+ * Search: ingest/search/ML VCUs + searchable storage GB (published floors).
  */
 
 import {
   calculateElasticServerlessCost,
   calculateElasticServerlessMetricsCost,
+  calculateElasticsearchServerlessCost,
   calculateObservabilityCompleteFloorCost,
+  calculateSecurityServerlessFloorCost,
   ELASTIC_DAYS_PER_MONTH,
   ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL,
   ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL,
+  ELASTIC_SERVERLESS_SEARCH_PRICING_URL,
+  ELASTIC_SERVERLESS_SECURITY_PRICING_URL,
+  ELASTICSEARCH_SERVERLESS_PUBLISHED,
   getElasticServerlessRates,
   type ElasticServerlessCostBreakdown,
+  type ElasticServerlessProductTier,
+  type ElasticServerlessSolution,
+  type ElasticsearchServerlessSearchBreakdown,
 } from "./elasticServerlessPricing";
 import {
+  BYTES_PER_SECURITY_EVENT,
   BYTES_PER_SPAN,
   calculateLogsCost,
+  calculateSecurityCost,
   calculateTracingCost,
   logsPlatforms,
+  securityPlatforms,
   tracingPlatforms,
 } from "./observabilityPricing";
 import {
@@ -36,39 +46,74 @@ import {
   type TcoPricingContext,
 } from "./tcoPricingContext";
 
-export { ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL, ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL };
+export {
+  ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL,
+  ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL,
+  ELASTIC_SERVERLESS_SEARCH_PRICING_URL,
+  ELASTIC_SERVERLESS_SECURITY_PRICING_URL,
+  ELASTICSEARCH_SERVERLESS_PUBLISHED,
+};
+export type { ElasticServerlessSolution };
 
 export type ServerlessEstimatorPricingMode = "tiered" | "floors";
 
+export type SecurityFeatureTier =
+  | "security-analytics-complete"
+  | "security-analytics-essentials";
+
 export interface ServerlessEstimatorInputs {
-  /** Raw log ingest GB/day (before 1.66× metering). */
+  solution: ElasticServerlessSolution;
+
+  // —— Observability ——
   logsGbPerDay: number;
   logsRetentionMonths: number;
-  /** Metrics ingest GB/day (TSDS). */
   metricsGbPerDay: number;
   metricsRetentionMonths: number;
-  /** Traces per minute before sampling. */
   tracesPerMinute: number;
-  /** 0–100. */
   traceSamplingPercent: number;
   tracesRetentionMonths: number;
-  /** Average bytes per span for TPM → GB. Default 500. */
   bytesPerSpan: number;
   pricingMode: ServerlessEstimatorPricingMode;
-  /**
-   * Datadog Infra + APM host count. When omitted, estimated as max(10, round(logsGbPerDay))
-   * (≈1 GB/day/host app-log heuristic — not the thin Linux baseline).
-   */
   datadogHosts?: number;
-  /**
-   * Bytes/datapoint used to turn metrics GB/day into samples/sec for Datadog/Grafana.
-   * Default Prometheus 296B — Elastic TSDS GB is often smaller than raw Prom wire size.
-   */
   metricsBytesPerDatapoint?: number;
+
+  // —— Security ——
+  securityGbPerDay: number;
+  securityRetentionMonths: number;
+  securityTier: SecurityFeatureTier;
+
+  // —— Search ——
+  searchIngestVcus: number;
+  searchSearchVcus: number;
+  searchMlVcus: number;
+  searchStoredGB: number;
 }
 
-/** Customer example that fails on the official Cloud estimator (fractional log retention). */
+export const SERVERLESS_SOLUTION_OPTIONS: {
+  id: ElasticServerlessSolution;
+  label: string;
+  description: string;
+}[] = [
+  {
+    id: "observability",
+    label: "Observability",
+    description: "Logs, metrics, and traces — Observability Complete",
+  },
+  {
+    id: "security",
+    label: "Security",
+    description: "SIEM / security analytics — ingest + retention GB",
+  },
+  {
+    id: "search",
+    label: "Search",
+    description: "Elasticsearch Serverless — VCUs + Search AI Lake storage",
+  },
+];
+
+/** Customer example that fails on the official Cloud Observability estimator. */
 export const SERVERLESS_ESTIMATOR_EXAMPLE: ServerlessEstimatorInputs = {
+  solution: "observability",
   logsGbPerDay: 585,
   logsRetentionMonths: 1.2,
   metricsGbPerDay: 12,
@@ -80,9 +125,17 @@ export const SERVERLESS_ESTIMATOR_EXAMPLE: ServerlessEstimatorInputs = {
   pricingMode: "tiered",
   datadogHosts: 585,
   metricsBytesPerDatapoint: BYTES_PER_DATAPOINT.Prometheus,
+  securityGbPerDay: 100,
+  securityRetentionMonths: 3,
+  securityTier: "security-analytics-complete",
+  searchIngestVcus: 2,
+  searchSearchVcus: 4,
+  searchMlVcus: 0,
+  searchStoredGB: 20,
 };
 
 export const DEFAULT_SERVERLESS_ESTIMATOR_INPUTS: ServerlessEstimatorInputs = {
+  solution: "observability",
   logsGbPerDay: 10,
   logsRetentionMonths: 1,
   metricsGbPerDay: 1,
@@ -94,10 +147,18 @@ export const DEFAULT_SERVERLESS_ESTIMATOR_INPUTS: ServerlessEstimatorInputs = {
   pricingMode: "tiered",
   datadogHosts: 10,
   metricsBytesPerDatapoint: BYTES_PER_DATAPOINT.Prometheus,
+  securityGbPerDay: 50,
+  securityRetentionMonths: 1,
+  securityTier: "security-analytics-complete",
+  // Elastic FAQ example 2-ish: 20GB searchable, modest VCUs
+  searchIngestVcus: 1,
+  searchSearchVcus: 2,
+  searchMlVcus: 0,
+  searchStoredGB: 20,
 };
 
 export interface ServerlessEstimatorSignalLine {
-  signal: "logs" | "metrics" | "traces";
+  signal: string;
   label: string;
   rawGbPerDay: number;
   billableMonthlyIngestGB: number;
@@ -115,6 +176,7 @@ export interface ServerlessCompetitorSignalCosts {
   metrics: number;
   logs: number;
   traces: number;
+  security?: number;
 }
 
 export interface ServerlessCompetitorEstimate {
@@ -129,13 +191,13 @@ export interface ServerlessCompetitorEstimate {
 }
 
 export interface ServerlessEstimatorResult {
+  solution: ElasticServerlessSolution;
   daysPerMonth: number;
   logsMeteringMultiplier: number;
   lines: ServerlessEstimatorSignalLine[];
   monthlyTotal: number;
   annualTotal: number;
   pricingMode: ServerlessEstimatorPricingMode;
-  /** Volumes used for competitor meters. */
   competitorVolumes: {
     logsMonthlyGB: number;
     metricsSamplesPerSecond: number;
@@ -143,8 +205,11 @@ export interface ServerlessEstimatorResult {
     metricsBytesPerDatapoint: number;
     monthlySpans: number;
     datadogHosts: number;
+    securityMonthlyGB: number;
   };
   competitors: ServerlessCompetitorEstimate[];
+  searchBreakdown?: ElasticsearchServerlessSearchBreakdown;
+  productLabel: string;
 }
 
 const GIB = 1024 * 1024 * 1024;
@@ -153,13 +218,11 @@ export function gbPerDayToMonthly(gbPerDay: number): number {
   return Math.max(0, gbPerDay) * ELASTIC_DAYS_PER_MONTH;
 }
 
-/** App-log heuristic: ~1 GB/day/host (not thin Linux agent-only baseline). */
 export function estimateDatadogHostsFromLogs(logsGbPerDay: number): number {
   if (logsGbPerDay <= 0) return 10;
   return Math.max(10, Math.round(logsGbPerDay));
 }
 
-/** Sampled TPM → monthly ingest GB (binary GiB, same as rest of TCO tool). */
 export function tracesTpmToMonthlyGB(
   tracesPerMinute: number,
   samplingPercent: number,
@@ -219,8 +282,24 @@ function costForMetrics(
   });
 }
 
+function costForSecurity(
+  monthlyIngestGB: number,
+  retentionMonths: number,
+  pricingMode: ServerlessEstimatorPricingMode,
+  tier: SecurityFeatureTier
+): ElasticServerlessCostBreakdown {
+  if (pricingMode === "floors") {
+    return calculateSecurityServerlessFloorCost(monthlyIngestGB, retentionMonths, tier);
+  }
+  return calculateElasticServerlessCost(monthlyIngestGB, {
+    retentionMonths,
+    productTier: tier,
+    useVolumeTiers: true,
+  });
+}
+
 function toLine(
-  signal: ServerlessEstimatorSignalLine["signal"],
+  signal: string,
   label: string,
   rawGbPerDay: number,
   breakdown: ElasticServerlessCostBreakdown,
@@ -249,10 +328,7 @@ function requirePlatform<T extends { id: string }>(list: T[], id: string): T {
   return p;
 }
 
-function competitorPricingContext(
-  hosts: number,
-  retentionMonths: number
-): TcoPricingContext {
+function competitorPricingContext(hosts: number, retentionMonths: number): TcoPricingContext {
   return {
     ...DEFAULT_TCO_PRICING_CONTEXT,
     elastic: {
@@ -267,7 +343,19 @@ function competitorPricingContext(
   };
 }
 
-function buildCompetitors(
+function emptyVolumes(): ServerlessEstimatorResult["competitorVolumes"] {
+  return {
+    logsMonthlyGB: 0,
+    metricsSamplesPerSecond: 0,
+    metricsMonthlyDatapoints: 0,
+    metricsBytesPerDatapoint: BYTES_PER_DATAPOINT.Prometheus,
+    monthlySpans: 0,
+    datadogHosts: 10,
+    securityMonthlyGB: 0,
+  };
+}
+
+function buildObservabilityCompetitors(
   inputs: ServerlessEstimatorInputs,
   elasticMonthly: number,
   volumes: ServerlessEstimatorResult["competitorVolumes"]
@@ -288,53 +376,32 @@ function buildCompetitors(
   const datadogTracing = requirePlatform(tracingPlatforms, "datadog-tracing");
   const grafanaTracing = requirePlatform(tracingPlatforms, "grafana-tracing");
 
-  const ddMetricsCost = calculatePlatformCost(
-    datadogMetrics,
-    volumes.metricsMonthlyDatapoints,
-    "Prometheus",
-    false,
-    false,
-    ctx,
-    volumes.metricsBytesPerDatapoint
-  );
-  const ddLogsCost = calculateLogsCost(
-    datadogLogs,
-    volumes.logsMonthlyGB,
-    false,
-    false,
-    ctx
-  );
-  const ddTracesCost = calculateTracingCost(
-    datadogTracing,
-    volumes.monthlySpans,
-    false,
-    false,
-    ctx
-  );
-
-  const gfMetricsCost = calculatePlatformCost(
-    grafanaMetrics,
-    volumes.metricsMonthlyDatapoints,
-    "Prometheus",
-    false,
-    false,
-    ctx,
-    volumes.metricsBytesPerDatapoint
-  );
-  const gfLogsCost = calculateLogsCost(
-    grafanaLogs,
-    volumes.logsMonthlyGB,
-    false,
-    false,
-    ctx
-  );
-  const gfTracesCost = calculateTracingCost(
-    grafanaTracing,
-    volumes.monthlySpans,
-    false,
-    false,
-    ctx
-  );
+  const dd = {
+    metrics: calculatePlatformCost(
+      datadogMetrics,
+      volumes.metricsMonthlyDatapoints,
+      "Prometheus",
+      false,
+      false,
+      ctx,
+      volumes.metricsBytesPerDatapoint
+    ),
+    logs: calculateLogsCost(datadogLogs, volumes.logsMonthlyGB, false, false, ctx),
+    traces: calculateTracingCost(datadogTracing, volumes.monthlySpans, false, false, ctx),
+  };
+  const gf = {
+    metrics: calculatePlatformCost(
+      grafanaMetrics,
+      volumes.metricsMonthlyDatapoints,
+      "Prometheus",
+      false,
+      false,
+      ctx,
+      volumes.metricsBytesPerDatapoint
+    ),
+    logs: calculateLogsCost(grafanaLogs, volumes.logsMonthlyGB, false, false, ctx),
+    traces: calculateTracingCost(grafanaTracing, volumes.monthlySpans, false, false, ctx),
+  };
 
   const make = (
     id: string,
@@ -343,9 +410,7 @@ function buildCompetitors(
     signals: ServerlessCompetitorSignalCosts,
     assumptions: string
   ): ServerlessCompetitorEstimate => {
-    const monthlyTotal = signals.metrics + signals.logs + signals.traces;
-    const vsElasticPct =
-      elasticMonthly > 0 ? ((monthlyTotal - elasticMonthly) / elasticMonthly) * 100 : null;
+    const monthlyTotal = signals.metrics + signals.logs + signals.traces + (signals.security ?? 0);
     return {
       id,
       name,
@@ -353,7 +418,8 @@ function buildCompetitors(
       signals,
       monthlyTotal,
       annualTotal: monthlyTotal * 12,
-      vsElasticPct,
+      vsElasticPct:
+        elasticMonthly > 0 ? ((monthlyTotal - elasticMonthly) / elasticMonthly) * 100 : null,
       assumptions,
     };
   };
@@ -363,22 +429,44 @@ function buildCompetitors(
       "datadog",
       "Datadog",
       "bg-purple-500",
-      { metrics: ddMetricsCost, logs: ddLogsCost, traces: ddTracesCost },
-      `${volumes.datadogHosts.toLocaleString()} Infra+APM hosts · metrics from GB→samples @ ${volumes.metricsBytesPerDatapoint}B · logs indexed (15d list) · APM host SKU`
+      dd,
+      `${volumes.datadogHosts.toLocaleString()} Infra+APM hosts · metrics GB→samples @ ${volumes.metricsBytesPerDatapoint}B · logs indexed · APM hosts`
     ),
     make(
       "grafana-cloud",
       "Grafana Cloud",
       "bg-orange-400",
-      { metrics: gfMetricsCost, logs: gfLogsCost, traces: gfTracesCost },
-      `Metrics billable series from ~${Math.round(volumes.metricsSamplesPerSecond).toLocaleString()} samples/sec · logs $/GB · traces $/M spans (list)`
+      gf,
+      `Metrics billable series from ~${Math.round(volumes.metricsSamplesPerSecond).toLocaleString()} samples/sec · logs $/GB · traces $/M spans`
     ),
   ].sort((a, b) => a.monthlyTotal - b.monthlyTotal);
 }
 
-export function calculateServerlessEstimator(
-  inputs: ServerlessEstimatorInputs
-): ServerlessEstimatorResult {
+function buildSecurityCompetitors(
+  elasticMonthly: number,
+  securityMonthlyGB: number,
+  retentionMonths: number
+): ServerlessCompetitorEstimate[] {
+  const ctx = competitorPricingContext(10, retentionMonths);
+  const datadog = requirePlatform(securityPlatforms, "datadog-security");
+  const events = (securityMonthlyGB * GIB) / BYTES_PER_SECURITY_EVENT;
+  const ddCost = calculateSecurityCost(datadog, events, false, false, ctx);
+  return [
+    {
+      id: "datadog-security",
+      name: "Datadog Security",
+      color: "bg-purple-500",
+      signals: { metrics: 0, logs: 0, traces: 0, security: ddCost },
+      monthlyTotal: ddCost,
+      annualTotal: ddCost * 12,
+      vsElasticPct:
+        elasticMonthly > 0 ? ((ddCost - elasticMonthly) / elasticMonthly) * 100 : null,
+      assumptions: `~${Math.round(securityMonthlyGB).toLocaleString()} GB/mo ingest @ $0.10/GB list (5 GB free)`,
+    },
+  ];
+}
+
+function calculateObservability(inputs: ServerlessEstimatorInputs): ServerlessEstimatorResult {
   const rates = getElasticServerlessRates("observability-complete");
   const logsMultiplier = rates.logsMeteringMultiplier ?? 1.66;
   const mode = inputs.pricingMode;
@@ -392,10 +480,8 @@ export function calculateServerlessEstimator(
   const logsRawMonthly = gbPerDayToMonthly(inputs.logsGbPerDay);
   const logsBillableMonthly = logsRawMonthly * logsMultiplier;
   const logsBd = costForLogsTraces(logsBillableMonthly, inputs.logsRetentionMonths, mode);
-
   const metricsMonthly = gbPerDayToMonthly(inputs.metricsGbPerDay);
   const metricsBd = costForMetrics(metricsMonthly, inputs.metricsRetentionMonths, mode);
-
   const tracesMonthly = tracesTpmToMonthlyGB(
     inputs.tracesPerMinute,
     inputs.traceSamplingPercent,
@@ -408,7 +494,7 @@ export function calculateServerlessEstimator(
   );
   const tracesBd = costForLogsTraces(tracesMonthly, inputs.tracesRetentionMonths, mode);
 
-  const lines: ServerlessEstimatorSignalLine[] = [
+  const lines = [
     toLine(
       "logs",
       "Logs",
@@ -438,32 +524,18 @@ export function calculateServerlessEstimator(
   ];
 
   const monthlyTotal = lines.reduce((s, l) => s + l.volumeCost, 0);
-
-  const metricsSamplesPerSecond = gbPerDayToMetricsPerSecond(
-    inputs.metricsGbPerDay,
-    metricsBytes
-  );
-  const metricsMonthlyDatapoints = gbPerDayToMonthlyMetrics(
-    inputs.metricsGbPerDay,
-    metricsBytes
-  );
-  const monthlySpans = tracesTpmToMonthlySpans(
-    inputs.tracesPerMinute,
-    inputs.traceSamplingPercent
-  );
-
   const competitorVolumes = {
     logsMonthlyGB: logsRawMonthly,
-    metricsSamplesPerSecond,
-    metricsMonthlyDatapoints,
+    metricsSamplesPerSecond: gbPerDayToMetricsPerSecond(inputs.metricsGbPerDay, metricsBytes),
+    metricsMonthlyDatapoints: gbPerDayToMonthlyMetrics(inputs.metricsGbPerDay, metricsBytes),
     metricsBytesPerDatapoint: metricsBytes,
-    monthlySpans,
+    monthlySpans: tracesTpmToMonthlySpans(inputs.tracesPerMinute, inputs.traceSamplingPercent),
     datadogHosts,
+    securityMonthlyGB: 0,
   };
 
-  const competitors = buildCompetitors(inputs, monthlyTotal, competitorVolumes);
-
   return {
+    solution: "observability",
     daysPerMonth: ELASTIC_DAYS_PER_MONTH,
     logsMeteringMultiplier: logsMultiplier,
     lines,
@@ -471,6 +543,143 @@ export function calculateServerlessEstimator(
     annualTotal: monthlyTotal * 12,
     pricingMode: mode,
     competitorVolumes,
-    competitors,
+    competitors: buildObservabilityCompetitors(inputs, monthlyTotal, competitorVolumes),
+    productLabel: "Observability Complete",
   };
+}
+
+function calculateSecurity(inputs: ServerlessEstimatorInputs): ServerlessEstimatorResult {
+  const mode = inputs.pricingMode;
+  const tier = inputs.securityTier;
+  const monthlyGB = gbPerDayToMonthly(inputs.securityGbPerDay);
+  const bd = costForSecurity(monthlyGB, inputs.securityRetentionMonths, mode, tier);
+  const rates = getElasticServerlessRates(tier as ElasticServerlessProductTier);
+  const lines = [
+    toLine(
+      "security",
+      rates.label,
+      inputs.securityGbPerDay,
+      bd,
+      inputs.securityRetentionMonths,
+      `${mode === "floors" ? "Published floor" : "Volume tier table"} · Security Analytics`
+    ),
+  ];
+  const monthlyTotal = bd.volumeCost;
+  const competitorVolumes = {
+    ...emptyVolumes(),
+    securityMonthlyGB: monthlyGB,
+  };
+
+  return {
+    solution: "security",
+    daysPerMonth: ELASTIC_DAYS_PER_MONTH,
+    logsMeteringMultiplier: 1,
+    lines,
+    monthlyTotal,
+    annualTotal: monthlyTotal * 12,
+    pricingMode: mode,
+    competitorVolumes,
+    competitors: buildSecurityCompetitors(
+      monthlyTotal,
+      monthlyGB,
+      inputs.securityRetentionMonths
+    ),
+    productLabel: rates.label,
+  };
+}
+
+function calculateSearch(inputs: ServerlessEstimatorInputs): ServerlessEstimatorResult {
+  const searchBreakdown = calculateElasticsearchServerlessCost({
+    ingestVcus: inputs.searchIngestVcus,
+    searchVcus: inputs.searchSearchVcus,
+    mlVcus: inputs.searchMlVcus,
+    storedGB: inputs.searchStoredGB,
+  });
+  const rates = searchBreakdown.rates;
+  const lines: ServerlessEstimatorSignalLine[] = [
+    {
+      signal: "ingest-vcu",
+      label: "Ingest VCUs",
+      rawGbPerDay: 0,
+      billableMonthlyIngestGB: 0,
+      retentionMonths: 0,
+      storedGB: 0,
+      ingestCost: searchBreakdown.ingestCost,
+      retentionCost: 0,
+      volumeCost: searchBreakdown.ingestCost,
+      ingestRateLabel: `$${rates.ingestVcuPerHour.toFixed(2)}/VCU-hour`,
+      retentionRateLabel: "",
+      notes: `${inputs.searchIngestVcus} VCU × ${rates.hoursPerMonth} h = ${searchBreakdown.ingestVcuHours.toLocaleString()} VCU-hours`,
+    },
+    {
+      signal: "search-vcu",
+      label: "Search VCUs",
+      rawGbPerDay: 0,
+      billableMonthlyIngestGB: 0,
+      retentionMonths: 0,
+      storedGB: 0,
+      ingestCost: searchBreakdown.searchCost,
+      retentionCost: 0,
+      volumeCost: searchBreakdown.searchCost,
+      ingestRateLabel: `$${rates.searchVcuPerHour.toFixed(2)}/VCU-hour`,
+      retentionRateLabel: "",
+      notes: `${inputs.searchSearchVcus} VCU × ${rates.hoursPerMonth} h = ${searchBreakdown.searchVcuHours.toLocaleString()} VCU-hours`,
+    },
+    {
+      signal: "ml-vcu",
+      label: "ML VCUs",
+      rawGbPerDay: 0,
+      billableMonthlyIngestGB: 0,
+      retentionMonths: 0,
+      storedGB: 0,
+      ingestCost: searchBreakdown.mlCost,
+      retentionCost: 0,
+      volumeCost: searchBreakdown.mlCost,
+      ingestRateLabel: `$${rates.mlVcuPerHour.toFixed(2)}/VCU-hour`,
+      retentionRateLabel: "",
+      notes: `${inputs.searchMlVcus} VCU × ${rates.hoursPerMonth} h = ${searchBreakdown.mlVcuHours.toLocaleString()} VCU-hours`,
+    },
+    {
+      signal: "storage",
+      label: "Storage & retention",
+      rawGbPerDay: 0,
+      billableMonthlyIngestGB: 0,
+      retentionMonths: 1,
+      storedGB: searchBreakdown.storedGB,
+      ingestCost: 0,
+      retentionCost: searchBreakdown.storageCost,
+      volumeCost: searchBreakdown.storageCost,
+      ingestRateLabel: "",
+      retentionRateLabel: `$${rates.storagePerGBMonth.toFixed(3)}/GB-mo`,
+      notes: `${searchBreakdown.storedGB.toLocaleString()} GB in Search AI Lake (published floor)`,
+    },
+  ];
+
+  return {
+    solution: "search",
+    daysPerMonth: ELASTIC_DAYS_PER_MONTH,
+    logsMeteringMultiplier: 1,
+    lines,
+    monthlyTotal: searchBreakdown.volumeCost,
+    annualTotal: searchBreakdown.volumeCost * 12,
+    pricingMode: "floors",
+    competitorVolumes: emptyVolumes(),
+    competitors: [],
+    searchBreakdown,
+    productLabel: "Elasticsearch Serverless",
+  };
+}
+
+export function calculateServerlessEstimator(
+  inputs: ServerlessEstimatorInputs
+): ServerlessEstimatorResult {
+  switch (inputs.solution) {
+    case "security":
+      return calculateSecurity(inputs);
+    case "search":
+      return calculateSearch(inputs);
+    case "observability":
+    default:
+      return calculateObservability(inputs);
+  }
 }
