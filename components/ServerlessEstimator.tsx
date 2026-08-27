@@ -16,6 +16,14 @@ import {
   type SecurityFeatureTier,
 } from "@/lib/serverlessEstimator";
 
+/** Primary stack comparison shown in the left summary pane (Observability). */
+const OBSERVABILITY_SUMMARY_VENDOR_IDS = [
+  "elastic-serverless",
+  "elastic-ech",
+  "grafana-cloud",
+  "datadog",
+] as const;
+
 function formatUsd(n: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -87,10 +95,14 @@ export default function ServerlessEstimator() {
 
   const setSolution = (solution: ElasticServerlessSolution) => patch({ solution });
 
-  const echRow = result.competitors.find((c) => c.id === "elastic-ech");
-  const highlightCompetitors = result.competitors
-    .filter((c) => !c.isElastic)
-    .slice(0, 4);
+  const observabilitySummaryVendors = useMemo(() => {
+    if (inputs.solution !== "observability") return [];
+    return OBSERVABILITY_SUMMARY_VENDOR_IDS.map((id) =>
+      result.competitors.find((c) => c.id === id)
+    )
+      .filter((c): c is NonNullable<typeof c> => c != null)
+      .sort((a, b) => a.monthlyTotal - b.monthlyTotal);
+  }, [inputs.solution, result.competitors]);
 
   const pricingDocsHref =
     inputs.solution === "search"
@@ -470,31 +482,27 @@ export default function ServerlessEstimator() {
           <div className="text-sm text-sky-800/80 dark:text-sky-200/80 mt-1">
             {formatUsd(result.annualTotal)} / year
           </div>
-          {echRow && (
-            <div className="mt-4 rounded-lg bg-white/60 dark:bg-gray-900/40 border border-sky-200/80 dark:border-sky-800 px-3 py-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
-                ECH (same volumes)
-              </div>
-              <div className="text-lg font-bold tabular-nums text-sky-950 dark:text-sky-50">
-                {formatUsd(echRow.monthlyTotal)}
-                <span className="text-xs font-normal text-sky-700/80 dark:text-sky-300/80 ml-1">
-                  /mo
-                </span>
-              </div>
-              <p className="text-[11px] text-sky-800/70 dark:text-sky-200/70 mt-0.5 leading-snug">
-                {echRow.assumptions}
-              </p>
-            </div>
-          )}
-          {highlightCompetitors.length > 0 && (
+          {observabilitySummaryVendors.length > 0 && (
             <div className="mt-4 space-y-2">
-              {highlightCompetitors.map((c) => (
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                Stack comparison
+              </div>
+              {observabilitySummaryVendors.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-baseline justify-between gap-2 text-sm border-t border-sky-200/60 dark:border-sky-800/40 pt-2"
+                  className={`flex items-baseline justify-between gap-2 text-sm border-t border-sky-200/60 dark:border-sky-800/40 pt-2 ${
+                    c.id === "elastic-serverless"
+                      ? "rounded-lg bg-white/50 dark:bg-gray-900/30 -mx-1 px-1 py-1 border-t-0"
+                      : ""
+                  }`}
                 >
                   <span className="text-sky-900/80 dark:text-sky-100/80">
                     {c.name}
+                    {c.id === "elastic-serverless" && (
+                      <span className="ml-1 text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                        (this worksheet)
+                      </span>
+                    )}
                     <span className="block text-[10px] text-sky-700/60 dark:text-sky-300/60">
                       {c.coverageLabel}
                     </span>
@@ -507,8 +515,9 @@ export default function ServerlessEstimator() {
             </div>
           )}
           <p className="text-[11px] text-sky-900/70 dark:text-sky-100/70 mt-4 leading-relaxed">
-            Totals sum only the signals each vendor covers. Metrics-only stacks (e.g. VictoriaMetrics)
-            look cheap until you add logs/traces/security. Full table →
+            {observabilitySummaryVendors.length > 0
+              ? "Same volumes · illustrative list rates. Full vendor coverage table →"
+              : "Elasticsearch Serverless line items below."}
           </p>
         </div>
 
