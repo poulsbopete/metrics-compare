@@ -22,14 +22,11 @@ export default function TcoDisclaimerBanner() {
           <div className="text-sm text-amber-950 dark:text-amber-100 leading-relaxed space-y-4 min-w-0">
             <div>
               <p className="font-semibold text-amber-900 dark:text-amber-50 mb-1">
-                Estimation purposes only — Observability Serverless
+                Estimation purposes only
               </p>
               <p className="text-amber-900/90 dark:text-amber-100/90">
-                <strong>Do not use this site for Serverless Security quotes.</strong> Security and
-                Search estimators were removed because they could diverge from the official Cloud
-                estimator and internal spreadsheet. This tool is not validated by Elastic Product,
-                Marketing, or Competitive Intelligence for accuracy. List rates reconciled as of{" "}
-                <strong>{TCO_LIST_RATES_AS_OF}</strong> against the{" "}
+                This tool is not validated by Elastic Product, Marketing, or Competitive Intelligence
+                for accuracy. List rates reconciled as of <strong>{TCO_LIST_RATES_AS_OF}</strong> against the{" "}
                 <a
                   href={ELASTIC_CLOUD_SERVERLESS_PRICING_URL}
                   className="underline font-medium"

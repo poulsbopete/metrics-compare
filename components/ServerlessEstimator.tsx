@@ -90,21 +90,6 @@ export default function ServerlessEstimator() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 px-4 py-3 text-sm text-rose-950 dark:text-rose-100 leading-relaxed">
-        <strong>Observability Serverless only.</strong> Security and Search estimators, and competitor
-        side-by-side pricing, have been removed from this public tool. For Security quotes use the
-        official{" "}
-        <a
-          href="https://cloud.elastic.co/pricing/serverless?s=security"
-          className="underline font-medium"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Elastic Cloud Serverless Security estimator
-        </a>{" "}
-        or your internal spreadsheet / PM tool — not this site.
-      </div>
-
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
