@@ -454,6 +454,17 @@ const OBSERVABILITY_ESTIMATOR_VENDORS: EstimatorVendorDef[] = [
     note: "~$200/mo cluster min on metrics · $0.05/GB ingest + 1d hot + ILM blob retention",
   },
   {
+    id: "elastic-self-hosted",
+    name: "Elastic (self-hosted)",
+    color: "bg-blue-400",
+    isElastic: true,
+    coverage: { metrics: true, traces: true, logs: true, security: true },
+    metricsId: "elastic-self-hosted",
+    tracingId: "elastic-apm-self-hosted",
+    logsId: "elasticsearch-logs",
+    note: "Sum of signal infra proxies (metrics/APM/logs) — shared-cluster reality may be lower · no Elastic license on this sheet",
+  },
+  {
     id: "datadog",
     name: "Datadog",
     color: "bg-purple-500",
@@ -675,8 +686,10 @@ function buildObservabilityCompetitors(
     if (a.isElastic && !b.isElastic) return -1;
     if (!a.isElastic && b.isElastic) return 1;
     if (a.isElastic && b.isElastic) {
-      if (a.id === "elastic-serverless") return -1;
-      if (b.id === "elastic-serverless") return 1;
+      const elasticOrder = ["elastic-serverless", "elastic-ech", "elastic-self-hosted"];
+      const ai = elasticOrder.indexOf(a.id);
+      const bi = elasticOrder.indexOf(b.id);
+      if (ai !== -1 || bi !== -1) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     }
     return a.monthlyTotal - b.monthlyTotal;
   });

@@ -102,7 +102,13 @@ export default function ObservabilityCompetitorComparison({
   };
 
   const summaryVendors = useMemo(() => {
-    const ids = ["elastic-serverless", "elastic-ech", "grafana-cloud", "datadog"] as const;
+    const ids = [
+      "elastic-serverless",
+      "elastic-ech",
+      "elastic-self-hosted",
+      "grafana-cloud",
+      "datadog",
+    ] as const;
     return ids
       .map((id) => result.competitors.find((c) => c.id === id))
       .filter((c): c is NonNullable<typeof c> => c != null)
