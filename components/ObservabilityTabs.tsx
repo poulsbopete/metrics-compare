@@ -2,14 +2,7 @@
 
 import { ReactNode } from "react";
 
-export type ObservabilityTab =
-  | "metrics"
-  | "tracing"
-  | "logs"
-  | "security"
-  | "fullstack"
-  | "datablocks"
-  | "serverless";
+export type ObservabilityTab = "serverless" | "comparison";
 
 interface ObservabilityTabsProps {
   activeTab: ObservabilityTab;
@@ -21,28 +14,31 @@ type TabDef = {
   id: ObservabilityTab;
   label: string;
   icon: string;
-  highlight?: "amber" | "emerald" | "sky";
+  highlight?: "amber" | "sky";
 };
 
-function tabActiveClass(highlight?: "amber" | "emerald" | "sky"): string {
-  if (highlight === "emerald") {
-    return "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md transform scale-105";
-  }
+function tabActiveClass(highlight?: "amber" | "sky"): string {
   if (highlight === "amber") {
     return "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md transform scale-105";
   }
-  if (highlight === "sky") {
-    return "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md transform scale-105";
+  return "bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md transform scale-105";
+}
+
+function tabIdleClass(highlight?: "amber" | "sky"): string {
+  if (highlight === "amber") {
+    return "text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 border border-amber-300 dark:border-amber-700";
   }
-  return "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md transform scale-105";
+  return "text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-sky-900/20 border border-sky-300 dark:border-sky-700";
 }
 
 export default function ObservabilityTabs({
+  activeTab,
+  onTabChange,
   children,
 }: ObservabilityTabsProps) {
-  // Public site: Observability Serverless only (Security / competitor TCO removed per Product).
   const tabs: TabDef[] = [
-    { id: "serverless", label: "Observability Serverless", icon: "☁️", highlight: "sky" },
+    { id: "serverless", label: "Serverless Estimator", icon: "☁️", highlight: "sky" },
+    { id: "comparison", label: "Competitor Comparison", icon: "⚡", highlight: "amber" },
   ];
 
   return (
@@ -53,7 +49,10 @@ export default function ObservabilityTabs({
             <button
               key={tab.id}
               type="button"
-              className={`px-5 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${tabActiveClass(tab.highlight)}`}
+              onClick={() => onTabChange(tab.id)}
+              className={`px-5 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                activeTab === tab.id ? tabActiveClass(tab.highlight) : tabIdleClass(tab.highlight)
+              }`}
             >
               <span className="mr-2">{tab.icon}</span>
               {tab.label}

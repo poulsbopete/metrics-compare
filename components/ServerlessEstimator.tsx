@@ -75,10 +75,20 @@ function observabilityOnly(inputs: ServerlessEstimatorInputs): ServerlessEstimat
   return { ...inputs, solution: "observability" };
 }
 
-export default function ServerlessEstimator() {
-  const [inputs, setInputs] = useState<ServerlessEstimatorInputs>(() =>
+export type ServerlessEstimatorProps = {
+  inputs?: ServerlessEstimatorInputs;
+  onInputsChange?: (inputs: ServerlessEstimatorInputs) => void;
+};
+
+export default function ServerlessEstimator({
+  inputs: controlledInputs,
+  onInputsChange,
+}: ServerlessEstimatorProps = {}) {
+  const [internalInputs, setInternalInputs] = useState<ServerlessEstimatorInputs>(() =>
     observabilityOnly(SERVERLESS_ESTIMATOR_EXAMPLE)
   );
+  const inputs = controlledInputs ?? internalInputs;
+  const setInputs = onInputsChange ?? setInternalInputs;
 
   const result = useMemo(
     () => calculateServerlessEstimator(observabilityOnly(inputs)),
@@ -86,7 +96,7 @@ export default function ServerlessEstimator() {
   );
 
   const patch = (partial: Partial<ServerlessEstimatorInputs>) =>
-    setInputs((prev) => observabilityOnly({ ...prev, ...partial }));
+    setInputs(observabilityOnly({ ...inputs, ...partial }));
 
   return (
     <div className="space-y-6 animate-fade-in-up">

@@ -1,7 +1,14 @@
 "use client";
 
+import { useState } from "react";
+import ObservabilityCompetitorComparison from "@/components/ObservabilityCompetitorComparison";
+import ObservabilityTabs, { type ObservabilityTab } from "@/components/ObservabilityTabs";
 import ServerlessEstimator from "@/components/ServerlessEstimator";
 import TcoDisclaimerBanner from "@/components/TcoDisclaimerBanner";
+import {
+  SERVERLESS_ESTIMATOR_EXAMPLE,
+  type ServerlessEstimatorInputs,
+} from "@/lib/serverlessEstimator";
 import {
   ELASTIC_CLOUD_HOSTED_PRICING_URL,
   ELASTIC_CLOUD_SERVERLESS_PRICING_URL,
@@ -10,13 +17,28 @@ import {
   TCO_VALIDATION_FOOTNOTE,
 } from "@/lib/tcoDisclaimer";
 
+function observabilityOnly(inputs: ServerlessEstimatorInputs): ServerlessEstimatorInputs {
+  return { ...inputs, solution: "observability" };
+}
+
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<ObservabilityTab>("serverless");
+  const [inputs, setInputs] = useState<ServerlessEstimatorInputs>(() =>
+    observabilityOnly(SERVERLESS_ESTIMATOR_EXAMPLE)
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-10 max-w-7xl">
         <TcoDisclaimerBanner />
 
-        <ServerlessEstimator />
+        <ObservabilityTabs activeTab={activeTab} onTabChange={setActiveTab}>
+          {activeTab === "serverless" ? (
+            <ServerlessEstimator inputs={inputs} onInputsChange={setInputs} />
+          ) : (
+            <ObservabilityCompetitorComparison inputs={inputs} onInputsChange={setInputs} />
+          )}
+        </ObservabilityTabs>
 
         <div className="mt-12 text-center">
           <div className="inline-block bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl px-6 py-4 border border-gray-200/50 dark:border-gray-700/50 shadow-md">
