@@ -110,28 +110,38 @@ export default function ServerlessEstimator() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
               <span className="w-1 h-8 bg-gradient-to-b from-sky-500 to-blue-600 rounded-full mr-3" />
-              Observability Serverless estimator
+              Elastic Serverless estimator
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-2xl leading-relaxed">
-              Elastic Observability Complete (logs, metrics, traces) aligned to{" "}
+              Observability Complete — logs, metrics, and traces. Same rates as{" "}
+              <a
+                href="https://cloud.elastic.co/pricing/serverless?s=observability"
+                className="underline font-medium text-blue-700 dark:text-blue-300"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                cloud.elastic.co/pricing/serverless
+              </a>
+              {" "}
+              (
               <a
                 href={ELASTIC_SERVERLESS_OBSERVABILITY_PRICING_URL}
                 className="underline font-medium text-blue-700 dark:text-blue-300"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                published Observability Serverless rates
-              </a>{" "}
-              and the{" "}
+                marketing floors
+              </a>
+              {" · "}
               <a
                 href={ELASTIC_CLOUD_OBSERVABILITY_PRICING_TABLE_URL}
                 className="underline font-medium text-blue-700 dark:text-blue-300"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Cloud volume tier table
+                volume tiers
               </a>
-              . Unofficial field helper — confirm with measured usage before customer quotes.
+              ). Unofficial — confirm before customer quotes.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
