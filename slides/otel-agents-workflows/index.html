@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OTel Demo Shop + Agents + Workflows — Serverless Auto-ops</title>
+  <link rel="stylesheet" href="slides/deck.css">
+</head>
+<body>
+<div class="deck">
+  <header class="deck-header">
+    <span class="deck-title">OTel · Agents · Workflows · Serverless</span>
+    <nav class="deck-nav">
+      <button type="button" data-nav="prev" aria-label="Previous">‹</button>
+      <div class="deck-dots"></div>
+      <button type="button" data-nav="next" aria-label="Next">›</button>
+    </nav>
+  </header>
+  <div class="slide-viewport">
+
+    <section class="slide" data-slide="1">
+      <div class="eyebrow">Next-gen o11y · Challenge 3 · ~10 min</div>
+      <h1>Demo Shop traces + metrics land on <em>Serverless</em> via OTLP.</h1>
+      <p class="value-outcome">Customer value: One Observability Serverless project + managed OTLP → Service inventory, Streams, and ES|QL without a self-hosted collector farm.</p>
+      <p class="lede">OpenTelemetry Demo Shop–shaped services (<code>frontend</code>, <code>cart</code>, <code>checkout</code>, …) stream through managed ingest into <code>traces-*</code> and <code>metrics-generic.otel-default</code>. Prove the signal, then keep Streams levers for TCO.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">OTLP</div>
+              <h3>Managed ingest</h3>
+              <p>Traces → Service inventory · metrics → Auto-ops boards — one endpoint.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <polyline fill="none" stroke="#22d3ee" stroke-width="2.5" points="4,44 28,38 52,40 76,24 100,18 136,8"/>
+              <circle cx="136" cy="8" r="4" fill="#00bfb3"/>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">APM</div>
+              <h3>Service inventory</h3>
+              <p>Demo Shop names appear under Applications — not an empty Add data card.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <rect x="10" y="12" width="36" height="32" rx="5" fill="#141820" stroke="#60a5fa"/>
+              <rect x="52" y="12" width="36" height="32" rx="5" fill="#141820" stroke="#22d3ee"/>
+              <rect x="94" y="12" width="36" height="32" rx="5" fill="#141820" stroke="#00bfb3"/>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">STREAM</div>
+              <h3>metrics-generic.otel-default</h3>
+              <p>Landing stream for shop KPIs + JVM — Drop / roll-up / retention story.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <rect x="8" y="18" width="124" height="28" rx="6" fill="#141820" stroke="#00bfb3"/>
+              <text x="70" y="36" text-anchor="middle" fill="#00bfb3" font-size="9" font-family="IBM Plex Mono, monospace">STREAM</text>
+            </svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">Path into the lab</div>
+          <div class="panel-stat">13 Demo Shop services</div>
+          <svg viewBox="0 0 320 200" aria-label="OTel Demo Shop ingest infographic">
+            <rect x="8" y="24" width="78" height="44" rx="8" fill="#141820" stroke="#f59e0b"/>
+            <text x="47" y="42" text-anchor="middle" fill="#f59e0b" font-size="8">Demo Shop</text>
+            <text x="47" y="56" text-anchor="middle" fill="#8b95a8" font-size="7">OTLP traces</text>
+            <path d="M88,46 H112" stroke="#5c6578" stroke-width="2"/>
+            <polygon points="112,46 104,42 104,50" fill="#5c6578"/>
+            <rect x="116" y="24" width="78" height="44" rx="8" fill="#141820" stroke="#22d3ee"/>
+            <text x="155" y="42" text-anchor="middle" fill="#22d3ee" font-size="8">Managed</text>
+            <text x="155" y="56" text-anchor="middle" fill="#8b95a8" font-size="7">OTLP ingest</text>
+            <path d="M196,46 H220" stroke="#5c6578" stroke-width="2"/>
+            <polygon points="220,46 212,42 212,50" fill="#5c6578"/>
+            <rect x="224" y="24" width="88" height="44" rx="8" fill="#141820" stroke="#00bfb3"/>
+            <text x="268" y="42" text-anchor="middle" fill="#00bfb3" font-size="8">Serverless</text>
+            <text x="268" y="56" text-anchor="middle" fill="#8b95a8" font-size="7">APM · Streams</text>
+            <rect x="16" y="96" width="52" height="20" rx="4" fill="#0f1218" stroke="#60a5fa"/>
+            <text x="42" y="110" text-anchor="middle" fill="#60a5fa" font-size="7">frontend</text>
+            <rect x="76" y="96" width="44" height="20" rx="4" fill="#0f1218" stroke="#60a5fa"/>
+            <text x="98" y="110" text-anchor="middle" fill="#60a5fa" font-size="7">cart</text>
+            <rect x="128" y="96" width="56" height="20" rx="4" fill="#0f1218" stroke="#60a5fa"/>
+            <text x="156" y="110" text-anchor="middle" fill="#60a5fa" font-size="7">checkout</text>
+            <rect x="192" y="96" width="56" height="20" rx="4" fill="#0f1218" stroke="#60a5fa"/>
+            <text x="220" y="110" text-anchor="middle" fill="#60a5fa" font-size="7">shipping</text>
+            <rect x="256" y="96" width="52" height="20" rx="4" fill="#0f1218" stroke="#60a5fa"/>
+            <text x="282" y="110" text-anchor="middle" fill="#60a5fa" font-size="7">reco…</text>
+            <rect x="40" y="132" width="100" height="28" rx="6" fill="#141820" stroke="#a78bfa"/>
+            <text x="90" y="150" text-anchor="middle" fill="#a78bfa" font-size="8">EDOT kube-stack</text>
+            <rect x="180" y="132" width="100" height="28" rx="6" fill="#141820" stroke="#34d399"/>
+            <text x="230" y="150" text-anchor="middle" fill="#34d399" font-size="8">[K8s OTel] boards</text>
+            <text x="160" y="182" text-anchor="middle" fill="#00bfb3" font-size="10" font-weight="600">Outcome: live OTel without a sidecar TSDB</text>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-teal">OTLP</span>
+            <span class="pill pill-blue">Demo Shop</span>
+            <span class="pill pill-orange">EDOT K8s</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Service inventory → Discover ES|QL on traces → Streams on <code>metrics-generic.otel-default</code>.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="2">
+      <div class="eyebrow">Next-gen o11y · Challenge 2 · ~10 min</div>
+      <h1>Agent Builder is the <em>brain</em> Auto-ops will call.</h1>
+      <p class="value-outcome">Customer value: Built-in Elastic AI Agent (<code>elastic-ai-agent</code>) with ES|QL, dashboards, and rules tools — same agent id Workflows invoke for gap-fill.</p>
+      <p class="lede">OTel Auto-ops Workflows ask an agent to investigate signals, polish boards, and narrate Streams TCO. Open <strong>Agent Builder → Agents</strong>, find the Elastic AI Agent, and confirm it can see Demo Shop telemetry.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">AGENT</div>
+              <h3>elastic-ai-agent</h3>
+              <p>Out-of-the-box Observability agent — query, boards, and rules tools.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <circle cx="70" cy="28" r="18" fill="none" stroke="#a78bfa" stroke-width="2"/>
+              <circle cx="70" cy="28" r="6" fill="#a78bfa"/>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">TOOLS</div>
+              <h3>ES|QL · boards · rules</h3>
+              <p>Enough surface for gap-only Auto-ops without a custom agent pack.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <rect x="10" y="14" width="36" height="12" rx="3" fill="#00bfb3" opacity="0.7"/>
+              <rect x="52" y="14" width="36" height="12" rx="3" fill="#22d3ee" opacity="0.7"/>
+              <rect x="94" y="14" width="36" height="12" rx="3" fill="#a78bfa" opacity="0.7"/>
+              <rect x="30" y="34" width="80" height="12" rx="3" fill="#60a5fa" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">ASK</div>
+              <h3>Demo Shop prompt</h3>
+              <p>One chat against live traces/metrics — proof the agent sees the same stream.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <path d="M20,40 Q40,10 70,28 T120,18" fill="none" stroke="#34d399" stroke-width="2"/>
+              <circle cx="120" cy="18" r="3" fill="#34d399"/>
+            </svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">Where the agent sits</div>
+          <div class="panel-stat">Workflows → Agent → Kibana APIs</div>
+          <svg viewBox="0 0 320 200" aria-label="Agent Builder loop infographic">
+            <rect x="20" y="70" width="72" height="48" rx="10" fill="#141820" stroke="#22d3ee"/>
+            <text x="56" y="90" text-anchor="middle" fill="#22d3ee" font-size="9">Workflow</text>
+            <text x="56" y="106" text-anchor="middle" fill="#8b95a8" font-size="7">otel-*</text>
+            <path d="M96,94 H128" stroke="#5c6578" stroke-width="2"/>
+            <polygon points="128,94 120,90 120,98" fill="#5c6578"/>
+            <rect x="132" y="62" width="88" height="64" rx="12" fill="#141820" stroke="#a78bfa" stroke-width="2"/>
+            <text x="176" y="88" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="600">AI Agent</text>
+            <text x="176" y="106" text-anchor="middle" fill="#8b95a8" font-size="7">elastic-ai-agent</text>
+            <path d="M224,94 H256" stroke="#5c6578" stroke-width="2"/>
+            <polygon points="256,94 248,90 248,98" fill="#5c6578"/>
+            <rect x="260" y="70" width="44" height="48" rx="10" fill="#141820" stroke="#00bfb3"/>
+            <text x="282" y="90" text-anchor="middle" fill="#00bfb3" font-size="8">APIs</text>
+            <text x="282" y="106" text-anchor="middle" fill="#8b95a8" font-size="7">gap-fill</text>
+            <path d="M282,118 V148 H56 V118" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <text x="160" y="168" text-anchor="middle" fill="#8b95a8" font-size="9">Same project · Demo Shop OTel · touchless SRE loop</text>
+            <text x="160" y="188" text-anchor="middle" fill="#00bfb3" font-size="10" font-weight="600">Outcome: name the agent Workflows will invoke</text>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-purple">Agent Builder</span>
+            <span class="pill pill-teal">elastic-ai-agent</span>
+            <span class="pill pill-green">Live chat</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Agents → Elastic AI Agent → skim tools → one Demo Shop health prompt.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="3">
+      <div class="eyebrow">Next-gen o11y · Challenge 1 · ~20 min</div>
+      <h1>Workflows close the loop — <em>boards, alerts, SLOs, Streams</em>.</h1>
+      <p class="value-outcome">Customer value: Pre-loaded <code>otel-*</code> Auto-ops pack upserts gap-only policies and boards — Template Library path once the OTel pack is catalogued.</p>
+      <p class="lede">Eight workflows ship as <code>otel-*</code>. Run the pack, confirm Auto: OTel dashboards / Universal alerts / SLOs, Service inventory, and managed <code>[Kubernetes OTel]</code> boards from EDOT kube-stack.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">AUTO</div>
+              <h3>otel-vega-dashboards</h3>
+              <p>Health Monitor · Trace Errors · Shop KPIs · JVM · K8s Restarts.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <rect x="12" y="28" width="18" height="20" fill="#00bfb3"/><rect x="36" y="18" width="18" height="30" fill="#22d3ee"/><rect x="60" y="10" width="18" height="38" fill="#60a5fa"/><rect x="84" y="22" width="18" height="26" fill="#a78bfa"/>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">GUARD</div>
+              <h3>Alerts · SLOs · ML</h3>
+              <p>Trace/error/latency policies + Demo Shop availability SLOs — healthy baselines.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <path d="M20,40 L50,40 L70,18 L110,18" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="110" cy="18" r="5" fill="none" stroke="#f87171" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">K8s</div>
+              <h3>EDOT kube-stack</h3>
+              <p>Lab k3s + managed OTLP → <code>[Kubernetes OTel] Workloads</code> renders.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <rect x="24" y="10" width="92" height="36" rx="6" fill="#141820" stroke="#34d399"/>
+              <text x="70" y="32" text-anchor="middle" fill="#34d399" font-size="9">k8scluster</text>
+            </svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">Auto-ops flywheel</div>
+          <div class="panel-stat">OTel signal → Agent → Policies</div>
+          <svg viewBox="0 0 320 200" aria-label="OTel Workflows automation flywheel">
+            <circle cx="160" cy="95" r="70" fill="none" stroke="rgba(0,191,179,0.25)" stroke-width="2"/>
+            <rect x="118" y="18" width="84" height="28" rx="8" fill="#141820" stroke="#22d3ee"/>
+            <text x="160" y="36" text-anchor="middle" fill="#22d3ee" font-size="9">OTLP lands</text>
+            <rect x="230" y="78" width="84" height="28" rx="8" fill="#141820" stroke="#a78bfa"/>
+            <text x="272" y="96" text-anchor="middle" fill="#a78bfa" font-size="9">Agent gap-fill</text>
+            <rect x="118" y="148" width="84" height="28" rx="8" fill="#141820" stroke="#00bfb3"/>
+            <text x="160" y="166" text-anchor="middle" fill="#00bfb3" font-size="9">Dash · Alert · SLO</text>
+            <rect x="6" y="78" width="84" height="28" rx="8" fill="#141820" stroke="#f59e0b"/>
+            <text x="48" y="96" text-anchor="middle" fill="#f59e0b" font-size="9">otel-*</text>
+            <text x="160" y="100" text-anchor="middle" fill="#f4f6f9" font-size="11" font-weight="600">touchless</text>
+            <text x="160" y="198" text-anchor="middle" fill="#8b95a8" font-size="8">YAML bridge today · Template Library after OTel pack publishes</text>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-teal">Workflows</span>
+            <span class="pill pill-purple">otel-*</span>
+            <span class="pill pill-orange">Gap-only</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Run <code>otel-vega-dashboards</code> → alerts/SLOs → Service inventory → <code>[Kubernetes OTel] Workloads</code>.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+  </div>
+</div>
+<script src="slides/deck.js"></script>
+</body>
+</html>
