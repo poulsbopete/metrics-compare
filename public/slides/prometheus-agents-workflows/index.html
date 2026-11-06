@@ -19,28 +19,17 @@
   <div class="slide-viewport">
 
     <section class="slide" data-slide="1">
-      <div class="eyebrow">Next-gen o11y · Challenge 3 · ~10 min</div>
-      <h1>Prom-style metrics land on <em>Serverless</em> — no self-hosted solutions.</h1>
-      <p class="value-outcome">Customer value: One Observability Serverless project + managed ingest → live Prom/OTLP metrics in minutes, not a self-managed TSDB stack.</p>
-      <p class="lede">Horizon services already stream into <code>metrics-generic.otel-default</code>. Same path works for <strong>Prometheus remote-write</strong> or <strong>OTLP</strong>. Prove four services, keep your PromQL habit, then automate on top.</p>
+      <div class="eyebrow">Next-gen o11y · Challenge 1 · ~10 min</div>
+      <h1>Prove the stream first — <em>Streams → Discover</em>.</h1>
+      <p class="value-outcome">Customer value: Same day-one path customers use — open the landing stream, View in Discover, confirm four services before any Auto-ops.</p>
+      <p class="lede">Lab metrics already land in <code>metrics-generic.otel-default</code> (OTLP seed). Managed Prometheus remote-write uses <code>metrics-generic.prometheus-default</code> — same story. Empty boards happen when you automate before you know the data.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
             <div>
-              <div class="tag">INGEST</div>
-              <h3>Remote-write / OTLP</h3>
-              <p>One managed endpoint — no scrape-interval gymnastics to control cost.</p>
-            </div>
-            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
-              <polyline fill="none" stroke="#22d3ee" stroke-width="2.5" points="4,48 28,40 52,42 76,28 100,22 136,10"/>
-              <circle cx="136" cy="10" r="4" fill="#00bfb3"/>
-            </svg>
-          </div>
-          <div class="metric-card">
-            <div>
-              <div class="tag">STREAM</div>
-              <h3>metrics-generic.otel-default</h3>
-              <p>Landing stream for Horizon Prom-shaped metrics — noise + signal in one place.</p>
+              <div class="tag">STREAMS</div>
+              <h3>Open the landing stream</h3>
+              <p>Find <code>metrics-generic.otel-default</code> — retention and quality live here.</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
               <rect x="8" y="18" width="124" height="28" rx="6" fill="#141820" stroke="#00bfb3"/>
@@ -49,19 +38,30 @@
           </div>
           <div class="metric-card">
             <div>
-              <div class="tag">HABIT</div>
-              <h3>Same PromQL</h3>
-              <p>Paste rate() / sum by (service.name) — Explore muscle memory, Elastic backend.</p>
+              <div class="tag">DISCOVER</div>
+              <h3>View in Discover</h3>
+              <p>ES|QL count-by-service — four rows means the seed is alive.</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
-              <text x="70" y="34" text-anchor="middle" fill="#a78bfa" font-size="11" font-family="IBM Plex Mono, monospace">rate([5m])</text>
+              <text x="70" y="34" text-anchor="middle" fill="#22d3ee" font-size="10" font-family="IBM Plex Mono, monospace">STATS BY svc</text>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">HABIT</div>
+              <h3>Same PromQL later</h3>
+              <p>Explore muscle memory still works — Elastic backend, no sidecar TSDB.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <polyline fill="none" stroke="#22d3ee" stroke-width="2.5" points="4,48 28,40 52,42 76,28 100,22 136,10"/>
+              <circle cx="136" cy="10" r="4" fill="#00bfb3"/>
             </svg>
           </div>
         </div>
         <div class="diagram-panel">
           <div class="panel-label">Path into the lab</div>
-          <div class="panel-stat">4 Horizon services</div>
-          <svg viewBox="0 0 320 200" aria-label="Ingest pipeline infographic">
+          <div class="panel-stat">4 demo services</div>
+          <svg viewBox="0 0 320 200" aria-label="Streams to Discover path">
             <rect x="8" y="28" width="70" height="36" rx="8" fill="#141820" stroke="#f59e0b"/>
             <text x="43" y="42" text-anchor="middle" fill="#f59e0b" font-size="8">Prom / OTel</text>
             <text x="43" y="56" text-anchor="middle" fill="#8b95a8" font-size="7">exporters</text>
@@ -74,41 +74,113 @@
             <polygon points="220,46 212,42 212,50" fill="#5c6578"/>
             <rect x="224" y="28" width="88" height="36" rx="8" fill="#141820" stroke="#00bfb3"/>
             <text x="268" y="42" text-anchor="middle" fill="#00bfb3" font-size="8">Streams</text>
-            <text x="268" y="56" text-anchor="middle" fill="#8b95a8" font-size="7">+ Discover</text>
-            <rect x="24" y="100" width="60" height="22" rx="4" fill="#0f1218" stroke="#60a5fa"/>
-            <text x="54" y="115" text-anchor="middle" fill="#60a5fa" font-size="7">playback</text>
-            <rect x="94" y="100" width="60" height="22" rx="4" fill="#0f1218" stroke="#60a5fa"/>
-            <text x="124" y="115" text-anchor="middle" fill="#60a5fa" font-size="7">cdn</text>
-            <rect x="164" y="100" width="60" height="22" rx="4" fill="#0f1218" stroke="#60a5fa"/>
-            <text x="194" y="115" text-anchor="middle" fill="#60a5fa" font-size="7">auth</text>
-            <rect x="234" y="100" width="60" height="22" rx="4" fill="#0f1218" stroke="#60a5fa"/>
-            <text x="264" y="115" text-anchor="middle" fill="#60a5fa" font-size="7">billing</text>
-            <text x="160" y="155" text-anchor="middle" fill="#8b95a8" font-size="9">horizon-* · docs in Discover = ready for agents</text>
-            <text x="160" y="178" text-anchor="middle" fill="#00bfb3" font-size="10" font-weight="600">Outcome: live metrics without a sidecar TSDB</text>
+            <text x="268" y="56" text-anchor="middle" fill="#8b95a8" font-size="7">→ Discover</text>
+            <rect x="8" y="100" width="72" height="22" rx="4" fill="#0f1218" stroke="#60a5fa"/>
+            <text x="44" y="115" text-anchor="middle" fill="#60a5fa" font-size="6.5">auth-gateway</text>
+            <rect x="86" y="100" width="72" height="22" rx="4" fill="#0f1218" stroke="#60a5fa"/>
+            <text x="122" y="115" text-anchor="middle" fill="#60a5fa" font-size="6.5">checkout-api</text>
+            <rect x="164" y="100" width="72" height="22" rx="4" fill="#0f1218" stroke="#60a5fa"/>
+            <text x="200" y="115" text-anchor="middle" fill="#60a5fa" font-size="6.5">inventory-svc</text>
+            <rect x="242" y="100" width="70" height="22" rx="4" fill="#0f1218" stroke="#60a5fa"/>
+            <text x="277" y="115" text-anchor="middle" fill="#60a5fa" font-size="6">recommendations</text>
+            <text x="160" y="155" text-anchor="middle" fill="#8b95a8" font-size="9">Four rows in Discover = ready for Template Library</text>
+            <text x="160" y="178" text-anchor="middle" fill="#00bfb3" font-size="10" font-weight="600">Outcome: prove signal before Auto-ops</text>
           </svg>
           <div class="pills">
-            <span class="pill pill-teal">PromQL</span>
-            <span class="pill pill-blue">OTLP</span>
-            <span class="pill pill-orange">Horizon</span>
+            <span class="pill pill-teal">Streams</span>
+            <span class="pill pill-blue">Discover</span>
+            <span class="pill pill-orange">service.name</span>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Discover → four <code>horizon-*</code> rows → optional PromQL rate → peek at Streams.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Streams → <code>metrics-generic.otel-default</code> → View in Discover → four service rows.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
     <section class="slide" data-slide="2">
-      <div class="eyebrow">Next-gen o11y · Challenge 2 · ~10 min</div>
-      <h1>Agent Builder is the <em>brain</em> Workflows will call.</h1>
-      <p class="value-outcome">Customer value: Built-in Elastic AI Agent (<code>elastic-ai-agent</code>) with ES|QL, dashboards, and rules tools — no custom SRE agent required for this lab.</p>
-      <p class="lede">Auto-ops Workflows gap-fill dashboards, alerts, and briefings by calling an agent. Open <strong>Agent Builder → Agents</strong>, find the Elastic AI Agent, and note the tools — that is the same id Workflows use next.</p>
+      <div class="eyebrow">Next-gen o11y · Challenge 2 · ~20 min</div>
+      <h1>Install Auto-ops <em>one template at a time</em>.</h1>
+      <p class="value-outcome">Customer value: Workflows → Template Library — install, run, confirm the asset, then the next. No bulk hope-and-pray.</p>
+      <p class="lede">Override metrics index to <code>metrics-generic.otel-default</code>. Keep Agent ID on <code>elastic-ai-agent</code>. Each run should leave a visible footprint: Streams board, Auto dashboards, alerts, SLOs, briefings.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
             <div>
-              <div class="tag">AGENT</div>
+              <div class="tag">1–2</div>
+              <h3>Streams + dashboards</h3>
+              <p>Noise &amp; savings board, then <code>Auto: Prometheus</code> Health / HTTP / KPIs.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <rect x="12" y="28" width="18" height="20" fill="#00bfb3"/><rect x="36" y="18" width="18" height="30" fill="#22d3ee"/><rect x="60" y="10" width="18" height="38" fill="#60a5fa"/><rect x="84" y="22" width="18" height="26" fill="#a78bfa"/>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">3–4</div>
+              <h3>Alerts + SLOs</h3>
+              <p>Allowlisted policies and service SLOs on the same lab stream.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <path d="M20,40 L50,40 L70,18 L110,18" fill="none" stroke="#f59e0b" stroke-width="2"/>
+              <circle cx="110" cy="18" r="5" fill="none" stroke="#f87171" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">5+</div>
+              <h3>Briefings (time)</h3>
+              <p>Agent-written Purpose / How to read on Auto dashboards.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <rect x="24" y="10" width="92" height="36" rx="6" fill="#141820" stroke="#34d399"/>
+              <text x="70" y="32" text-anchor="middle" fill="#34d399" font-size="9">brief.md</text>
+            </svg>
+          </div>
+        </div>
+        <div class="diagram-panel">
+          <div class="panel-label">Install loop</div>
+          <div class="panel-stat">Template → Run → Confirm</div>
+          <svg viewBox="0 0 320 200" aria-label="Template Library install loop">
+            <rect x="16" y="70" width="80" height="48" rx="10" fill="#141820" stroke="#22d3ee"/>
+            <text x="56" y="90" text-anchor="middle" fill="#22d3ee" font-size="9">Template</text>
+            <text x="56" y="106" text-anchor="middle" fill="#8b95a8" font-size="7">library</text>
+            <path d="M100,94 H128" stroke="#5c6578" stroke-width="2"/>
+            <polygon points="128,94 120,90 120,98" fill="#5c6578"/>
+            <rect x="132" y="70" width="80" height="48" rx="10" fill="#141820" stroke="#f59e0b"/>
+            <text x="172" y="90" text-anchor="middle" fill="#f59e0b" font-size="9">Install</text>
+            <text x="172" y="106" text-anchor="middle" fill="#8b95a8" font-size="7">+ Run</text>
+            <path d="M216,94 H244" stroke="#5c6578" stroke-width="2"/>
+            <polygon points="244,94 236,90 236,98" fill="#5c6578"/>
+            <rect x="248" y="70" width="56" height="48" rx="10" fill="#141820" stroke="#00bfb3"/>
+            <text x="276" y="90" text-anchor="middle" fill="#00bfb3" font-size="8">Asset</text>
+            <text x="276" y="106" text-anchor="middle" fill="#8b95a8" font-size="7">confirm</text>
+            <path d="M276,118 V148 H56 V118" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <text x="160" y="168" text-anchor="middle" fill="#8b95a8" font-size="9">One footprint at a time — then next template</text>
+            <text x="160" y="188" text-anchor="middle" fill="#00bfb3" font-size="10" font-weight="600">Outcome: project lights up with gap-only Auto-ops</text>
+          </svg>
+          <div class="pills">
+            <span class="pill pill-teal">Template Library</span>
+            <span class="pill pill-orange">otel-default</span>
+            <span class="pill pill-purple">elastic-ai-agent</span>
+          </div>
+        </div>
+      </div>
+      <footer class="slide-footer"><strong>In the lab:</strong> Template library → install → Run → confirm dashboard / rule / SLO → next.</footer>
+      <span class="elastic-mark">elastic</span>
+    </section>
+
+    <section class="slide" data-slide="3">
+      <div class="eyebrow">Next-gen o11y · Challenge 3 · ~10 min</div>
+      <h1>Chat with the <em>default</em> Elastic AI Agent only.</h1>
+      <p class="value-outcome">Customer value: Built-in <code>elastic-ai-agent</code> already powers Auto-ops — no custom SRE agent, no Create agent for this lab.</p>
+      <p class="lede">Leave the dropdown on <strong>Elastic AI Agent</strong>. Skim Overview / Tools if you want — then <strong>+ New</strong> conversation and ask about the same lab stream you proved in Challenge 1.</p>
+      <div class="slide-body">
+        <div class="cards">
+          <div class="metric-card">
+            <div>
+              <div class="tag">DEFAULT</div>
               <h3>elastic-ai-agent</h3>
-              <p>Out-of-the-box Observability agent — tools for query, boards, and rules.</p>
+              <p>Same id every Template Library form already uses — do not create another.</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
               <circle cx="70" cy="28" r="18" fill="none" stroke="#a78bfa" stroke-width="2"/>
@@ -119,7 +191,7 @@
             <div>
               <div class="tag">TOOLS</div>
               <h3>ES|QL · boards · rules</h3>
-              <p>Enough surface area for gap-only Auto-ops without a custom agent pack.</p>
+              <p>Enough surface area for gap-fill without a bespoke agent pack.</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
               <rect x="10" y="14" width="36" height="12" rx="3" fill="#00bfb3" opacity="0.7"/>
@@ -130,9 +202,9 @@
           </div>
           <div class="metric-card">
             <div>
-              <div class="tag">ASK</div>
-              <h3>Horizon health prompt</h3>
-              <p>One chat against live metrics — proof the agent sees the same stream as Discover.</p>
+              <div class="tag">CHAT</div>
+              <h3>Grounded prompt</h3>
+              <p>Ask which lab services have the most docs in the last 2 hours.</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
               <path d="M20,40 Q40,10 70,28 T120,18" fill="none" stroke="#34d399" stroke-width="2"/>
@@ -142,11 +214,11 @@
         </div>
         <div class="diagram-panel">
           <div class="panel-label">Where the agent sits</div>
-          <div class="panel-stat">Workflows → Agent → Kibana APIs</div>
-          <svg viewBox="0 0 320 200" aria-label="Agent Builder loop infographic">
+          <div class="panel-stat">Workflows → default agent → APIs</div>
+          <svg viewBox="0 0 320 200" aria-label="Default agent loop">
             <rect x="20" y="70" width="72" height="48" rx="10" fill="#141820" stroke="#22d3ee"/>
             <text x="56" y="90" text-anchor="middle" fill="#22d3ee" font-size="9">Workflow</text>
-            <text x="56" y="106" text-anchor="middle" fill="#8b95a8" font-size="7">trigger</text>
+            <text x="56" y="106" text-anchor="middle" fill="#8b95a8" font-size="7">Auto-ops</text>
             <path d="M96,94 H128" stroke="#5c6578" stroke-width="2"/>
             <polygon points="128,94 120,90 120,98" fill="#5c6578"/>
             <rect x="132" y="62" width="88" height="64" rx="12" fill="#141820" stroke="#a78bfa" stroke-width="2"/>
@@ -158,85 +230,17 @@
             <text x="282" y="90" text-anchor="middle" fill="#00bfb3" font-size="8">APIs</text>
             <text x="282" y="106" text-anchor="middle" fill="#8b95a8" font-size="7">gap-fill</text>
             <path d="M282,118 V148 H56 V118" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <text x="160" y="168" text-anchor="middle" fill="#8b95a8" font-size="9">Same project · same metrics · touchless SRE loop</text>
-            <text x="160" y="188" text-anchor="middle" fill="#00bfb3" font-size="10" font-weight="600">Outcome: name the agent Workflows will invoke</text>
+            <text x="160" y="168" text-anchor="middle" fill="#8b95a8" font-size="9">Do not create · duplicate · or rename an agent</text>
+            <text x="160" y="188" text-anchor="middle" fill="#00bfb3" font-size="10" font-weight="600">Outcome: platform default agent is the workhorse</text>
           </svg>
           <div class="pills">
-            <span class="pill pill-purple">Agent Builder</span>
+            <span class="pill pill-purple">Default only</span>
             <span class="pill pill-teal">elastic-ai-agent</span>
             <span class="pill pill-green">Live chat</span>
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Agents → Elastic AI Agent → skim tools → one Horizon metrics prompt.</footer>
-      <span class="elastic-mark">elastic</span>
-    </section>
-
-    <section class="slide" data-slide="3">
-      <div class="eyebrow">Next-gen o11y · Challenge 1 · ~20 min</div>
-      <h1>Workflows close the loop — <em>dashboards, alerts, SLOs</em>.</h1>
-      <p class="value-outcome">Customer value: Pre-loaded Auto-ops pack creates gap-only boards and policies — Template Library story without waiting on merge approval.</p>
-      <p class="lede">Auto-ops workflows are already installed. <strong>Run them</strong>, then open Dashboards / Alerts / SLOs and see touchless SRE automation land on Horizon metrics.</p>
-      <div class="slide-body">
-        <div class="cards">
-          <div class="metric-card">
-            <div>
-              <div class="tag">AUTO</div>
-              <h3>Vega dashboards</h3>
-              <p><code>prometheus-vega-dashboards</code> — gap-only Horizon / Prom-style boards.</p>
-            </div>
-            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
-              <rect x="12" y="28" width="18" height="20" fill="#00bfb3"/><rect x="36" y="18" width="18" height="30" fill="#22d3ee"/><rect x="60" y="10" width="18" height="38" fill="#60a5fa"/><rect x="84" y="22" width="18" height="26" fill="#a78bfa"/>
-            </svg>
-          </div>
-          <div class="metric-card">
-            <div>
-              <div class="tag">GUARD</div>
-              <h3>Alerts + SLOs</h3>
-              <p>Gap-only policies + baseline SLOs — Healthy coverage, not a red sea of 99.9%.</p>
-            </div>
-            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
-              <path d="M20,40 L50,40 L70,18 L110,18" fill="none" stroke="#f59e0b" stroke-width="2"/>
-              <circle cx="110" cy="18" r="5" fill="none" stroke="#f87171" stroke-width="2"/>
-            </svg>
-          </div>
-          <div class="metric-card">
-            <div>
-              <div class="tag">BRIEF</div>
-              <h3>SRE briefings</h3>
-              <p>Day-one Markdown on Auto dashboards — agent-written ops context.</p>
-            </div>
-            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
-              <rect x="24" y="10" width="92" height="36" rx="6" fill="#141820" stroke="#34d399"/>
-              <text x="70" y="32" text-anchor="middle" fill="#34d399" font-size="9">brief.md</text>
-            </svg>
-          </div>
-        </div>
-        <div class="diagram-panel">
-          <div class="panel-label">Auto-ops flywheel</div>
-          <div class="panel-stat">Metrics → Agent → Policies</div>
-          <svg viewBox="0 0 320 200" aria-label="Workflows automation flywheel">
-            <circle cx="160" cy="95" r="70" fill="none" stroke="rgba(0,191,179,0.25)" stroke-width="2"/>
-            <rect x="118" y="18" width="84" height="28" rx="8" fill="#141820" stroke="#22d3ee"/>
-            <text x="160" y="36" text-anchor="middle" fill="#22d3ee" font-size="9">Metrics land</text>
-            <rect x="230" y="78" width="84" height="28" rx="8" fill="#141820" stroke="#a78bfa"/>
-            <text x="272" y="96" text-anchor="middle" fill="#a78bfa" font-size="9">Agent gap-fill</text>
-            <rect x="118" y="148" width="84" height="28" rx="8" fill="#141820" stroke="#00bfb3"/>
-            <text x="160" y="166" text-anchor="middle" fill="#00bfb3" font-size="9">Dash · Alert · SLO</text>
-            <!-- flywheel confirms Ch1 outcomes -->
-            <rect x="6" y="78" width="84" height="28" rx="8" fill="#141820" stroke="#f59e0b"/>
-            <text x="48" y="96" text-anchor="middle" fill="#f59e0b" font-size="9">Workflows</text>
-            <text x="160" y="100" text-anchor="middle" fill="#f4f6f9" font-size="11" font-weight="600">touchless</text>
-            <text x="160" y="198" text-anchor="middle" fill="#8b95a8" font-size="8">Template Library path — available in-lab today</text>
-          </svg>
-          <div class="pills">
-            <span class="pill pill-teal">Workflows</span>
-            <span class="pill pill-purple">Auto-ops</span>
-            <span class="pill pill-orange">Gap-only</span>
-          </div>
-        </div>
-      </div>
-      <footer class="slide-footer"><strong>In the lab (Ch1):</strong> Workflows → run Auto-ops → Dashboards + Alerts + SLOs → one leadership sentence on touchless SRE.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Stay on Elastic AI Agent → + New → grounded metrics chat — no Create agent.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
