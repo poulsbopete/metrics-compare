@@ -21,15 +21,15 @@
     <section class="slide" data-slide="1">
       <div class="eyebrow">Next-gen o11y · Challenge 1 · ~10 min</div>
       <h1>Prove the stream first — <em>Streams → Discover</em>.</h1>
-      <p class="value-outcome">Customer value: Same day-one path customers use — open the landing stream, View in Discover, confirm four services before any Auto-ops.</p>
-      <p class="lede">Lab metrics already land in <code>metrics-generic.otel-default</code> (OTLP seed). Managed Prometheus remote-write uses <code>metrics-generic.prometheus-default</code> — same story. Empty boards happen when you automate before you know the data.</p>
+      <p class="value-outcome">Customer value: Real Prometheus remote_write into Serverless — open <code>metrics-generic.prometheus-default</code>, View in Discover, confirm four services before Auto-ops.</p>
+      <p class="lede">Setup runs a local Prometheus that <strong>remote_writes</strong> into Managed Inputs. Metrics land in <code>metrics-generic.prometheus-default</code> with Prom labels (<code>service</code>, <code>status</code>). Empty boards happen when you automate before you know the data.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
             <div>
               <div class="tag">STREAMS</div>
               <h3>Open the landing stream</h3>
-              <p>Find <code>metrics-generic.otel-default</code> — retention and quality live here.</p>
+              <p>Find <code>metrics-generic.prometheus-default</code> — Managed PRW landing stream.</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
               <rect x="8" y="18" width="124" height="28" rx="6" fill="#141820" stroke="#00bfb3"/>
@@ -93,7 +93,7 @@
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>In the lab:</strong> Streams → <code>metrics-generic.otel-default</code> → View in Discover → four service rows.</footer>
+      <footer class="slide-footer"><strong>In the lab:</strong> Streams → <code>metrics-generic.prometheus-default</code> → View in Discover → four <code>service</code> rows.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
@@ -101,7 +101,7 @@
       <div class="eyebrow">Next-gen o11y · Challenge 2 · ~20 min</div>
       <h1>Install Auto-ops <em>one template at a time</em>.</h1>
       <p class="value-outcome">Customer value: Workflows → Template Library — install, run, confirm the asset, then the next. No bulk hope-and-pray.</p>
-      <p class="lede">Override metrics index to <code>metrics-generic.otel-default</code>. Keep Agent ID on <code>elastic-ai-agent</code>. Each run should leave a visible footprint: Streams board, Auto dashboards, alerts, SLOs, briefings.</p>
+      <p class="lede">Leave metrics index on <code>metrics-generic.prometheus-default</code> (catalog default). Keep Agent ID on <code>elastic-ai-agent</code>. Each run should leave a visible footprint: Streams board, Auto dashboards, alerts, SLOs, briefings.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
@@ -160,7 +160,7 @@
           </svg>
           <div class="pills">
             <span class="pill pill-teal">Template Library</span>
-            <span class="pill pill-orange">otel-default</span>
+            <span class="pill pill-orange">prometheus-default</span>
             <span class="pill pill-purple">elastic-ai-agent</span>
           </div>
         </div>
@@ -204,7 +204,7 @@
             <div>
               <div class="tag">CHAT</div>
               <h3>Grounded prompt</h3>
-              <p>Ask which lab services have the most docs in the last 2 hours.</p>
+              <p>Ask which lab services have the most docs in prometheus-default (label <code>service</code>).</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
               <path d="M20,40 Q40,10 70,28 T120,18" fill="none" stroke="#34d399" stroke-width="2"/>
