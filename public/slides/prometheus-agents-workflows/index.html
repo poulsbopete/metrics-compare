@@ -21,7 +21,7 @@
     <section class="slide" data-slide="1">
       <div class="eyebrow">Challenge 1 · ~10 min</div>
       <h1>Confirm your metrics are landing — <em>Streams → Discover</em>.</h1>
-      <p class="value-outcome">What you’ll do: Open <code>metrics-generic.prometheus-default</code>, jump to Discover, and verify your services are present before you automate anything.</p>
+      <p class="value-outcome">What you’ll do: Open <code>metrics-generic.prometheus-default</code>, verify services in Discover, then confirm Dashboards / Alerting / SLOs are still empty of Auto-ops.</p>
       <p class="lede">Your project already receives Prometheus <strong>remote_write</strong> through Managed Inputs. Series use familiar Prom labels (<code>service</code>, <code>status</code>). Checking the stream first avoids empty dashboards and broken SLOs later.</p>
       <div class="slide-body">
         <div class="cards">
@@ -49,15 +49,16 @@
           </div>
           <div class="metric-card">
             <div>
-              <div class="tag">HABIT</div>
-              <h3>Keep your PromQL</h3>
-              <p>Explore the same way you would in Prometheus — Elastic holds the data.</p>
+              <div class="tag">BASELINE</div>
+              <h3>Empty ops surface</h3>
+              <p>Glance at Dashboards, Alerting, and SLOs — no Auto-ops assets yet (managed Audit boards don’t count).</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
-              <polyline fill="none" stroke="#22d3ee" stroke-width="2.5" points="4,48 28,40 52,42 76,28 100,22 136,10"/>
-              <circle cx="136" cy="10" r="4" fill="#00bfb3"/>
+              <text x="70" y="26" text-anchor="middle" fill="#8b95a8" font-size="8" font-family="IBM Plex Mono, monospace">Dash · Alert · SLO</text>
+              <text x="70" y="42" text-anchor="middle" fill="#f59e0b" font-size="10" font-family="IBM Plex Mono, monospace">— empty —</text>
             </svg>
           </div>
+
         </div>
         <div class="diagram-panel">
           <div class="panel-label">Your data path</div>
@@ -94,7 +95,8 @@
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>Next:</strong> Streams → <code>metrics-generic.prometheus-default</code> → View in Discover → <strong>Last 15 minutes</strong> → count by <code>service</code>.</footer>
+      <footer class="slide-footer"><strong>Next:</strong> Streams → Discover (<strong>15m</strong>) → confirm Dashboards / Alerting / SLOs have no Auto-ops yet.</footer>
+
 
       <span class="elastic-mark">elastic</span>
     </section>
