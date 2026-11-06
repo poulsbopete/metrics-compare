@@ -104,15 +104,25 @@
     <section class="slide" data-slide="2">
       <div class="eyebrow">Challenge 2 · ~20 min</div>
       <h1>Stand up ops coverage <em>one workflow at a time</em>.</h1>
-      <p class="value-outcome">What you’ll do: In Workflows → Template library, install a template, run it, confirm the dashboard / rule / SLO, then move to the next.</p>
-      <p class="lede">Keep the metrics index on <code>metrics-generic.prometheus-default</code> and Agent ID on <code>elastic-ai-agent</code>. Each successful run should leave something you can open and use — not a bulk install you hope worked.</p>
+      <p class="value-outcome">What you’ll do: Template library → <strong>Monitoring</strong> → install each <strong>Prometheus</strong> card one at a time (run + confirm, then next).</p>
+      <p class="lede">Keep the metrics index on <code>metrics-generic.prometheus-default</code> and Agent ID on <code>elastic-ai-agent</code>. Skip AWS / non-Prometheus templates.</p>
       <div class="slide-body">
         <div class="cards">
           <div class="metric-card">
             <div>
-              <div class="tag">1–2</div>
-              <h3>Streams + dashboards</h3>
-              <p>Noise &amp; savings view, then <code>Auto: Prometheus</code> Health / HTTP / KPI boards.</p>
+              <div class="tag">FIND</div>
+              <h3>Monitoring</h3>
+              <p>Template library sidebar → <strong>Monitoring</strong> — all Prometheus Auto-ops cards live here.</p>
+            </div>
+            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
+              <text x="70" y="34" text-anchor="middle" fill="#00bfb3" font-size="11" font-family="IBM Plex Mono, monospace">Monitoring</text>
+            </svg>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="tag">INSTALL</div>
+              <h3>Each Prometheus card</h3>
+              <p>Dashboards → Alert Policies → SLO policies → briefings (ML optional).</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
               <rect x="12" y="28" width="18" height="20" fill="#00bfb3"/><rect x="36" y="18" width="18" height="30" fill="#22d3ee"/><rect x="60" y="10" width="18" height="38" fill="#60a5fa"/><rect x="84" y="22" width="18" height="26" fill="#a78bfa"/>
@@ -120,27 +130,17 @@
           </div>
           <div class="metric-card">
             <div>
-              <div class="tag">3–4</div>
-              <h3>Alerts + SLOs</h3>
-              <p>Threshold policies and availability SLOs on the same stream you just verified.</p>
+              <div class="tag">LOOP</div>
+              <h3>One at a time</h3>
+              <p>Install → Run → open Dashboards / Alerting / SLOs → next card.</p>
             </div>
             <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
               <path d="M20,40 L50,40 L70,18 L110,18" fill="none" stroke="#f59e0b" stroke-width="2"/>
               <circle cx="110" cy="18" r="5" fill="none" stroke="#f87171" stroke-width="2"/>
             </svg>
           </div>
-          <div class="metric-card">
-            <div>
-              <div class="tag">5+</div>
-              <h3>Briefings (if time)</h3>
-              <p>Day-one Markdown on Auto dashboards — Purpose / How to read.</p>
-            </div>
-            <svg class="chart" viewBox="0 0 140 56" aria-hidden="true">
-              <rect x="24" y="10" width="92" height="36" rx="6" fill="#141820" stroke="#34d399"/>
-              <text x="70" y="32" text-anchor="middle" fill="#34d399" font-size="9">brief.md</text>
-            </svg>
-          </div>
         </div>
+
         <div class="diagram-panel">
           <div class="panel-label">Your install loop</div>
           <div class="panel-stat">Template → Run → Confirm</div>
@@ -169,7 +169,7 @@
           </div>
         </div>
       </div>
-      <footer class="slide-footer"><strong>Next:</strong> Template library → install → Run → open the asset → next template.</footer>
+      <footer class="slide-footer"><strong>Next:</strong> Template library → <strong>Monitoring</strong> → each Prometheus card → Install → Run → confirm.</footer>
       <span class="elastic-mark">elastic</span>
     </section>
 
